@@ -1,4 +1,4 @@
-import math, time
+import math, inspect, os, sys, time
 import pymel.core as pm
 import maya.cmds as cmds
 from maya import OpenMaya as om
@@ -696,6 +696,8 @@ class UI(object):
         src_blend_shape = self.get_src_blend_shape_name()
         if src_blend_shape is None:
             return
+        if src_blend_shape == 'No Blend Shape Selected':
+            return
 
         # The blend shape array is sparse, so keep a mapping from list indices to blend
         # shape weight indices.  Note that for some reason, these are 1-based.
@@ -703,6 +705,7 @@ class UI(object):
 
         # Add the blend shape targets in the source blend shape to the list.
         src_blend_shape = pm.ls(src_blend_shape)[0]
+
         src_weights = src_blend_shape.attr('weight')
         for weight in src_weights:
             target_name = pm.aliasAttr(weight, q=True)
@@ -720,44 +723,61 @@ def run():
     ui = UI()
     ui.run()
 
-def setup():
-    # Work around Python forgetting to define __file__ for files run with execfile().
-    filename = os.path.abspath(inspect.getsourcefile(lambda: 0))
-    installation_path = os.path.dirname(filename)
+class PluginMenu(object):
+    def __init__(self):
+        self.menu_items = []
 
-    # Add this directory to the Python path.
-    if installation_path not in sys.path:
-        sys.path.append(installation_path)
+        for menu in ['mainDeformMenu', 'mainRigDeformationsMenu']:
+            # Make sure the file menu is built.
+            pm.mel.eval('ChaDeformationsMenu "MayaWindow|%s";' % menu)
 
-    pm.setParent(gMainFileMenu, menu=True)
+            for item in pm.menu(menu, q=True, ia=True):
+                # Find the "Edit" section.
+                if pm.menuItem(item, q=True, divider=True):
+                    section = pm.menuItem(item, q=True, label=True)
+                if section != 'Edit':
+                    continue
 
-    for menu in ['mainDeformMenu', 'mainRigDeformationsMenu']:
-        # Make sure the file menu is built.
-        pm.mel.eval('ChaDeformationsMenu "MayaWindow|%s";' % menu)
+                # Find the "Blend Shape" submenu.
+                if not pm.menuItem(item, q=True, subMenu=True):
+                    continue
+                if pm.menuItem(item, q=True, label=True) != 'Blend Shape':
+                    continue
 
-        for item in pm.menu(menu, q=True, ia=True):
-            # Find the "Edit" section.
-            if pm.menuItem(item, q=True, divider=True):
-                section = pm.menuItem(item, q=True, label=True)
-            if section != 'Edit':
-                continue
+                menu_item_name = 'zBlendShapeRetargetting_%s' % menu
 
-            # Find the "Blend Shape" submenu.
-            if not pm.menuItem(item, q=True, subMenu=True):
-                continue
-            if pm.menuItem(item, q=True, label=True) != 'Blend Shape':
-                continue
+                # In case this has already been created, remove the old one.  Maya is a little silly
+                # here and throws an error if it doesn't exist, so just ignore that if it happens.
+                try:
+                    pm.deleteUI(menu_item_name, menuItem=True)
+                except RuntimeError:
+                    pass
 
-            menu_item_name = 'zBlendShapeRetargetting_%s' % menu
+                item = pm.menuItem(menu_item_name, label='Retarget Blend Shapes', command=lambda unused: run(), parent=item)
+                self.menu_items.append(item)
 
-            # In case this has already been created, remove the old one.  Maya is a little silly
-            # here and throws an error if it doesn't exist, so just ignore that if it happens.
+    def remove(self):
+        for item in self.menu_items:
             try:
-                pm.deleteUI(menu_item_name, menuItem=True)
+                pm.deleteUI(item, menuItem=True)
             except RuntimeError:
                 pass
+        self.menu_items = []
 
-            pm.menuItem(menu_item_name, label='Retarget Blend Shapes', command=lambda unused: run(), parent=item)
+plugin = None
+def initializePlugin(mobject):
+    if om.MGlobal.mayaState() != om.MGlobal.kInteractive:
+        return
 
-if __name__ == "__main__":    
-    setup()
+    global plugin
+    plugin = PluginMenu()
+
+def uninitializePlugin(mobject):
+    global plugin
+    if plugin is None:
+        return
+
+    # Remove the menu on unload.
+    plugin.remove()
+    plugin = None
+
