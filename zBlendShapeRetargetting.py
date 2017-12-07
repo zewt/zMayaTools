@@ -14,6 +14,10 @@ from maya import OpenMaya as om
 # you retarget an elbow corrective on the body to the shoes, it'll just create an empty
 # target.  That's harmless, and checking if the mesh has actually changed would be
 # slower.
+#
+# A "set" button to set the selection to the source or destination blend shape
+# would be nice, as well as a "swap" button, but Maya's GUI system is so awful
+# to use I just don't want to figure out how to make a clean UI for it.
  
 def duplicate_mesh_from_plug(shape_attr, name):
     """
@@ -544,8 +548,6 @@ class UI(object):
         self.set_optionvars_from_ui()
         self.execute_from_optionvars()
 
-    # XXX: set source and dst from selection
-    # XXX: "swap" button
     def execute_from_optionvars(self):
         # Get the selected blendShapes.
         src_blend_shape = pm.optionMenuGrp('sourceBlendShapeList', q=True, v=True)
@@ -625,9 +627,9 @@ class UI(object):
         parent = pm.columnLayout(adjustableColumn=True)
 
         def add_blend_shape_selector(name, label, refresh_on_change):
-            # Create a list of blendShapes.
             pm.optionMenuGrp(name, label=label)
 
+            # Create a list of blendShapes.
             bnArray = pm.ls(type='blendShape')
             for entry in bnArray:
                 pm.menuItem(label=entry)
@@ -718,3 +720,44 @@ def run():
     ui = UI()
     ui.run()
 
+def setup():
+    # Work around Python forgetting to define __file__ for files run with execfile().
+    filename = os.path.abspath(inspect.getsourcefile(lambda: 0))
+    installation_path = os.path.dirname(filename)
+
+    # Add this directory to the Python path.
+    if installation_path not in sys.path:
+        sys.path.append(installation_path)
+
+    pm.setParent(gMainFileMenu, menu=True)
+
+    for menu in ['mainDeformMenu', 'mainRigDeformationsMenu']:
+        # Make sure the file menu is built.
+        pm.mel.eval('ChaDeformationsMenu "MayaWindow|%s";' % menu)
+
+        for item in pm.menu(menu, q=True, ia=True):
+            # Find the "Edit" section.
+            if pm.menuItem(item, q=True, divider=True):
+                section = pm.menuItem(item, q=True, label=True)
+            if section != 'Edit':
+                continue
+
+            # Find the "Blend Shape" submenu.
+            if not pm.menuItem(item, q=True, subMenu=True):
+                continue
+            if pm.menuItem(item, q=True, label=True) != 'Blend Shape':
+                continue
+
+            menu_item_name = 'zBlendShapeRetargetting_%s' % menu
+
+            # In case this has already been created, remove the old one.  Maya is a little silly
+            # here and throws an error if it doesn't exist, so just ignore that if it happens.
+            try:
+                pm.deleteUI(menu_item_name, menuItem=True)
+            except RuntimeError:
+                pass
+
+            pm.menuItem(menu_item_name, label='Retarget Blend Shapes', command=lambda unused: run(), parent=item)
+
+if __name__ == "__main__":    
+    setup()
