@@ -1,0 +1,57 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<templates>
+	<using package='maya'/>
+	<using package='std'/>
+	<template name='NEzOBBTransform'>
+		<attribute name='pivot' type='maya.double3'>
+			<label>Pivot</label>
+		</attribute>
+		<attribute name='rotate' type='maya.double3'>
+			<label>Rotate</label>
+		</attribute>
+		<attribute name='scale' type='maya.double3'>
+			<label>Scale</label>
+		</attribute>
+		<attribute name='translate' type='maya.double3'>
+			<label>Translate</label>
+		</attribute>
+		<attribute name='inputMesh' type='maya.mesh'>
+			<label>Input Mesh</label>
+		</attribute>
+		<attribute name='inputGroupId' type='maya.long'>
+			<label>Input Group Id</label>
+		</attribute>
+		<attribute name='currentGroupId' type='maya.long'>
+			<label>Current Group Id</label>
+		</attribute>
+		<attribute name='currentMesh' type='maya.mesh'>
+			<label>Current Mesh</label>
+		</attribute>
+		<attribute name='scaleWeightPrimary' type='maya.double3'>
+			<label>Scale Weight Primary</label>
+		</attribute>
+		<attribute name='scaleWeightSecondary' type='maya.double3'>
+			<label>Scale Weight Secondary</label>
+		</attribute>
+		<attribute name='scaleWeightTertiary' type='maya.double3'>
+			<label>Scale Weight Tertiary</label>
+		</attribute>
+		<attribute name='rotationMode' type='maya.enum'>
+			<label>Rotation Mode</label>
+		</attribute>
+	</template>
+	<view name='NEDefault' template='NEzOBBTransform'>
+		<property name='pivot'/>
+		<property name='rotate'/>
+		<property name='scale'/>
+		<property name='translate'/>
+		<property name='inputMesh'/>
+		<property name='inputGroupId'/>
+		<property name='currentGroupId'/>
+		<property name='currentMesh'/>
+		<property name='scaleWeightPrimary'/>
+		<property name='scaleWeightSecondary'/>
+		<property name='scaleWeightTertiary'/>
+		<property name='rotationMode'/>
+	</view>
+</templates>
