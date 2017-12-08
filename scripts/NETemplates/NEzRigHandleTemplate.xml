@@ -1,0 +1,53 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<templates>
+	<using package='maya'/>
+	<using package='std'/>
+	<template name='NEzRigHandle'>
+		<attribute name='color' type='maya.float3'>
+			<label>Color</label>
+		</attribute>
+		<attribute name='alpha' type='maya.float'>
+			<label>Alpha</label>
+		</attribute>
+		<attribute name='borderColor' type='maya.float3'>
+			<label>Border Color</label>
+		</attribute>
+		<attribute name='borderAlpha' type='maya.float'>
+			<label>Border Alpha</label>
+		</attribute>
+		<attribute name='xray' type='maya.bool'>
+			<label>Xray</label>
+		</attribute>
+		<attribute name='visibility' type='maya.bool'>
+			<label>Visibility</label>
+		</attribute>
+		<attribute name='localPosition' type='maya.float3'>
+			<label>Local Position</label>
+		</attribute>
+		<attribute name='localRotate' type='maya.double3'>
+			<label>Local Rotate</label>
+		</attribute>
+		<attribute name='localScale' type='maya.float3'>
+			<label>Local Scale</label>
+		</attribute>
+		<attribute name='shape' type='maya.enum'>
+			<label>Shape</label>
+		</attribute>
+		<attribute name='inCustomMesh' type='maya.mesh'>
+			<label>In Custom Mesh</label>
+		</attribute>
+	</template>
+	<view name='NEDefault' template='NEzRigHandle'>
+		<property name='color'/>
+		<property name='alpha'/>
+		<property name='borderColor'/>
+		<property name='borderAlpha'/>
+		<property name='xray'/>
+		<property name='visibility'/>
+		<property name='localPosition'/>
+		<property name='localRotate'/>
+		<property name='localScale'/>
+		<property name='shape'/>
+		<property name='inCustomMesh'/>
+	</view>
+</templates>
