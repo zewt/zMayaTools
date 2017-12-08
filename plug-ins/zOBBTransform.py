@@ -4,7 +4,7 @@ import maya.OpenMayaMPx as OpenMayaMPx
 import maya.OpenMaya as om
 import math, traceback, time
 
-from obb_transform import obb_transform
+from zMayaTools.obb_transform import obb_transform
 from zMayaTools import maya_logging
 
 log = maya_logging.get_log()
