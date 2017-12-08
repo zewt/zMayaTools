@@ -5,6 +5,9 @@ import maya.OpenMaya as OpenMaya
 import maya.OpenMayaAnim as OpenMayaAnim
 from zMayaTools.menus import Menu
 
+from zMayaTools import maya_logging
+log = maya_logging.get_log()
+
 def scale(x, l1, h1, l2, h2):
     return (x - l1) * (h2 - l2) / (h1 - l1) + l2
 def _to_vtx_list(p):
@@ -194,7 +197,7 @@ def split_blend_shape_from_deformer(blend_shape, blendTarget,
                             
                     blend_shape.attr('weight').elementByLogicalIndex(idx).set(0)
                 except RuntimeError as e:
-                    print 'Couldn\'t disable blend shape target: %s' % e
+                    log.error('Couldn\'t disable blend shape target: %s' % e)
 
             # Turn on the blend shape that we're splitting.
             blend_shape.attr(blendTarget).set(1)
@@ -252,7 +255,7 @@ def split_blend_shape_from_deformer(blend_shape, blendTarget,
                             
                     attr.set(weight)
                 except RuntimeError as e:
-                        print 'Couldn\'t disable blend shape target: %s' % e
+                        log.error('Couldn\'t disable blend shape target: %s' % e)
 
             # Reconnect any incoming connections to the weights that we disconnected above.
             for dst, src in zip(existing_connections[0::2], existing_connections[1::2]):

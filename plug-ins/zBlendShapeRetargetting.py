@@ -2,6 +2,9 @@ import math, inspect, os, sys, time
 import pymel.core as pm
 import maya.cmds as cmds
 from zMayaTools.menus import Menu
+from zMayaTools import maya_logging
+
+log = maya_logging.get_log()
 
 # Notes:
 #
@@ -118,7 +121,7 @@ def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend
         target_name = pm.aliasAttr(src_weight, q=True)
         
         if target_name is None:
-            print 'Warning: destination blend shape has an unused blend shape %i' % idx
+            log.warning('Warning: destination blend shape has an unused blend shape %i' % idx)
             continue
         
         dst_blend_shape_name_to_index[target_name] = idx
@@ -139,7 +142,7 @@ def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend
         # Each index is a weight attribute on the source blend shape deformer.  Get the name of the blend shape.
         target_name = pm.aliasAttr(src_weight, q=True)
         if target_name is None:
-            print 'Error: blend shape index %i has no name' % idx
+            log.warning('Error: blend shape index %i has no name' % idx)
             continue
 
         # Find the blend shape in the target with this name.  If it already exists, we'll just update
@@ -153,8 +156,8 @@ def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend
 
         dst_weight = dst_blend_shape_node.attr('weight').elementByLogicalIndex(new_idx)
         if dst_weight.isConnectedTo(src_weight):
-            print 'Warning: the destination target %s is a source for the source %s.  Are the blend shapes selected backwards?' % (
-                    dst_weight, src_weight)
+            log.warning('Warning: the destination target %s is a source for the source %s.  Are the blend shapes selected backwards?' % (
+                    dst_weight, src_weight))
             continue
 
         # Enable the blend shape target on the source object.  This will deform dst_node_copy through
@@ -441,7 +444,7 @@ def xrun():
     # select them there.)
     selection = pm.ls(sl=True, type='blendShape')
     if len(selection) < 2:
-        print 'Select the target mesh, then the source mesh, then a blend shape node in the channel box'
+        log.error('Select the target mesh, then the source mesh, then a blend shape node in the channel box')
         return
 
     dst_blend_shape = selection[0]
@@ -500,7 +503,7 @@ def xrun():
         blend_shape_indices.append(target.index())
 
     if not blend_shape_indices:
-        print 'No blend shape targets are selected'
+        log.error('No blend shape targets are selected')
         return
 
     redst_blend_shapes(src_node, dst_node, src_blend_shape, dst_blend_shape, blend_shape_indices, connect_weights=Trues
