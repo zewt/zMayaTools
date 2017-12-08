@@ -1,0 +1,46 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>zSplitBlendShape</h1>
+
+Split facial blend shapes into blended left and right halves
+
+<h2>Usage</h2>
+
+Select "Split blend shape" from Deform &gt; Edit Blend Shape.  The following options are available:
+
+<ul>
+    <li>
+        "Blend shape" Select the blend shape containing the target you want to split.
+    </li>
+    <li>
+        "Blend target" The blend shape target to split.
+    </li>
+    <li>
+        "Blend distance" Select the distance to blend the split.  If 0, the halves will
+        be cut sharply along the plane.  If 10, the halves will blend from one to the
+        other for 10 units around the plane.  The default of 2 is good for typical faces
+        when in standard Maya units, giving a 2cm blend.
+    </li>
+    <li>
+        "Plane" Select the plane of symmetry.  The default of YZ is correct for Maya's
+        default Y-up.
+    </li>
+    <li>
+        "Plane origin" Set the origin for the plane of symmetry.  If "Plane" is set to
+        YZ and "Plane origin" is set to 10, the blend shape will be split across a YZ
+        plane with X = 10.
+    </li>
+</ul>
+
+<h2>Limitations</h2>
+
+<ul>
+    <li>This doesn't undo properly.  For now, just delete the new blend shapes.</li>
+    <li>Menu settings aren't saved anywhere.  There are only two settings, so this isn't
+    a big deal.</li>
+</ul>
+
+
