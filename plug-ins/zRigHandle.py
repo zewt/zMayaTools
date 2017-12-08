@@ -177,7 +177,7 @@ def _getCustomShape(node):
 
         if len(face) == 3:
             tris.extend(face)
-            lines.extend(face)
+            lines.extend((face[0], face[1], face[1], face[2], face[2], face[0]))
         elif len(face) == 4:
             tris.extend((face[0], face[1], face[2], face[2], face[3], face[0]))
             lines.extend((face[0], face[1], face[1], face[2], face[2], face[3], face[3], face[0]))
