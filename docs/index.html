@@ -5,19 +5,42 @@
 <body>
 <h1>zMayaTools</h1>
 
+<h2>Introduction</h2>
+
+This is a collection of small tools and utilities for Maya.
+
 <h2>Installation</h2>
 
-Install by copying zMayaTools.mod into Maya's modules
-directory and setting the correct path, and adding this to your userSetup.mel:
-<p>
-source "zMayaTools.mel";
-<p>
-You can then load the plugins from the Plug-in Manager.
+Install by copying zMayaTools.mod into Maya's modules directory and setting the path
+to zMayaTools.  You can then load the desired plugins from the Plug-in Manager.
 
 <h2>Plugins</h2>
 
-<ul>
-    <li><a href=zBlendShapeRetargetting.html>zBlendShapeRetargetting</a></li>
-    <li><a href=zOBBTransform.html>zOBBTransform</a></li>
-</ul>
+<style>
+#plugin-list > tbody > tr > td:nth-child(1) {
+    width: 200px;
+}
+</style>
+<table id=plugin-list>
+    <thead>
+        <tr style="width: 100px">
+            <td></td>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+                <a href=zBlendShapeRetargetting.html>zBlendShapeRetargetting</a>
+            </td>
+            <td>Automatic blend shape retargetting</td>
+        </tr>
+
+        <tr>
+            <td>
+                <a href=zOBBTransform.html>zOBBTransform</a>
+            </td>
+            <td>Estimate the transform applied by mesh deformations</td>
+        </tr>
+    <tbody>
+</table>
 

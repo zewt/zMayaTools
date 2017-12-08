@@ -7,7 +7,7 @@
 
 Automatic blend shape retargetting
 <p>
-This allows taking a blend shape on one mesh, and wrapping it to another mesh.
+This allows taking a blend shape on one mesh and applying it to a different mesh.
 <p>
 For example, a corrective blend shape on the elbow may need to affect the shirt as well.
 This allows sculpting a corrective shape on the elbow, and then automatically creating
@@ -20,16 +20,16 @@ the meshes, add a blend shape deformer to the new mesh, then transfer the blend 
 across.
 <p>
 This works by creating a temporary wrap deformer from the body to the shirt, enabling the
-blend shape, and applying the resulting change to the shirt as a blend shape.  This avoids
-the need to use a live wrap deformer, which can be very slow and which can't be exported.
-
-<h2>Installation</h2>
-
-Load the zBlendShapeRetargetting plugin in the Plug-in Manager.
+blend shape, and applying the resulting change to the shirt as a blend shape.  The wrap
+deformer is then deleted, leaving just the new blend shape.  This avoids the need to use
+a live wrap deformer, which can be very slow and can't be exported to other applications.
 
 <h2>Usage</h2>
 
-Create a blendShape deformer on the destination node if one doesn't exist.
+Load the zBlendShapeRetargetting plugin in the Plug-in Manager.
+<p>
+Create a blendShape deformer on the destination node if one doesn't exist.  Be sure that the
+source and destination meshes are aligned to each another.
 <p>
 Run Deform &gt; Edit Blend Shape &gt; Retarget Blend Shapes.  Select the source and destination
 blendShape nodes, and then select one or more blend shape targets in the list to be
@@ -42,3 +42,13 @@ To update the blend shape later, just run the script again.  The existing blend 
 will be updated.  Note that the targets must always have the same name, so if you rename
 one, rename them both.
 
+<h2>Limitations</h2>
+
+<ul>
+    <li>Inbetween blend shapes aren't supported.</li>
+    <li>Blend shapes with multiple output meshes aren't supported.</li>
+</ul>
+
+<h2>Demo video</h2>
+
+<video src=https://s3.amazonaws.com/zmayatools/zBlendShapeRetargetting.mp4 controls></video>
