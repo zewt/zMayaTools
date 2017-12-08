@@ -10,22 +10,22 @@ def scale(x, l1, h1, l2, h2):
 def _to_vtx_list(p):
     return [(x, y, z) for x, y, z in zip(p[0::3], p[1::3], p[2::3])]
 
-def split_blend_shape(baseMesh, targetMesh, rightSide=True, fade_distance=2, axis=0, axis_origin=0):
+def split_blend_shape(base_mesh, target_mesh, right_side=True, fade_distance=2, axis=0, axis_origin=0):
     # Read the positions in world space.  Although the shapes should be in the same position,
     # we want world space units so the distance factor makes sense.
     #
     # We do this with cmds instead of pm, since it's faster for dealing with lots of vertex
     # data.
-    targetPos = _to_vtx_list(cmds.xform('%s.vtx[*]' % targetMesh, q=True, t=True, ws=True))
-    basePos = _to_vtx_list(cmds.xform('%s.vtx[*]' % baseMesh, q=True, t=True, ws=True))
-    if len(targetPos) != len(basePos):
-        OpenMaya.MGlobal.displayError('Target has %i vertices, but base has %i vertices.' % (len(targetPos) != len(basePos)))
+    target_pos = _to_vtx_list(cmds.xform('%s.vtx[*]' % target_mesh, q=True, t=True, ws=True))
+    base_pos = _to_vtx_list(cmds.xform('%s.vtx[*]' % base_mesh, q=True, t=True, ws=True))
+    if len(target_pos) != len(base_pos):
+        OpenMaya.MGlobal.displayError('Target has %i vertices, but base has %i vertices.' % (len(target_pos) != len(base_pos)))
         return
 
     resultPos = []
-    newTargetPos = []
-    for idx in xrange(len(targetPos)):
-        dist = targetPos[idx][axis]
+    new_target_pos = []
+    for idx in xrange(len(target_pos)):
+        dist = target_pos[idx][axis]
         dist -= axis_origin
 
         if fade_distance == 0:
@@ -34,7 +34,7 @@ def split_blend_shape(baseMesh, targetMesh, rightSide=True, fade_distance=2, axi
             p = scale(dist, -fade_distance/2.0, fade_distance/2.0, 0, 1.0)
 
         # If we're fading in the left side instead of the right, flip the value.
-        if not rightSide:
+        if not right_side:
             p = 1-p
 
         p = min(max(p, 0), 1)
@@ -43,29 +43,29 @@ def split_blend_shape(baseMesh, targetMesh, rightSide=True, fade_distance=2, axi
         # them to zero or one can give a smaller file.
         if p < 0.001: p = 0
         if p > .999: p = 1
-        delta = [targetPos[idx][i] - basePos[idx][i] for i in range(3)]
-        newTargetPos.append([basePos[idx][i] + delta[i]*p for i in range(3)])
+        delta = [target_pos[idx][i] - base_pos[idx][i] for i in range(3)]
+        new_target_pos.append([base_pos[idx][i] + delta[i]*p for i in range(3)])
 
-    for idx in xrange(len(newTargetPos)):
-        cmds.xform('%s.vtx[%i]' % (targetMesh, idx), t=newTargetPos[idx], ws=True)
+    for idx in xrange(len(new_target_pos)):
+        cmds.xform('%s.vtx[%i]' % (target_mesh, idx), t=new_target_pos[idx], ws=True)
 
-def _getConnectedInputGeometry(blendShape):
+def _getConnectedInputGeometry(blend_shape):
 	"""
-	Return an array of blendShape's input plugs that have an input connection.
+	Return an array of blend_shape's input plugs that have an input connection.
 	
 	pm.listConnections should do this, but it has bugs when the input array is sparse.
 	"""
 	results = []
-	blendShapePlug = _get_plug_from_node('%s.input' % blendShape)
-	numInputElements = blendShapePlug.evaluateNumElements()
-	for idx in xrange(numInputElements):
-            input = blendShapePlug.elementByPhysicalIndex(idx)
-            inputGeometryAttr = OpenMaya.MFnDependencyNode(input.node()).attribute('inputGeometry')
-            inputGeometryPlug = input.child(inputGeometryAttr)
+	blend_shape_plug = _get_plug_from_node('%s.input' % blend_shape)
+	num_input_elements = blend_shape_plug.evaluateNumElements()
+	for idx in xrange(num_input_elements):
+            input = blend_shape_plug.elementByPhysicalIndex(idx)
+            input_geometry_attr = OpenMaya.MFnDependencyNode(input.node()).attribute('inputGeometry')
+            input_geometry_plug = input.child(input_geometry_attr)
             conns = OpenMaya.MPlugArray()
-            inputGeometryPlug.connectedTo(conns, True, False);
+            input_geometry_plug.connectedTo(conns, True, False);
             if conns.length():
-                results.append(inputGeometryPlug.info())
+                results.append(input_geometry_plug.info())
 	return results
 
 def _find_output_mesh(plug):
@@ -84,10 +84,10 @@ def _find_output_mesh(plug):
         OpenMaya.MGlobal.displayError('Couldn\'t find a mesh in the future of %s.' % deformer)
 
 def _get_plug_from_node(node):
-    selectionList = OpenMaya.MSelectionList()
-    selectionList.add(node)
+    selection_list = OpenMaya.MSelectionList()
+    selection_list.add(node)
     plug = OpenMaya.MPlug()
-    selectionList.getPlug(0, plug)
+    selection_list.getPlug(0, plug)
     return plug
 
 def _copy_mesh_from_plug(path):
@@ -95,24 +95,24 @@ def _copy_mesh_from_plug(path):
     mesh = OpenMaya.MFnMesh().copy(plug.asMObject())
     return pm.ls(OpenMaya.MFnTransform(mesh).partialPathName())[0]
 
-def getWeightFromAlias(blendShape, alias):
+def getWeightFromAlias(blend_shape, alias):
     """
     Given a blend shape node and an aliased weight attribute, return the index in .weight to the
     alias.
     """
     # aliasAttr lets us get the alias from an attribute, but it doesn't let us get the attribute
     # from the alias.
-    existingIndexes = blendShape.attr('weight').get(mi=True) or []
-    for idx in existingIndexes:
-        aliasName = pm.aliasAttr(blendShape.attr('weight').elementByLogicalIndex(idx), q=True)
+    existing_indexes = blend_shape.attr('weight').get(mi=True) or []
+    for idx in existing_indexes:
+        aliasName = pm.aliasAttr(blend_shape.attr('weight').elementByLogicalIndex(idx), q=True)
         if aliasName == alias:
             return idx
-    raise Exception('Couldn\'t find the weight index for blend shape target %s.%s' % (blendShape, alias))
+    raise Exception('Couldn\'t find the weight index for blend shape target %s.%s' % (blend_shape, alias))
 
-def split_all_blend_shape_targets(blendShape, *args, **kwargs):
-    blendTargets = pm.listAttr(blendShape.attr('w'), m=True) or []
-    for blendTarget in blendTargets:
-        split_blend_shape_from_deformer(blendShape, blendTarget, *args, **kwargs)
+def split_all_blend_shape_targets(blend_shape, *args, **kwargs):
+    blend_targets = pm.listAttr(blend_shape.attr('w'), m=True) or []
+    for blend_target in blend_targets:
+        split_blend_shape_from_deformer(blend_shape, blend_target, *args, **kwargs)
 
 def substitute_name(pattern, name, left_side):
     """
@@ -137,12 +137,12 @@ def substitute_name(pattern, name, left_side):
         return s.group(0)
     return re.sub(r'<([^>]*)>', sub, pattern)
 
-def split_blend_shape_from_deformer(blendShape, blendTarget,
+def split_blend_shape_from_deformer(blend_shape, blendTarget,
         outputBlendShapeLeft=None, outputBlendShapeRight=None,
         naming_pattern='<Name>',
         split_args={}):
     """
-    outputBlendShapeLeft, outputBlendShapeRight: If not None, the blendShape deformers
+    outputBlendShapeLeft, outputBlendShapeRight: If not None, the blend_shape deformers
     to put the resulting blend shapes.  If None, the blend shapes are added to the same
     deformer as their source.
 
@@ -158,95 +158,95 @@ def split_blend_shape_from_deformer(blendShape, blendTarget,
     try:
         if outputBlendShapeLeft is None:
             # Get the next free blend shape target indexes, for the new blend shapes we'll create.
-            existingIndexes = pm.getAttr(blendShape.attr('weight'), mi=True) or [-1]
-            outputBlendShapeIndexes = {
-                'L': max(existingIndexes) + 1,
-                'R': max(existingIndexes) + 2,
+            existing_indexes = pm.getAttr(blend_shape.attr('weight'), mi=True) or [-1]
+            output_blend_shape_indexes = {
+                'L': max(existing_indexes) + 1,
+                'R': max(existing_indexes) + 2,
             }
         else:
             # If we're adding the blend shapes to separate blendShape deformers rather than the
             # same deformer as the source, we'll always use the same index as the source, so that
             # srcBlendShape.w[1] for the full blend shape corresponds to leftBlendShape.w[1] for the
             # left side blend shape.
-            weightIndex = getWeightFromAlias(blendShape, blendTarget)
-            outputBlendShapeIndexes = {
+            weightIndex = getWeightFromAlias(blend_shape, blendTarget)
+            output_blend_shape_indexes = {
                 'L': weightIndex,
                 'R': weightIndex,
             }
 
         # Save all weights.
-        originalWeights = {attr.index(): attr.get() for attr in blendShape.attr('weight')}
+        original_weights = {attr.index(): attr.get() for attr in blend_shape.attr('weight')}
 
         # Disconnect all incoming connections into the weights, so we can manipulate them.  We'll
         # reconnect them when we're done.
-        existingConnections = pm.listConnections(blendShape.attr('weight'), s=True, d=False, p=True, c=True) or []
-        for dst, src in zip(existingConnections[0::2], existingConnections[1::2]):
+        existing_connections = pm.listConnections(blend_shape.attr('weight'), s=True, d=False, p=True, c=True) or []
+        for dst, src in zip(existing_connections[0::2], existing_connections[1::2]):
             src.disconnect(dst)
 
         try:
             # Reset all weights to 0.
-            for idx in xrange(len(originalWeights)):
+            for idx in xrange(len(original_weights)):
                 try:
                     # Don't try to set weights that are already 0, so we don't print warnings for connected blend
                     # shape weights that we don't actually need to change.
-                    if blendShape.attr('weight').elementByLogicalIndex(idx).get() == 0:
+                    if blend_shape.attr('weight').elementByLogicalIndex(idx).get() == 0:
                         continue
                             
-                    blendShape.attr('weight').elementByLogicalIndex(idx).set(0)
+                    blend_shape.attr('weight').elementByLogicalIndex(idx).set(0)
                 except RuntimeError as e:
                     print 'Couldn\'t disable blend shape target: %s' % e
 
             # Turn on the blend shape that we're splitting.
-            blendShape.attr(blendTarget).set(1)
+            blend_shape.attr(blendTarget).set(1)
        
             # Get a list of the inputGeometry plugs on the blend shape that are connected.
-            connectedInputGeometry = _getConnectedInputGeometry(blendShape)
+            connected_input_geometry = _getConnectedInputGeometry(blend_shape)
 
             # Split each mesh.
-            for inputGeom in connectedInputGeometry:
+            for inputGeom in connected_input_geometry:
                 # Figure out the outputGeometry for this inputGeometry.  Maya knows this
                 # via passThroughToMany, but I don't know how to access that information here.
                 # Search and replace input[*].inputGeometry -> outputGeometry[*].
-                outputGeom = inputGeom.replace('.inputGeometry', '')
-                outputGeom = outputGeom.replace('.input', '.outputGeometry')
+                output_geom = inputGeom.replace('.inputGeometry', '')
+                output_geom = output_geom.replace('.input', '.outputGeometry')
 
                 # Make a separate copy of the blended mesh for the left and right sides, and a copy of the input
                 # into the blend shape.  We do this directly from the blend shape's plugs, so we're not affected
                 # by other deformers.
-                newMesh_Base = _copy_mesh_from_plug(outputGeom)
+                new_mesh_base = _copy_mesh_from_plug(output_geom)
                 for side in ('L', 'R'):
-                    newMesh = _copy_mesh_from_plug(inputGeom)
+                    new_mesh = _copy_mesh_from_plug(inputGeom)
             
                     # Rename the blended nodes, since the name of this node will become the name of the
                     # blend shape target.
                     new_mesh_name = substitute_name(naming_pattern, blendTarget, side == 'L')
-                    newMesh.rename(new_mesh_name)
+                    new_mesh.rename(new_mesh_name)
                     
                     # Fade the left and right shapes to their respective sides.
-                    split_blend_shape(newMesh_Base, newMesh, rightSide=side == 'R', **split_args)
+                    split_blend_shape(new_mesh_base, new_mesh, right_side=side == 'R', **split_args)
             
-                    # Find the mesh that outputGeom is connected to.
-                    outputMesh = _find_output_mesh(outputGeom)
+                    # Find the mesh that output_geom is connected to.
+                    output_mesh = _find_output_mesh(output_geom)
 
                     # Create the two blend shapes (or add them to the existing blend shape if there
                     # are multiple meshes attached to the deformer).
                     if outputBlendShapeLeft:
                         outputShape = outputBlendShapeLeft if side == 'L' else outputBlendShapeRight
                     else:
-                        outputShape = blendShape
-                    pm.blendShape(outputShape, edit=True, t=(outputMesh, outputBlendShapeIndexes[side], newMesh, 1))
+                        outputShape = blend_shape
+                    pm.blendShape(outputShape, edit=True, t=(output_mesh, output_blend_shape_indexes[side], new_mesh, 1))
 
                     # Delete the mesh.  It'll be stored in the blendShape.
-                    pm.delete(newMesh)
+                    pm.delete(new_mesh)
 
-                pm.delete(newMesh_Base)
+                pm.delete(new_mesh_base)
     
         finally:
             # Reset blend shape weights that we disabled.
-            for idx in xrange(len(originalWeights)):
+            for idx in xrange(len(original_weights)):
                 try:
-                    weight = originalWeights[idx]
-                    attr = blendShape.attr('weight').elementByLogicalIndex(idx)
+                    weight = original_weights[idx]
+                    attr = blend_shape.attr('weight').elementByLogicalIndex(idx)
                     if attr.get() == weight:
                             continue
                             
@@ -255,7 +255,7 @@ def split_blend_shape_from_deformer(blendShape, blendTarget,
                         print 'Couldn\'t disable blend shape target: %s' % e
 
             # Reconnect any incoming connections to the weights that we disconnected above.
-            for dst, src in zip(existingConnections[0::2], existingConnections[1::2]):
+            for dst, src in zip(existing_connections[0::2], existing_connections[1::2]):
                 src.connect(dst)
     finally:
         pm.undoInfo(closeChunk=True)
@@ -289,10 +289,10 @@ class UI(object):
         selection = pm.ls(sl=True)
         if selection:
             history = pm.listHistory(selection)
-            blendShapes = pm.ls(history, type='blendShape')
-            if blendShapes:
-                defaultBlendShape = blendShapes[0]
-                self.selectBlendShape(defaultBlendShape)
+            blend_shapes = pm.ls(history, type='blendShape')
+            if blend_shapes:
+                default_blend_shape = blend_shapes[0]
+                self.selectBlendShape(default_blend_shape)
 
         pm.optionMenuGrp('sbsTargetList', label='Blend target:')
         self.splitBlendShapeFillBlendTarget()
@@ -342,9 +342,9 @@ class UI(object):
             target_name = pm.aliasAttr(item, q=True)
             pm.menuItem(label=target_name, parent='sbsTargetList|OptionMenu')
 
-    def selectBlendShape(self, blendShape):
-        menuItems = pm.optionMenu('sbsList|OptionMenu', q=True, itemListLong=True)
-        for idx, menu_item in enumerate(menuItems):
+    def selectBlendShape(self, blend_shape):
+        menu_items = pm.optionMenu('sbsList|OptionMenu', q=True, itemListLong=True)
+        for idx, menu_item in enumerate(menu_items):
             item = pm.menuItem(menu_item, q=True, label=True)
 
             nodes = pm.ls(item)
@@ -352,7 +352,7 @@ class UI(object):
                 continue
             node = nodes[0]
 
-            if node != blendShape:
+            if node != blend_shape:
                 continue;
 
             pm.optionMenuGrp('sbsList', edit=True, select=idx + 1)
@@ -372,8 +372,8 @@ class UI(object):
 
         pm.setParent(parent)
 
-        blendShape = pm.optionMenuGrp('sbsList', q=True, v=True)
-        blendShape = pm.ls(blendShape)[0]
+        blend_shape = pm.optionMenuGrp('sbsList', q=True, v=True)
+        blend_shape = pm.ls(blend_shape)[0]
         leftOutput = None
         rightOutput = None
         if pm.optionMenuGrp('sbsLeftOutput', q=True, sl=True) != 1: # "Same deformer as source"
@@ -403,7 +403,7 @@ class UI(object):
         else:
             func = split_all_blend_shape_targets
 
-        kwargs['blendShape'] = blendShape
+        kwargs['blend_shape'] = blend_shape
         if leftOutput:
             kwargs['outputBlendShapeLeft'] = leftOutput
         if rightOutput:
