@@ -297,7 +297,7 @@ class UI(object):
         pm.optionMenuGrp('sbsTargetList', label='Blend target:')
         self.splitBlendShapeFillBlendTarget()
 
-        pm.floatSliderGrp('sbsBlendDistance', label='Blend distance', field=True, v=2, min=0, max=100)
+        pm.floatSliderGrp('sbsBlendDistance', label='Blend distance', field=True, v=2, min=0, max=10, fieldMinValue=0, fieldMaxValue=1000)
         pm.radioButtonGrp('sbsPlane', label='Plane:', numberOfRadioButtons=3, labelArray3=('XY', 'YZ', 'XZ'), select=2)
         pm.floatSliderGrp('sbsPlaneOrigin', label='Plane origin', field=True, v=0, min=0, max=1000)
         pm.textFieldGrp('sbsNamingPattern', label='Naming pattern', text='<name>_<L|R>')
