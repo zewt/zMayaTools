@@ -309,7 +309,7 @@ class zRigHandle(om.MPxSurfaceShape):
                 if plug in (self.transformAttr, self.shapeAttr,
                     self.localTranslateAttr, self.localRotateAttr, self.localScaleAttr,
                     self.colorAttr, self.alphaAttr, self.borderColorAttr, self.borderAlphaAttr,
-                    self.xrayAttr):
+                    self.xrayAttr, self.customMeshAttr):
                     self.childChanged(self.kBoundingBoxChanged)
                     omr.MRenderer.setGeometryDrawDirty(self.thisMObject(), True)
 
