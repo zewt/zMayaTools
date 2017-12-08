@@ -5,6 +5,7 @@ import maya.api.OpenMayaAnim as oma
 import maya.api.OpenMayaRender as omr
 from maya.OpenMaya import MGlobal
 import pymel.core as pm
+from zMayaTools.menus import Menu
 
 # This is insane.  There are two Python APIs in Maya, and both of them are missing lots of
 # stuff, and you can't mix them except in specific careful ways.
@@ -545,14 +546,8 @@ def create_zRigHandle(arg):
 # Thanks to https://github.com/chadmv/cvwrap/ for showing how to add items to a menu
 # in the right place.  Angry glares to Autodesk for having a menu API so bad that
 # you need to find third-party example code just to add items to it.
-class PluginMenu(object):
-    def __init__(self):
-        self.menu_items = []
-
-        # Don't create menu items in batch mode.  It causes an annoying warning.
-        if pm.about(batch=True):
-            return
-
+class PluginMenu(Menu):
+    def add_menu_items(self):
         pm.mel.eval('ModCreateMenu "mainCreateMenu"')
         menu = 'mainCreateMenu'
         for item in pm.menu(menu, q=True, ia=True):
@@ -561,36 +556,20 @@ class PluginMenu(object):
 
             menuLabel = pm.menuItem(item, q=True, label=True)
             if menuLabel == 'Locator' and section == 'Construction Aids':
-                create = pm.menuItem(label="Rig Handle", command=create_zRigHandle, sourceType='python', insertAfter=item, parent=menu)
-                self.menu_items.append(create)
+                self.add_menu_item('zRigHandle', label="Rig Handle", command=create_zRigHandle, sourceType='python', insertAfter=item, parent=menu)
 
-    def remove(self):
-        for item in self.menu_items:
-            try:
-                pm.deleteUI(item, menuItem=True)
-            except RuntimeError:
-                pass
-        self.menu_items = []
-
-plugin = None
+menu = PluginMenu()
 def initializePlugin(obj):
-        plugin = om.MFnPlugin(obj)
-        plugin.registerShape('zRigHandle', zRigHandle.id, zRigHandle.creator, zRigHandle.initialize, zRigHandleShapeUI.creator, zRigHandle.drawDbClassification)
-        omr.MDrawRegistry.registerDrawOverrideCreator(zRigHandle.drawDbClassification, zRigHandle.drawRegistrantId, zRigHandleDrawOverride.creator)
+    plugin = om.MFnPlugin(obj)
+    plugin.registerShape('zRigHandle', zRigHandle.id, zRigHandle.creator, zRigHandle.initialize, zRigHandleShapeUI.creator, zRigHandle.drawDbClassification)
+    omr.MDrawRegistry.registerDrawOverrideCreator(zRigHandle.drawDbClassification, zRigHandle.drawRegistrantId, zRigHandleDrawOverride.creator)
 
-        global menu
-        menu = PluginMenu()
+    menu.add_menu_items()
 
 def uninitializePlugin(obj):
-        plugin = om.MFnPlugin(obj)
-        omr.MDrawRegistry.deregisterDrawOverrideCreator(zRigHandle.drawDbClassification, zRigHandle.drawRegistrantId)
-        plugin.deregisterNode(zRigHandle.id)
+    plugin = om.MFnPlugin(obj)
+    omr.MDrawRegistry.deregisterDrawOverrideCreator(zRigHandle.drawDbClassification, zRigHandle.drawRegistrantId)
+    plugin.deregisterNode(zRigHandle.id)
 
-        global menu
-        if menu is None:
-                return
-
-        # Remove the menu on unload.
-        menu.remove()
-        plugin = None
+    menu.remove_menu_items()
 

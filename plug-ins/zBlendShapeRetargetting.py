@@ -1,7 +1,7 @@
 import math, inspect, os, sys, time
 import pymel.core as pm
 import maya.cmds as cmds
-from maya import OpenMaya as om
+from zMayaTools.menus import Menu
 
 # Notes:
 #
@@ -723,10 +723,8 @@ def run():
     ui = UI()
     ui.run()
 
-class PluginMenu(object):
-    def __init__(self):
-        self.menu_items = []
-
+class PluginMenu(Menu):
+    def add_menu_items(self):
         for menu in ['mainDeformMenu', 'mainRigDeformationsMenu']:
             # Make sure the file menu is built.
             pm.mel.eval('ChaDeformationsMenu "MayaWindow|%s";' % menu)
@@ -744,40 +742,12 @@ class PluginMenu(object):
                 if pm.menuItem(item, q=True, label=True) != 'Blend Shape':
                     continue
 
-                menu_item_name = 'zBlendShapeRetargetting_%s' % menu
+                self.add_menu_item('zBlendShapeRetargetting_%s' % menu, label='Retarget Blend Shapes', command=lambda unused: run(), parent=item)
 
-                # In case this has already been created, remove the old one.  Maya is a little silly
-                # here and throws an error if it doesn't exist, so just ignore that if it happens.
-                try:
-                    pm.deleteUI(menu_item_name, menuItem=True)
-                except RuntimeError:
-                    pass
-
-                item = pm.menuItem(menu_item_name, label='Retarget Blend Shapes', command=lambda unused: run(), parent=item)
-                self.menu_items.append(item)
-
-    def remove(self):
-        for item in self.menu_items:
-            try:
-                pm.deleteUI(item, menuItem=True)
-            except RuntimeError:
-                pass
-        self.menu_items = []
-
-plugin = None
+menu = PluginMenu()
 def initializePlugin(mobject):
-    if om.MGlobal.mayaState() != om.MGlobal.kInteractive:
-        return
-
-    global plugin
-    plugin = PluginMenu()
+    menu.add_menu_items()
 
 def uninitializePlugin(mobject):
-    global plugin
-    if plugin is None:
-        return
-
-    # Remove the menu on unload.
-    plugin.remove()
-    plugin = None
+    menu.remove_menu_items()
 

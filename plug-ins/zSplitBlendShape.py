@@ -1,9 +1,9 @@
 import re
-from maya import OpenMaya as om
 import pymel.core as pm
 import maya.cmds as cmds
 import maya.OpenMaya as OpenMaya
 import maya.OpenMayaAnim as OpenMayaAnim
+from zMayaTools.menus import Menu
 
 def scale(x, l1, h1, l2, h2):
     return (x - l1) * (h2 - l2) / (h1 - l1) + l2
@@ -419,10 +419,10 @@ class UI(object):
 def run():
     ui = UI()
     ui.run()
-    
-class Menu(object):
-    def __init__(self):
-        self.menu_items = []
+   
+class SplitBlendShapeMenu(Menu):
+    def add_menu_items(self):
+        super(SplitBlendShapeMenu, self).__init__()
 
         for menu in ['mainDeformMenu', 'mainRigDeformationsMenu']:
             # Make sure the file menu is built.
@@ -441,42 +441,15 @@ class Menu(object):
                 if pm.menuItem(item, q=True, label=True) != 'Blend Shape':
                     continue
 
-                menu_item_name = 'zSplitBlendShape_%s' % menu
-
-                # In case this has already been created, remove the old one.  Maya is a little silly
-                # here and throws an error if it doesn't exist, so just ignore that if it happens.
-                try:
-                    pm.deleteUI(menu_item_name, menuItem=True)
-                except RuntimeError:
-                    pass
-
-                item = pm.menuItem(menu_item_name, label='Split Blend Shape', parent=item,
+                self.add_menu_item('zSplitBlendShape_%s' % menu, label='Split Blend Shape', parent=item,
                         annotation='Split a blend shape across a plane',
                         command=lambda unused: run())
-                self.menu_items.append(item)
 
-    def remove(self):
-        for item in self.menu_items:
-            try:
-                pm.deleteUI(item, menuItem=True)
-            except RuntimeError:
-                pass
-        self.menu_items = []
+menu = SplitBlendShapeMenu()
 
-menu = None
 def initializePlugin(mobject):
-    if om.MGlobal.mayaState() != om.MGlobal.kInteractive:
-        return
-
-    global menu
-    menu = Menu()
+    menu.add_menu_items()
 
 def uninitializePlugin(mobject):
-    global menu
-    if menu is None:
-        return
-
-    # Remove the menu on unload.
-    menu.remove()
-    menu = None
+    menu.remove_menu_items()
 
