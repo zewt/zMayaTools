@@ -1,3 +1,4 @@
+import re
 from maya import OpenMaya as om
 import pymel.core as pm
 import maya.cmds as cmds
@@ -113,7 +114,33 @@ def split_all_blend_shape_targets(blendShape, *args, **kwargs):
     for blendTarget in blendTargets:
         split_blend_shape_from_deformer(blendShape, blendTarget, *args, **kwargs)
 
-def split_blend_shape_from_deformer(blendShape, blendTarget, outputBlendShapeLeft=None, outputBlendShapeRight=None, split_args={}):
+def substitute_name(pattern, name, left_side):
+    """
+    Replace substitutions in a name pattern.
+
+    <name> will be replaced with the value of name.
+    Patterns containing a pipe, eg.  <ABCD|EFGH>, will be replaced with "ABCD"
+    if left_side is true or "EFGH" if left_side is false.
+    """
+    def sub(s):
+        text = s.group(1)
+        if text == 'name':
+            return name
+
+        if '|' in text:
+            parts = text.split('|', 2)
+            if left_side or len(parts) == 1:
+                return parts[0]
+            else:
+                return parts[1]
+
+        return s.group(0)
+    return re.sub(r'<([^>]*)>', sub, pattern)
+
+def split_blend_shape_from_deformer(blendShape, blendTarget,
+        outputBlendShapeLeft=None, outputBlendShapeRight=None,
+        naming_pattern='<Name>',
+        split_args={}):
     """
     outputBlendShapeLeft, outputBlendShapeRight: If not None, the blendShape deformers
     to put the resulting blend shapes.  If None, the blend shapes are added to the same
@@ -191,11 +218,9 @@ def split_blend_shape_from_deformer(blendShape, blendTarget, outputBlendShapeLef
                     newMesh = _copy_mesh_from_plug(inputGeom)
             
                     # Rename the blended nodes, since the name of this node will become the name of the
-                    # blend shape target.  Don't do this if we're outputting to a different blend shape.
-                    if outputBlendShapeLeft is None:
-                        newMesh = newMesh.rename('%s_%s' % (blendTarget, side))
-                    else:
-                        newMesh = newMesh.rename(blendTarget)
+                    # blend shape target.
+                    new_mesh_name = substitute_name(naming_pattern, blendTarget, side == 'L')
+                    newMesh.rename(new_mesh_name)
                     
                     # Fade the left and right shapes to their respective sides.
                     split_blend_shape(newMesh_Base, newMesh, rightSide=side == 'R', **split_args)
@@ -234,25 +259,6 @@ def split_blend_shape_from_deformer(blendShape, blendTarget, outputBlendShapeLef
                 src.connect(dst)
     finally:
         pm.undoInfo(closeChunk=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 class UI(object):
     def __init__(self):
@@ -294,6 +300,7 @@ class UI(object):
         pm.floatSliderGrp('sbsBlendDistance', label='Blend distance', field=True, v=2, min=0, max=100)
         pm.radioButtonGrp('sbsPlane', label='Plane:', numberOfRadioButtons=3, labelArray3=('XY', 'YZ', 'XZ'), select=2)
         pm.floatSliderGrp('sbsPlaneOrigin', label='Plane origin', field=True, v=0, min=0, max=1000)
+        pm.textFieldGrp('sbsNamingPattern', label='Naming pattern', text='<name>_<L|R>')
 
         pm.waitCursor(state=0)
         
@@ -361,6 +368,8 @@ class UI(object):
             pm.menuItem(parent=target, label=item)
 
     def run_from_ui(self, parent):
+        kwargs = { }
+
         pm.setParent(parent)
 
         blendShape = pm.optionMenuGrp('sbsList', q=True, v=True)
@@ -379,6 +388,7 @@ class UI(object):
         distance = pm.floatSliderGrp('sbsBlendDistance', q=True, v=True)
         origin = pm.floatSliderGrp('sbsPlaneOrigin', q=True, v=True)
         plane = pm.radioButtonGrp('sbsPlane', q=True, sl=True)
+        kwargs['naming_pattern'] = pm.textFieldGrp('sbsNamingPattern', q=True, text=True)
 
         plane_to_axis = {
             1: 2,
@@ -387,7 +397,6 @@ class UI(object):
         }
         axis = plane_to_axis[plane]
 
-        kwargs = { }
         if blendShapeTarget != "":
             func = split_blend_shape_from_deformer
             kwargs['blendTarget'] = blendShapeTarget
@@ -441,8 +450,8 @@ class Menu(object):
                 except RuntimeError:
                     pass
 
-                item = pm.menuItem(menu_item_name, label='Split blend shape', parent=item,
-                        annotation='Split a facial blend shape across an axis',
+                item = pm.menuItem(menu_item_name, label='Split Blend Shape', parent=item,
+                        annotation='Split a blend shape across a plane',
                         command=lambda unused: run())
                 self.menu_items.append(item)
 
