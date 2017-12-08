@@ -1,0 +1,18 @@
+global proc AEzRigHandleTemplate(string $nodeName)
+{
+    editorTemplate -beginScrollLayout;
+    editorTemplate -beginLayout "Attributes" -collapse false;
+    editorTemplate -label "Shape" -addControl "shape";
+    editorTemplate -label "Color" -addControl "color";
+    editorTemplate -label "Alpha" -addControl "alpha";
+    editorTemplate -label "Border Color" -addControl "borderColor";
+    editorTemplate -label "Border Alpha" -addControl "borderAlpha";
+    editorTemplate -label "Xray" -addControl "xray";
+    editorTemplate -label "Visibility" -addControl "visibility";
+    editorTemplate -label "Local Position" -addControl "localPosition";
+    editorTemplate -label "Local Rotation" -addControl "localRotate";
+    editorTemplate -label "Local Scale" -addControl "localScale";
+    editorTemplate -endScrollLayout;
+    editorTemplate -addExtraControls;
+    editorTemplate -endScrollLayout;
+}

@@ -1,0 +1,56 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>zRigHandle</h1>
+
+<h2>Introduction</h2>
+
+A shape node for visible, easily selected rig controls.
+
+<h2>Usage</h2>
+
+Create a rig handle with Create &gt; Rig Handle.
+<p>
+This node can be used in place of shape nodes and nurbs curves for rig controls.
+<p>
+<ul>
+    <li>
+        This control is drawn in X-ray, like HumanIK controls, to make it easy to see
+        and select.  This can be turned off in the attribute editor.
+    </li>
+    <li>
+        Like HumanIK viewport handles, a solid object is displayed and selectable, so
+        you don't have to click on an awkward thin wireframe like with joint controls.
+    </li>
+    <li>
+        The color and opacity of the control in the viewport can be set.  These can be
+        keyed, for example to brighten a control as it gets further away from its bind
+        position.
+    </li>
+    <li>
+        A separate local transform attribute is provided.  This controls the orientation
+        of the control independently from its transform.  For example, you can put an aim
+        constraint on a helper node underneath the rig control and connect its local matrix
+        to .translate, which will make the displayed control follow the aim constraint without
+        affecting its transform.
+    </li>
+    <li>
+        Local transform, rotate and scale attributes allow adjusting the displayed
+        control, without affecting objects constrained to it.
+    </li>
+    <li>
+        A custom mesh can be used.  Connect its outMesh to .inCustomMesh, and set the
+        shape to "Custom" in the AE.  Only the faces of the mesh will be used, not its
+        material, and only tris and quads are supported.
+    </li>
+</ul>
+
+<h2>Limitations</h2>
+<ul>
+    <li>
+    This is only tested in Viewport 2.0, and isn't expected to work in obsolete viewports.
+    </li>
+</ul>
+
