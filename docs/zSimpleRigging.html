@@ -1,0 +1,46 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>zSimpleRigging</h1>
+
+Helpers for rigging
+<p>
+(This is a place to put rigging helpers.  For now it only contains one, but I didn't
+want to name this "zEyeRig" and then have to rename the module later.)
+
+<h2>Eye rig</h2>
+
+This creates a simple eye orientation rig using zRigHandle.
+<p>
+
+<h2>Usage</h2>
+
+Select the left and right eye joints (in any order), and select Skeleton &gt; Eye Rig from the Rigging
+menu set.  The eye control will be created.
+<p>
+The control can be rotated, which is usually the most convenient way to work with
+it.  It can also be translated around, and the eyes will look at the control, allowing
+the control to be parent constrained to something the eyes should follow.
+<p>
+By default, the eyes look forward and rotate in unison, as if they're looking far
+in the distance, and will stay locked even if the control is moved closer to the character.
+If the "Eyes Focused" attribute on the control handle is set to 1, the eyes will look
+directly at the control, and moving the control close to the eyes will cause them to
+cross, as if they're looking at something very close to the face.  (Setting Eyes Focused
+to a negative value will push the eyes apart, which isn't usually wanted.)
+
+<h2>Requirements</h2>
+
+The character must be Y-up, facing positive Z, which is the usual coordinate system
+in Maya.  The eyes should be controlled by rotating a transform (this can be a joint,
+but doesn't have to be).  The two eye transforms need to have a common ancestor so
+the control knows what to follow.  The eyes should be facing forwards (down positive
+Z).
+
+<h2>Advanced</h2>
+
+The "Angle" attributes on the handle receive the final X and Y rotation of each eye.
+Soft eye controls can use this to read the position of the eyes.
+
