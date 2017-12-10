@@ -9,11 +9,15 @@ A shape node for visible, easily selected rig controls.
 
 <h2>Introduction</h2>
 
-zRigHandle is a viewport shape designed for use as a rig handle.  It's modelled after
-the handles provided by HumanIK to be much easier to select quickly than NURBS curves
-and can be viewed in Xray.
+<div>
+    <img src=images/zRigHandle.png style="float: right; margin-left: 1em;">
 
-<h2>Usage</h2>
+    zRigHandle is a viewport shape designed for use as a rig handle.  It's modelled after
+    the handles provided by HumanIK to be much easier to select quickly than NURBS curves
+    and can be viewed in Xray.
+</div>
+
+<h2 style="clear: right;">Usage</h2>
 
 Create a rig handle with Create &gt; Rig Handle.
 <p>
@@ -34,22 +38,36 @@ This node can be used in place of shape nodes and nurbs curves for rig controls.
         position.
     </li>
     <li>
-        A separate local transform attribute is provided.  This controls the orientation
-        of the control independently from its transform.  For example, you can put an aim
-        constraint on a helper node underneath the rig control and connect its local matrix
-        to .translate, which will make the displayed control follow the aim constraint without
-        affecting its transform.
-    </li>
-    <li>
         Local transform, rotate and scale attributes allow adjusting the displayed
         control, without affecting objects constrained to it.
     </li>
-    <li>
-        A custom mesh can be used.  Connect its outMesh to .inCustomMesh, and set the
-        shape to "Custom" in the AE.  Only the faces of the mesh will be used, not its
-        material, and only tris and quads are supported.
-    </li>
 </ul>
+
+<h2>Custom shapes</h2>
+
+<img src=images/zRigHandle-custom-shapes.png style="float: right; margin-left: 1em;">
+
+To use a custom shape for the handle, create a mesh with the shape you want.  Set
+zRigHandle's Shape attribute to "Custom", and attach the outMesh of your custom shape
+to the inCustomMesh attribute of the handle.  You can then hide the mesh.
+<p>
+Only the shape of the mesh is used, and not its materials or textures.  The mesh must
+only contain tris and quads (n-gons will be ignored).
+<p>
+The shape should be a static mesh.  Attaching deformed meshes as a custom shape may
+work, but this is unoptimized and will be very slow.
+
+<h2>Local transforms</h2>
+
+Four attributes are provided to transform the control in the viewport: transform, Local Position,
+Local Rotation and Local Scale.
+<p>
+The local attributes allow moving the displayed handle in the viewport without affecting its
+transform.  Manipulators won't be affected, so this can be used to position the handle relative
+to the manipulator.
+<p>
+The transform attribute has the same effect, but receives a matrix value directly.  This can
+be connected to a composeMatrix node.
 
 <h2>Limitations</h2>
 <ul>
