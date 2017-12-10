@@ -159,26 +159,31 @@ class UI(maya_helpers.OptionsBox):
         if not is_blend_shape_deformer:
             return
 
-        pm.menuItem(label='Main deformer weights', parent='mpwBlendShapeTargets|OptionMenu')
-        idx = pm.optionMenuGrp('mpwBlendShapeTargets', q=True, numberOfItems=True)
-        self.src_blend_shape_map[idx] = '(main)'
+        def add_target(name, shape_id):
+            pm.menuItem(label=name, parent='mpwBlendShapeTargets|OptionMenu')
+            idx = pm.optionMenuGrp('mpwBlendShapeTargets', q=True, numberOfItems=True)
+            self.src_blend_shape_map[idx] = shape_id
+
+        add_target('All', '(all)')
+        add_target('Main deformer weights', '(main)')
 
         # Add the blend shape targets in the source blend shape to the list.
-        src_weights = deformer.attr('weight')
-        for idx, weight in enumerate(src_weights):
-            target_name = pm.aliasAttr(weight, q=True)
+        for idx, weight in enumerate(deformer.attr('weight')):
+            add_target('Target: ' + pm.aliasAttr(weight, q=True), weight)
 
-            item = pm.menuItem(label='Target: ' + target_name, parent='mpwBlendShapeTargets|OptionMenu')
-            idx = pm.optionMenuGrp('mpwBlendShapeTargets', q=True, numberOfItems=True)
-            self.src_blend_shape_map[idx] = weight
+    def _get_selected_shape(self):
+        """
+        Return the selected shape, and its index in the deformer's output.
+        """
+        shape_idx = pm.optionMenuGrp('mpwTargetList', q=True, select=True) - 1
+        shape, deformer_shape_idx = self.deformer_output_shapes[shape_idx]
+        return shape, deformer_shape_idx
 
     def option_box_apply(self):
         pm.setParent(self.option_box)
 
         deformer = self._get_selected_deformer()
-
-        shape_idx = pm.optionMenuGrp('mpwTargetList', q=True, select=True) - 1
-        shape, deformer_shape_idx = self.deformer_output_shapes[shape_idx]
+        shape, deformer_shape_idx = self._get_selected_shape()
 
         axis = pm.radioButtonGrp('mpwAxis', q=True, select=True)
         positive_to_negative = pm.checkBoxGrp('mpwDirection', q=True, value1=True)
@@ -191,10 +196,6 @@ class UI(maya_helpers.OptionsBox):
         }
 
         axis_of_symmetry = axes[axis]
-#        mirror_paintable_weights(deformer, deformer_shape_idx,
-#                axis_of_symmetry=axis_of_symmetry,
-#                positive_to_negative=positive_to_negative,
-#                threshold=threshold)
 
         # Get the shape we're updating weights for.
         shape = deformer.outputShapeAtIndex(deformer_shape_idx)
@@ -209,23 +210,55 @@ class UI(maya_helpers.OptionsBox):
             log.error('No symmetric vertices were matched')
             return
             
-        # Find the attribute we're mirroring.
-        if isinstance(deformer, pm.nodetypes.BlendShape):
-            input_target = deformer.attr('it').elementByLogicalIndex(deformer_shape_idx)
-            selected_target_idx = pm.optionMenuGrp('mpwBlendShapeTargets', q=True, select=True)
-            selected_target = self.src_blend_shape_map[selected_target_idx]
-            if selected_target == '(main)':
+        attrs_to_map = self.get_selected_attrs()
+
+        for attr in attrs_to_map:
+            mirror_attribute_with_map(attr, index_mapping)
+
+    def get_selected_attrs(self):
+        """
+        Get the selected attributes.
+
+        For most deformers, this is just the painted weight attribute.  For blendShapes, this
+        can be multiple attributes including blend shape target weights.
+        """
+        deformer = self._get_selected_deformer()
+        shape, deformer_shape_idx = self._get_selected_shape()
+
+        # Find the attributes we're mirroring.
+        if not isinstance(deformer, pm.nodetypes.BlendShape):
+            # Other things are weightGeometryFilters, eg. delta mush and tension deformers.
+            # These only have a single paintable attribute.
+            input_target = deformer.attr('weightList').elementByLogicalIndex(deformer_shape_idx)
+            weights = input_target.attr('weights')
+            return [weights]
+
+        # Get the selection from the blend shape target dropdown.
+        selected_target_idx = pm.optionMenuGrp('mpwBlendShapeTargets', q=True, select=True)
+        selected_target = self.src_blend_shape_map[selected_target_idx]
+
+        # Loop over each available selection, and see if we should add it to the output.
+        input_target = deformer.attr('it').elementByLogicalIndex(deformer_shape_idx)
+        attrs_to_map = []
+        for target in self.src_blend_shape_map.values():
+            if target == '(all)':
+                continue
+
+            # If the user didn't select "all", and this isn't the item he selected, skip it.
+            if selected_target != '(all)' and target != selected_target:
+                continue
+
+            if target == '(main)':
                 # The first entry in the target list is the weights on the blendShape deformer
                 # itself, which is the first entry in the "Target" list in the blend shape painting
                 # tool.
-                weights = input_target.attr('bw')
-            else:
-                # The rest are weights for individual blend shape targets.
-                target_index = selected_target.index()
-                input_target_group = input_target.attr('itg').elementByLogicalIndex(target_index)
-                weights = input_target_group.attr('targetWeights')
-        else:
-            # Other things are weightGeometryFilters, eg. delta mush and tension deformers.
-            weights = deformer.attr('weightList').elementByLogicalIndex(deformer_shape_idx).attr('weights')
-        mirror_attribute_with_map(weights, index_mapping)
+                attrs_to_map.append(input_target.attr('bw'))
+                continue
+
+            # The rest are weights for individual blend shape targets.
+            index = target.index()
+            input_target_group = input_target.attr('itg').elementByLogicalIndex(index)
+            attrs_to_map.append(input_target_group.attr('targetWeights'))
+
+        return attrs_to_map
 
