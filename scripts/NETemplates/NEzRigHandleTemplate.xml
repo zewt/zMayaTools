@@ -36,6 +36,9 @@
 		<attribute name='inCustomMesh' type='maya.mesh'>
 			<label>In Custom Mesh</label>
 		</attribute>
+		<attribute name='transform' type='maya.matrix'>
+			<label>Transform</label>
+		</attribute>
 	</template>
 	<view name='NEDefault' template='NEzRigHandle'>
 		<property name='color'/>
@@ -49,5 +52,6 @@
 		<property name='localScale'/>
 		<property name='shape'/>
 		<property name='inCustomMesh'/>
+		<property name='transform'/>
 	</view>
 </templates>
