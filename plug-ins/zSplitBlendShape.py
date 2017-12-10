@@ -4,8 +4,8 @@ import maya.cmds as cmds
 import maya.OpenMaya as OpenMaya
 import maya.OpenMayaAnim as OpenMayaAnim
 from zMayaTools.menus import Menu
+from zMayaTools import maya_logging, maya_helpers
 
-from zMayaTools import maya_logging
 log = maya_logging.get_log()
 
 def scale(x, l1, h1, l2, h2):
@@ -25,7 +25,7 @@ def split_blend_shape(base_mesh, target_mesh, right_side=True, fade_distance=2, 
         OpenMaya.MGlobal.displayError('Target has %i vertices, but base has %i vertices.' % (len(target_pos) != len(base_pos)))
         return
 
-    resultPos = []
+    result_pos = []
     new_target_pos = []
     for idx in xrange(len(target_pos)):
         dist = target_pos[idx][axis]
@@ -263,30 +263,20 @@ def split_blend_shape_from_deformer(blend_shape, blendTarget,
     finally:
         pm.undoInfo(closeChunk=True)
 
-class UI(object):
-    def __init__(self):
-        pass
+class UI(maya_helpers.OptionsBox):
+    title = 'Split Blend Shape'
 
-    def run(self):
-        pm.setParent(pm.mel.eval('getOptionBox()'))
-        
-        pm.mel.eval('setOptionBoxCommandName("blendShape")')
-        pm.setUITemplate('DefaultTemplate', pushTemplate=True)
-
-        pm.waitCursor(state=1)
-
-        pm.tabLayout(tabsVisible=0, scrollable=1)
-        
+    def options_box_setup(self):
         parent = pm.columnLayout(adjustableColumn=1)
 
-        pm.optionMenuGrp('sbsList', label='Blend shape:', cc=self.splitBlendShapeFillBlendTarget)
-        self.splitBlendShapeFillBlendShapes('sbsList|OptionMenu', False)
+        pm.optionMenuGrp('sbsList', label='Blend shape:', cc=self.fill_blend_target)
+        self.fill_blend_shapes('sbsList|OptionMenu', False)
 
         pm.optionMenuGrp('sbsLeftOutput', label='Left output:')
-        self.splitBlendShapeFillBlendShapes('sbsLeftOutput|OptionMenu', True)
+        self.fill_blend_shapes('sbsLeftOutput|OptionMenu', True)
 
         pm.optionMenuGrp('sbsRightOutput', label='Right output:')
-        self.splitBlendShapeFillBlendShapes('sbsRightOutput|OptionMenu', True)
+        self.fill_blend_shapes('sbsRightOutput|OptionMenu', True)
 
         # If something is selected, try to find a blend shape to select by default.
         selection = pm.ls(sl=True)
@@ -295,37 +285,17 @@ class UI(object):
             blend_shapes = pm.ls(history, type='blendShape')
             if blend_shapes:
                 default_blend_shape = blend_shapes[0]
-                self.selectBlendShape(default_blend_shape)
+                self.select_blend_shape(default_blend_shape)
 
         pm.optionMenuGrp('sbsTargetList', label='Blend target:')
-        self.splitBlendShapeFillBlendTarget()
+        self.fill_blend_target()
 
         pm.floatSliderGrp('sbsBlendDistance', label='Blend distance', field=True, v=2, min=0, max=10, fieldMinValue=0, fieldMaxValue=1000)
         pm.radioButtonGrp('sbsPlane', label='Plane:', numberOfRadioButtons=3, labelArray3=('XY', 'YZ', 'XZ'), select=2)
         pm.floatSliderGrp('sbsPlaneOrigin', label='Plane origin', field=True, v=0, min=0, max=1000)
         pm.textFieldGrp('sbsNamingPattern', label='Naming pattern', text='<name>_<L|R>')
 
-        pm.waitCursor(state=0)
-        
-        pm.setUITemplate(popTemplate=True)
-
-        def apply(unused):
-            self.run_from_ui(parent)
-
-        def apply_and_close(unused):
-            self.run_from_ui(parent)
-            pm.mel.eval('hideOptionBox()')
-
-        # We need to set both apply and apply and close explicitly.  Maya breaks apply and close
-        # if apply is set to a Python function.
-        pm.button(pm.mel.eval('getOptionBoxApplyBtn()'), edit=True, command=apply)
-        pm.button(pm.mel.eval('getOptionBoxApplyAndCloseBtn()'), edit=True, command=apply_and_close)
-    #    pm.button(pm.mel.eval('getOptionBoxSaveBtn()'), edit=True, command=run_and_close)
-
-        pm.mel.eval('setOptionBoxTitle("Split blend shape");')
-        pm.mel.eval('showOptionBox()')
-
-    def splitBlendShapeFillBlendTarget(self):
+    def fill_blend_target(self):
         # Clear the existing target list.
         for item in pm.optionMenu('sbsTargetList|OptionMenu', q=True, itemListLong=True):
             pm.deleteUI(item)
@@ -345,7 +315,7 @@ class UI(object):
             target_name = pm.aliasAttr(item, q=True)
             pm.menuItem(label=target_name, parent='sbsTargetList|OptionMenu')
 
-    def selectBlendShape(self, blend_shape):
+    def select_blend_shape(self, blend_shape):
         menu_items = pm.optionMenu('sbsList|OptionMenu', q=True, itemListLong=True)
         for idx, menu_item in enumerate(menu_items):
             item = pm.menuItem(menu_item, q=True, label=True)
@@ -360,7 +330,7 @@ class UI(object):
 
             pm.optionMenuGrp('sbsList', edit=True, select=idx + 1)
 
-    def splitBlendShapeFillBlendShapes(self, target, includeSame):
+    def fill_blend_shapes(self, target, includeSame):
         for item in pm.optionMenu(target, q=True, itemListLong=True):
             pm.deleteUI(item)
 
@@ -370,10 +340,8 @@ class UI(object):
         for item in pm.ls(type='blendShape'):
             pm.menuItem(parent=target, label=item)
 
-    def run_from_ui(self, parent):
+    def option_box_apply(self):
         kwargs = { }
-
-        pm.setParent(parent)
 
         blend_shape = pm.optionMenuGrp('sbsList', q=True, v=True)
         blend_shape = pm.ls(blend_shape)[0]
@@ -418,6 +386,8 @@ class UI(object):
         split_args['axis_origin'] = origin
         func(**kwargs)
 
+    def option_box_load(self): pass
+    def option_box_save(self): pass
 
 def run():
     ui = UI()
