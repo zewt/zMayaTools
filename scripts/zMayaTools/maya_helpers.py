@@ -86,7 +86,7 @@ class OptionsBox(object):
         # XXX: Is there a way for us to add a help link?
         pm.mel.eval('setOptionBoxCommandName("%s")' % self.title)
         # pm.mel.eval('setOptionBoxHelpTag "%s"' % self.title)
-        # pm.mel.eval('setOptionBoxTitle("%s");' % self.title)
+        pm.mel.eval('setOptionBoxTitle("%s");' % self.title)
 
         pm.mel.eval('showOptionBox()')
 
