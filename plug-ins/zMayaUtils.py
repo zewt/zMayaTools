@@ -23,9 +23,7 @@ class PluginMenu(Menu):
 
             # Add "Mirror Weights" in the "Weights" section at the bottom of the Deform menu.
             menu_items = pm.menu(menu, q=True, ia=True)
-            idx = self.find_divider_by_name(menu_items, 'm_ChaDeformationsMenu.kDeformWeights')
-
-            insert_after = self.find_end_of_section(menu_items, idx)
+            section = self.find_menu_section_by_name(menu_items, 'm_ChaDeformationsMenu.kDeformWeights')
 
             def run_mirror_painted_weights(unused):
                 from zMayaTools import mirror_painted_weights
@@ -34,51 +32,29 @@ class PluginMenu(Menu):
 
             self.add_menu_item('zMayaTools_MirrorWeights_%s' % menu, label='Mirror Weights...', parent=menu,
                     annotation='Mirror painted weights on a mesh',
-                    insertAfter=insert_after,
+                    insertAfter=section[-1],
                     command=run_mirror_painted_weights)
 
-            for item in pm.menu(menu, q=True, ia=True):
-                # Find the "Edit" section.
-                if pm.menuItem(item, q=True, divider=True):
-                    section = pm.menuItem(item, q=True, label=True)
-                if section != 'Edit':
-                    continue
+            # Find the "Edit" section in the Deform menu, then find the "Blend Shape" submenu inside
+            # that section.
+            menu_items = pm.menu(menu, q=True, ia=True)
+            section = self.find_menu_section_by_name(menu_items, 'm_ChaDeformationsMenu.kDeformEdit')
+            submenu = self.find_submenu_by_name(section, 'm_ChaDeformationsMenu.kEditBlendShape')
+                
+            def run_blend_shape_retargetting(unused):
+                from zMayaTools import blend_shape_retargetting
+                blend_shape_retargetting.UI().run()
 
-                # Find the "Blend Shape" submenu.
-                if not pm.menuItem(item, q=True, subMenu=True):
-                    continue
-                if pm.menuItem(item, q=True, label=True) != 'Blend Shape':
-                    continue
+            self.add_menu_item('zBlendShapeRetargetting_%s' % menu, label='Retarget Blend Shapes', parent=submenu,
+                    command=run_blend_shape_retargetting)
 
-                def run_blend_shape_retargetting(unused):
-                    from zMayaTools import blend_shape_retargetting
-                    blend_shape_retargetting.UI().run()
-                self.add_menu_item('zBlendShapeRetargetting_%s' % menu, label='Retarget Blend Shapes', parent=item,
-                        command=run_blend_shape_retargetting)
+            def run_split_blend_shapes(unused):
+                from zMayaTools import split_blend_shapes
+                split_blend_shapes.UI().run()
 
-            # Make sure file menu is built.
-            pm.mel.eval('ChaDeformationsMenu "MayaWindow|%s";' % menu)
-
-            for item in pm.menu(menu, q=True, ia=True):
-                # Find the "Edit" section.
-                if pm.menuItem(item, q=True, divider=True):
-                    section = pm.menuItem(item, q=True, label=True)
-                if section != 'Edit':
-                    continue
-
-                # Find the "Blend Shape" submenu.
-                if not pm.menuItem(item, q=True, subMenu=True):
-                    continue
-                if pm.menuItem(item, q=True, label=True) != 'Blend Shape':
-                    continue
-
-                def run_split_blend_shapes(unused):
-                    from zMayaTools import split_blend_shapes
-                    split_blend_shapes.UI().run()
-   
-                self.add_menu_item('zSplitBlendShape_%s' % menu, label='Split Blend Shape', parent=item,
-                        annotation='Split a blend shape across a plane',
-                        command=run_split_blend_shapes)
+            self.add_menu_item('zSplitBlendShape_%s' % menu, label='Split Blend Shape', parent=submenu,
+                    annotation='Split a blend shape across a plane',
+                    command=run_split_blend_shapes)
 
 menu = PluginMenu()
 def initializePlugin(mobject):

@@ -543,20 +543,16 @@ def create_zRigHandle(arg):
     sel = pm.ls(sl=True)
     return pm.createNode('zRigHandle')
 
-# Thanks to https://github.com/chadmv/cvwrap/ for showing how to add items to a menu
-# in the right place.  Angry glares to Autodesk for having a menu API so bad that
-# you need to find third-party example code just to add items to it.
 class PluginMenu(Menu):
     def add_menu_items(self):
+        # Add "Rig Handle" after "Locator" in Create > Construction Aids.
         pm.mel.eval('ModCreateMenu "mainCreateMenu"')
         menu = 'mainCreateMenu'
-        for item in pm.menu(menu, q=True, ia=True):
-            if pm.menuItem(item, q=True, divider=True):
-                section = pm.menuItem(item, q=True, label=True)
-
-            menuLabel = pm.menuItem(item, q=True, label=True)
-            if menuLabel == 'Locator' and section == 'Construction Aids':
-                self.add_menu_item('zRigHandle', label="Rig Handle", command=create_zRigHandle, sourceType='python', insertAfter=item, parent=menu)
+        menu_items = pm.menu(menu, q=True, ia=True)
+        section = self.find_menu_section_by_name(menu_items, 'm_ModCreateMenu.kCreateAids')
+        text = pm.displayString('m_ModCreateMenu.kCreateLocator', q=True, value=True)
+        idx = self.find_item_by_name(section, 'm_ModCreateMenu.kCreateLocator')
+        self.add_menu_item('zRigHandle', label="Rig Handle", command=create_zRigHandle, insertAfter=section[idx], parent=menu)
 
 menu = PluginMenu()
 def initializePlugin(obj):

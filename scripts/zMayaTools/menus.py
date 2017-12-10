@@ -1,5 +1,8 @@
 import pymel.core as pm
 
+from zMayaTools import maya_logging
+log = maya_logging.get_log()
+
 class Menu(object):
     """
     A helper for adding and removing menu items.
@@ -37,15 +40,39 @@ class Menu(object):
         self.menu_items = []
 
     @classmethod
-    def find_divider_by_name(self, menu_items, label_id):
+    def find_menu_section_by_name(cls, menu_items, label_id):
+        # Find the section.
+        start_idx = cls.find_item_by_name(menu_items, label_id, divider=True)
+        if start_idx is None:
+            return menu_items
+
+        # The next menu item is the first one in the section.
+        start_idx += 1
+
+        end_idx = start_idx
+        for idx in xrange(start_idx+1, len(menu_items)):
+            menu_item = menu_items[idx]
+            section = pm.menuItem(menu_item, q=True, label=True)
+            
+            if not pm.menuItem(menu_items[idx], q=True, divider=True):
+                continue
+
+            return menu_items[start_idx:idx]
+        else:
+            return menu_items[start_idx:]
+
+    @classmethod
+    def find_item_by_name(cls, menu_items, label_id, divider=False):
         """
-        Find a divider with the given label, and return its index.  If it's not
+        Find an item with the given label, and return its index.  If it's not
         found, return the last element in the menu.
         """
         text = pm.displayString(label_id, q=True, value=True)
         for idx, item in enumerate(menu_items):
-            if pm.menuItem(item, q=True, divider=True):
-                section = pm.menuItem(item, q=True, label=True)
+            if divider and not pm.menuItem(item, q=True, divider=True):
+                continue
+
+            section = pm.menuItem(item, q=True, label=True)
             if section == text:
                 return idx
 
@@ -53,20 +80,15 @@ class Menu(object):
         return len(menu_items)-1
 
     @classmethod
-    def find_end_of_section(cls, menu_items, from_idx):
-        """
-        Given a menu item in a section, return the menu item to insert after in order
-        to put the item at the end of that section.
+    def find_submenu_by_name(cls, section, label_id):
+        label = pm.displayString(label_id, q=True, value=True)
         
-        If we're inserting at the end of the menu, return None instead of the last item.
-        This is to work around a silly Maya warning if you use insertAfter to insert after
-        the last element.
-        """
-        for idx in xrange(from_idx+1, len(menu_items)):
-            menu_item = menu_items[idx]
-            if pm.menuItem(menu_items[idx], q=True, divider=True):
-                return menu_items[idx-1]
+        for item in section:
+            # Find the "Blend Shape" submenu.
+            if not pm.menuItem(item, q=True, subMenu=True):
+                continue
+            if pm.menuItem(item, q=True, label=True) != label:
+                continue
 
-        return None
+            return item
 
- 
