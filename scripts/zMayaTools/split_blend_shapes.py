@@ -267,6 +267,11 @@ class UI(maya_helpers.OptionsBox):
     title = 'Split Blend Shape'
 
     def options_box_setup(self):
+        self.optvars.add('zSplitBlendShapesBlendDistance', 'float', 2)
+        self.optvars.add('zSplitBlendShapesPlane', 'int', 2)
+        self.optvars.add('zSplitBlendShapesPlaneOrigin', 'float', 0)
+        self.optvars.add('zSplitBlendShapesNamingPattern', 'string', '<name>_<L|R>')
+        
         parent = pm.columnLayout(adjustableColumn=1)
 
         pm.optionMenuGrp('sbsList', label='Blend shape:', cc=self.fill_blend_target)
@@ -290,10 +295,10 @@ class UI(maya_helpers.OptionsBox):
         pm.optionMenuGrp('sbsTargetList', label='Blend target:')
         self.fill_blend_target()
 
-        pm.floatSliderGrp('sbsBlendDistance', label='Blend distance', field=True, v=2, min=0, max=10, fieldMinValue=0, fieldMaxValue=1000)
-        pm.radioButtonGrp('sbsPlane', label='Plane:', numberOfRadioButtons=3, labelArray3=('XY', 'YZ', 'XZ'), select=2)
-        pm.floatSliderGrp('sbsPlaneOrigin', label='Plane origin', field=True, v=0, min=0, max=1000)
-        pm.textFieldGrp('sbsNamingPattern', label='Naming pattern', text='<name>_<L|R>')
+        pm.floatSliderGrp('sbsBlendDistance', label='Blend distance', field=True, min=0, max=10, fieldMinValue=0, fieldMaxValue=1000)
+        pm.radioButtonGrp('sbsPlane', label='Plane:', numberOfRadioButtons=3, labelArray3=('XY', 'YZ', 'XZ'))
+        pm.floatSliderGrp('sbsPlaneOrigin', label='Plane origin', v=0, min=0, max=1000)
+        pm.textFieldGrp('sbsNamingPattern', label='Naming pattern')
 
     def fill_blend_target(self):
         # Clear the existing target list.
@@ -386,8 +391,17 @@ class UI(maya_helpers.OptionsBox):
         split_args['axis_origin'] = origin
         func(**kwargs)
 
-    def option_box_load(self): pass
-    def option_box_save(self): pass
+    def option_box_load(self):
+        pm.floatSliderGrp('sbsBlendDistance', edit=True, v=self.optvars['zSplitBlendShapesBlendDistance'])
+        pm.radioButtonGrp('sbsPlane', edit=True, select=self.optvars['zSplitBlendShapesPlane'])
+        pm.floatSliderGrp('sbsPlaneOrigin', edit=True, v=self.optvars['zSplitBlendShapesPlaneOrigin'])
+        pm.textFieldGrp('sbsNamingPattern', edit=True, text=self.optvars['zSplitBlendShapesNamingPattern'])
+
+    def option_box_save(self):
+        self.optvars['zSplitBlendShapesBlendDistance'] = pm.floatSliderGrp('sbsBlendDistance', q=True, v=True)
+        self.optvars['zSplitBlendShapesPlane'] = pm.radioButtonGrp('sbsPlane', q=True, select=True)
+        self.optvars['zSplitBlendShapesPlaneOrigin'] = pm.floatSliderGrp('sbsPlaneOrigin', q=True, v=True)
+        self.optvars['zSplitBlendShapesNamingPattern'] = pm.textFieldGrp('sbsNamingPattern', q=True, text=True)
 
 def run():
     ui = UI()
