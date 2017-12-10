@@ -305,8 +305,13 @@ class UI(maya_helpers.OptionsBox):
         for item in pm.optionMenu('sbsTargetList|OptionMenu', q=True, itemListLong=True):
             pm.deleteUI(item)
 
+        # Prevent a warning from being printed if there aren't any blendShapes.
+        if pm.optionMenuGrp('sbsList', q=True, ni=True) == 0:
+            return
+
         # Get the names of the targets in the selected blend shape.
         value = pm.optionMenuGrp('sbsList', q=True, v=True)
+
         if not value:
             return
         nodes = pm.ls(value)
