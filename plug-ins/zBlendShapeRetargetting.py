@@ -2,7 +2,7 @@ import math, inspect, os, sys, time
 import pymel.core as pm
 import maya.cmds as cmds
 from zMayaTools.menus import Menu
-from zMayaTools import maya_logging
+from zMayaTools import maya_logging, maya_helpers
 
 log = maya_logging.get_log()
 
@@ -509,29 +509,21 @@ def xrun():
     redst_blend_shapes(src_node, dst_node, src_blend_shape, dst_blend_shape, blend_shape_indices, connect_weights=Trues
 )
 
-class UI(object):
+class UI(maya_helpers.OptionsBox):
+    title = 'Retarget Blend Shapes'
+
     def get_src_blend_shape_name(self):
         return pm.optionMenuGrp('sourceBlendShapeList', q=True, v=True)
     
     def get_dst_blend_shape_name(self):
         return pm.optionMenuGrp('dstBlendShapeList', q=True, v=True)
 
-    def set_optionvars_from_ui(self):
-        """
-        Store saved settings to optionVars.
-        """
-        connect_weights_to_source = pm.checkBoxGrp('connectWeightsToSource', q=True, value1=False)
-        pm.optionVar(intValue=('zBlendShapeRetargettingConnectWeightsToSource', connect_weights_to_source))
-
-    def load_ui_from_optionvars(self, parent):
+    def option_box_load(self):
         """
         Load saved settings from optionVars to the UI.
         """
-        pm.setParent(parent)
-
-        if pm.optionVar(exists='zBlendShapeRetargettingSourceBlendShape'):
-            connect_weights_to_source = pm.optionVar(q='zBlendShapeRetargettingConnectWeightsToSource') == 1
-            pm.checkBoxGrp('connectWeightsToSource', edit=True, value1=connect_weights_to_source)
+        connect_weights_to_source = self.optvars['zBlendShapeRetargettingConnectWeightsToSource'] == 1
+        pm.checkBoxGrp('connectWeightsToSource', edit=True, value1=connect_weights_to_source)
 
         # optionMenuGrp will throw RuntimeError if the value doesn't exist, eg. the saved blendShape
         # node doesn't exist in the scene.
@@ -544,14 +536,10 @@ class UI(object):
 #        set_option_from_blend_shape_list('sourceBlendShapeList', 'zBlendShapeRetargettingSourceBlendShape')
 #        set_option_from_blend_shape_list('dstBlendShapeList', 'zBlendShapeRetargettingTargetBlendShape')
 
-    def reset_optionvars(self):
-        pm.optionVar(remove='zBlendShapeRetargettingConnectWeightsToSource')
+    def option_box_save(self):
+        self.optvars['zBlendShapeRetargettingConnectWeightsToSource'] = pm.checkBoxGrp('connectWeightsToSource', q=True, value1=False)
 
-    def execute_from_dialog(self):
-        self.set_optionvars_from_ui()
-        self.execute_from_optionvars()
-
-    def execute_from_optionvars(self):
+    def option_box_apply(self):
         # Get the selected blendShapes.
         src_blend_shape = pm.optionMenuGrp('sourceBlendShapeList', q=True, v=True)
         dst_blend_shape = pm.optionMenuGrp('dstBlendShapeList', q=True, v=True)
@@ -619,14 +607,9 @@ class UI(object):
         connect_weights = pm.checkBoxGrp('connectWeightsToSource', q=True, value1=False)
         redst_blend_shapes(src_node, dst_node, src_blend_shape, dst_blend_shape, blend_shape_indices, connect_weights=connect_weights)
 
-    def run(self):
-        option_box = pm.mel.eval('getOptionBox()')
-
-        pm.setParent(option_box)
-        pm.mel.eval('setOptionBoxCommandName("blendShape");')
-        pm.setUITemplate('DefaultTemplate', pushTemplate=True)
-
-        pm.tabLayout(tabsVisible=False, scrollable=True)
+    def options_box_setup(self):
+        self.optvars.add('zBlendShapeRetargettingConnectWeightsToSource', 'int', 0)
+        
         parent = pm.columnLayout(adjustableColumn=True)
 
         def add_blend_shape_selector(name, label, refresh_on_change):
@@ -656,42 +639,7 @@ class UI(object):
        
         pm.checkBoxGrp('connectWeightsToSource', numberOfCheckBoxes=1, value1=False, label='Connect weights to source')
 
-        pm.setUITemplate(popTemplate=True)    
-        
-        def apply(unused):
-            self.execute_from_dialog()
-
-        def apply_and_close(unused):
-            self.execute_from_dialog()
-            pm.mel.eval('hideOptionBox')
-
-        def save(unused):
-            self.set_optionvars_from_ui()
-
-        def reset(unused):
-            self.reset_optionvars()
-            self.load_ui_from_optionvars(parent)
-
-        # We need to set both apply and apply and close explicitly.  Maya breaks apply and close
-        # if apply is set to a Python function.
-        pm.button(pm.mel.eval('getOptionBoxApplyBtn()'), edit=True, command=apply)
-        pm.button(pm.mel.eval('getOptionBoxApplyAndCloseBtn()'), edit=True, command=apply_and_close)
-
-        pm.mel.eval('setOptionBoxTitle "Retarget Blend Shapes"')
-        pm.mel.eval('setOptionBoxHelpTag "Retarget Blend Shapes"')
-        self.load_ui_from_optionvars(parent)
-        
         self.refresh_src_blend_shape_list()
-
-        pm.mel.eval('showOptionBox')
-
-        # To work around a Maya bug, we need to set save and reset directly to the menu,
-        # rather than to the buttons, and do it after calling showOptionBox, or they
-        # won't work.
-        save_menu_item = pm.mel.globals['gOptionBoxEditMenuSaveItem']
-        reset_menu_item = pm.mel.globals['gOptionBoxEditMenuResetItem']
-        pm.menuItem(save_menu_item, edit=True, command=save)
-        pm.menuItem(reset_menu_item, edit=True, command=reset)
 
     def refresh_src_blend_shape_list(self):
         pm.textScrollList('blendShapeTargetList', edit=True, removeAll=True)
