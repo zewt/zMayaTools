@@ -27,6 +27,12 @@ and this dependency could be eliminated with something like this:
 Conversely, this is fairly slow due to manipulating vertex data in Python.  Doing that
 part in native code would be a lot faster.
 
+<h2>Notes</h2>
+
+This works best on irregular shapes.  If it's used on a regular shape like a sphere or
+a cube, there are many possible orientations that will give the same bounding box and
+the orientation can't be determined from just the vertex positions.
+
 <h2>Binary plugin source</h2>
 
 The source to the binary plugin is available on

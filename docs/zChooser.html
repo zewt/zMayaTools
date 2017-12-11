@@ -1,0 +1,45 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>zChooser</h1>
+
+<h2>Introduction</h2>
+
+This is a small helper node to select one output out of several.  This can be implemented
+with native Maya nodes, and this is only a shortcut to allow selecting any number of outputs
+with just one node.
+
+<h2>Attributes</h2>
+
+<ul>
+<li>
+    <b>choice</b> - The element of output[] that should be set to <b>selectedValue</b>.
+</li>
+<li>
+    <b>selectedValue</b> - The value to set the selected element to.
+</li>
+<li>
+    <b>unselectedValue</b> - The value to set all other elements to.
+</li>
+<li>
+    <b>output[]</b> - An array of output values.
+</li>
+</ul>
+
+<h2>Example</h2>
+
+To display one out of a list of ten meshes, connect each transform's visibility attribute
+to an element of output.  Leave selectedValue and unselectedValue at their defaults of 1 and 0,
+and set choice to the index of the mesh to display.
+
+<h2>Limitations</h2>
+
+This doesn't work for texture attributes.  A Python implementation would probably be too slow
+for that anyway.
+
+<h2>Notes</h2>
+
+There must be a builtin node that does this.  "chooser" looks close, but isn't quite it.
+
