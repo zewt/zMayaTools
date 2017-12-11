@@ -1,7 +1,7 @@
 from pymel import core as pm
 from maya import cmds
 import os, sys, time
-from zMayaTools import kdtree, maya_helpers, maya_logging, vertex_symmetry
+from zMayaTools import kdtree, maya_helpers, maya_logging, vertex_mapping
 
 log = maya_logging.get_log()
 
@@ -201,7 +201,7 @@ class UI(maya_helpers.OptionsBox):
         shape = deformer.outputShapeAtIndex(deformer_shape_idx)
         
         # Make a symmetry mapping for the shape.
-        index_mapping, unmapped_dst_vertices = vertex_symmetry.make_vertex_symmetry_map(shape, threshold=0.01,
+        index_mapping, unmapped_dst_vertices = vertex_mapping.make_vertex_symmetry_map(shape, threshold=0.01,
                 axis_of_symmetry=axis_of_symmetry, positive_to_negative=positive_to_negative)
 
         if unmapped_dst_vertices:

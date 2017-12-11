@@ -18,12 +18,14 @@ class PointWithIndex(object):
         return self.coords[i]
 
     def __repr__(self):
-        return 'Item({}, {}, {})'.format(self.coords[0], self.coords[1], self.data)
+        return 'Item({}, {}, {})'.format(self.coords[0], self.coords[1], self.idx)
 
 def make_vertex_symmetry_map(shape, threshold=0.01, axis_of_symmetry='x', positive_to_negative=True):
     """
     Given a shape, make a mapping from vertices on one side to matching vertices on the
-    other side, returning a map of {dst: src} vertex indices.
+    other side.
+
+    Return a map of {dst: src} vertex indices and a list of target vertices that weren't matched.
     """
     axes = {'x': 0, 'y': 1, 'z': 2}
     axis_of_symmetry = axes[axis_of_symmetry]
