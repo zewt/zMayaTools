@@ -1,0 +1,38 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>Deform &gt; Copy Weights...</h1>
+
+Copy weights from one deformer to another, or from one blend shape target to another.
+<p>
+This is like Copy Skin Weights for deformer and blend shape weights.
+
+<h2>Usage</h2>
+
+Select a mesh and activate Copy Weights.
+<p>
+Select the source and destination deformers to copy.
+<p>
+If a blendShape is selected, you can select the blend shape target's weights to
+copy, or "Main deformer weights" to copy the main deformer weights.
+<p>
+If both the source and destination deformers are blendShapes, you can select
+"All (match by name)" in the source blend shape target, and all blend shape
+targets with matching names will have their weights copied.  The deformer
+weights will also be copied.  If this is selected, the blend shape target in
+the target deformer will be greyed out.
+<p>
+If more than one mesh is affected by either deformer, select which one to copy
+from the Shape dropdowns.
+<p>
+Click Apply.
+
+<h2>Limitations</h2>
+
+<ul>
+    <li>Only simple world space position matching is supported.</li>
+    <li>Only deformed meshes are supported, and not curves or NURBS surfaces.</li>
+</ul>
+
