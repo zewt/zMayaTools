@@ -22,6 +22,13 @@ SOFTWARE.
 
 ------------------
 
+The MIT License (MIT)
+
+https://github.com/jpaasen/cos/blob/master/framework/cholesky.py
+Copyright (c) 2014 Jon Petter Asen
+
+------------------
+
 https://github.com/stefankoegl/kdtree/blob/master/kdtree.py
 
 Copyright (c) Stefan Kögl <stefan@skoegl.net>
@@ -38,6 +45,7 @@ LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR
 OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR
 PERFORMANCE OF THIS SOFTWARE.
 
---
+------------------
+
 zOBBTransform depends on eigen3 built with MPL2 code: https://www.mozilla.org/en-US/MPL/2.0/
 

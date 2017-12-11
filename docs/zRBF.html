@@ -1,0 +1,38 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>zRBF (Create > zRBF)</h1>
+
+An RBF solver for Maya.
+
+<h2>Introduction</h2>
+
+There are a few of these, but they're all either commercial, under restrictive
+licenses, or native C++ plugins.  This plugin is rough, with no UI and only simple
+vector-to-scalar support, but it's simple, permissively licensed, and written in
+Python to simplify installation.
+<p>
+Some other implementations are here.  I haven't tried any of these:
+
+<ul>
+<li>
+    <a href=http://silvestrejulien.blogspot.com/2015/09/rbf-suite-mayac.html>Silvestre Julien's RBF suite</a>
+</li>
+<li>
+    <a href="https://apps.autodesk.com/MAYA/en/Detail/Index?id=3400459002389744225&ln=en&mode=preview">
+    RBF Solver by Zapan
+    </a>
+</li>
+<li>
+    <a href="https://github.com/yaoyansi/mayarbf">yaoyansi/mayarbf</a>
+</li>
+</ul>
+
+<h2>Limitations</h2>
+
+Being written in Python is convenient and not a performance problem when used for
+things like high-level rigging, but its performance wouldn't be suitable for things like
+calculating textures or dense particle systems.
+
