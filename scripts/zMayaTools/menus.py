@@ -30,6 +30,7 @@ class Menu(object):
 
         item = pm.menuItem(name, *args, **kwargs)
         self.menu_items.append(item)
+        return item
 
     def remove_menu_items(self):
         for item in self.menu_items:

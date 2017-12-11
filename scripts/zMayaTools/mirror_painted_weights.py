@@ -3,6 +3,9 @@ from maya import cmds
 import os, sys, time
 from zMayaTools import kdtree, maya_helpers, maya_logging, vertex_mapping
 
+from zMayaTools.ui import painted_weights_ui
+reload(painted_weights_ui)
+
 log = maya_logging.get_log()
 
 # This only supports deformed meshes, and not NURBS surfaces or curves.
@@ -40,23 +43,6 @@ def mirror_attribute_with_map(weights, index_mapping):
     for index, value in new_values.items():
         cmds.setAttr('%s[%i]' % (weight_path, index), value)
 
-def mirror_paintable_weights(deformer, deformer_index, axis_of_symmetry, positive_to_negative, threshold=0.01):
-    """
-    """
-    shape = deformer.outputShapeAtIndex(deformer_index)
-    
-    index_mapping, unmapped_dst_vertices = vertex_symmetry.make_vertex_symmetry_map(shape, threshold=0.01,
-            axis_of_symmetry=axis_of_symmetry, positive_to_negative=positive_to_negative)
-
-    if unmapped_dst_vertices:
-        log.warning('Warning: unmapped vertices: %s', ' '.join(str(idx) for idx in unmapped_dst_vertices))
-    if not index_mapping:
-        log.error('No symmetric vertices were matched')
-        return
-        
-    weights = deformer.attr('weightList').elementByLogicalIndex(deformer_index).attr('weights')
-    mirror_attribute_with_map(weights, index_mapping)
-
 class UI(maya_helpers.OptionsBox):
     title = 'Mirror Painted Weights'
 
@@ -72,20 +58,22 @@ class UI(maya_helpers.OptionsBox):
         parent = self.option_box
 
         def deformer_node_changed(unused=None):
-            self.fill_output_shape_list()
-            self.fill_blend_shape_target_list()
+            self.shape_list.refresh()
 
-        deformer_nodes = pm.ls(type=['wire', 'blendShape', 'weightGeometryFilter', 'skinCluster'])
+            deformer = self.deformer_list.get_selected_deformer()
+            self.blend_shape_target_list.refresh(deformer)
+
+            self.refresh_enabled_blend_shape_target_list(self.blend_shape_target_list, self.deformer_list.get_selected_deformer())
+
         pm.optionMenuGrp('mpwDeformerList', label='Deformer:', cc=deformer_node_changed)
-
-        for node in deformer_nodes:
-            pm.menuItem(parent='mpwDeformerList|OptionMenu', label=node)
+        self.deformer_list = painted_weights_ui.DeformerList('mpwDeformerList')
 
         pm.optionMenuGrp('mpwBlendShapeTargets', label='Blend shape target:')
+        self.blend_shape_target_list = painted_weights_ui.BlendShapeTargetList('mpwBlendShapeTargets', self.deformer_list)
+        self.blend_shape_target_list.set_all_text('All')
 
         pm.optionMenuGrp('mpwTargetList', label='Shape:')
-        self.fill_output_shape_list()
-        deformer_node_changed()
+        self.shape_list = painted_weights_ui.DeformerShapeList('mpwTargetList', self.deformer_list)
 
         pm.separator()
 
@@ -95,14 +83,11 @@ class UI(maya_helpers.OptionsBox):
         pm.checkBoxGrp('mpwDirection', label='Direction:', label1='Positive to negative', numberOfCheckBoxes=1)
         pm.floatSliderGrp('mpwThreshold', label='Vertex matching threshold', field=True, v=0.01, min=0, max=.1, fieldMinValue=0, fieldMaxValue=1000)
 
-    def _get_selected_deformer(self):
-        deformer = pm.optionMenuGrp('mpwDeformerList', q=True, v=True)
-        if not deformer:
-            return None
-        deformers = pm.ls(deformer)
-        if not deformers:
-            return None
-        return deformers[0]
+        deformer_nodes = pm.ls(type=['wire', 'blendShape', 'weightGeometryFilter', 'skinCluster'])
+        for node in deformer_nodes:
+            pm.menuItem(parent='mpwDeformerList|OptionMenu', label=node)
+
+        deformer_node_changed()
 
     def option_box_save(self):
         self.optvars['zMirrorPaintedWeightsAxis'] = pm.radioButtonGrp('mpwAxis', q=True, select=True)
@@ -114,75 +99,21 @@ class UI(maya_helpers.OptionsBox):
         pm.checkBoxGrp('mpwDirection', edit=True, value1=self.optvars['zMirrorPaintedWeightsDirection'])
         pm.floatSliderGrp('mpwThreshold', edit=True, v=self.optvars['zMirrorPaintedWeightsThreshold'])
         
-    def fill_output_shape_list(self):
-        # Clear the existing target list.
-        for item in pm.optionMenu('mpwTargetList|OptionMenu', q=True, itemListLong=True):
-            pm.deleteUI(item)
-
-        # Get the names of the outputs of the selected deformer.
-        value = pm.optionMenuGrp('mpwDeformerList', q=True, v=True)
-        if not value:
-            return
-        nodes = pm.ls(value)
-        if not nodes:
-            return
-        node = nodes[0]
-
-        # Make a list of output shapes for this deformer.
-        self.deformer_output_shapes = []
-        for deformed_idx in xrange(node.numOutputConnections()):
-            try:
-                output_shape = node.outputShapeAtIndex(deformed_idx)
-            except RuntimeError:
-                # This fails with RuntimeError if we query an index that isn't connected, which can happen if you
-                # create a deformer for three shapes and then delete the second one.
-                continue
-
-            self.deformer_output_shapes.append((output_shape, deformed_idx))
-            pm.menuItem(label=output_shape.getParent().name(), parent='mpwTargetList|OptionMenu')
-
-    def fill_blend_shape_target_list(self):
-        """
-        If a blendShape is selected, populate the list of targets.
-        """
-        deformer = self._get_selected_deformer()
-        is_blend_shape_deformer = isinstance(deformer, pm.nodetypes.BlendShape)
-        pm.optionMenuGrp('mpwBlendShapeTargets', edit=True, enable=is_blend_shape_deformer)
-
-        for item in pm.optionMenu('mpwBlendShapeTargets|OptionMenu', q=True, itemListLong=True):
-            pm.deleteUI(item)
-
-        # The blend shape array is sparse, so keep a mapping from list indices to blend
-        # shape weight indices.  Note that for some reason, these are 1-based.
-        self.src_blend_shape_map = {}
-
-        if not is_blend_shape_deformer:
-            return
-
-        def add_target(name, shape_id):
-            pm.menuItem(label=name, parent='mpwBlendShapeTargets|OptionMenu')
-            idx = pm.optionMenuGrp('mpwBlendShapeTargets', q=True, numberOfItems=True)
-            self.src_blend_shape_map[idx] = shape_id
-
-        add_target('All', '(all)')
-        add_target('Main deformer weights', '(main)')
-
-        # Add the blend shape targets in the source blend shape to the list.
-        for idx, weight in enumerate(deformer.attr('weight')):
-            add_target('Target: ' + pm.aliasAttr(weight, q=True), weight)
-
     def _get_selected_shape(self):
         """
         Return the selected shape, and its index in the deformer's output.
         """
-        shape_idx = pm.optionMenuGrp('mpwTargetList', q=True, select=True) - 1
-        shape, deformer_shape_idx = self.deformer_output_shapes[shape_idx]
-        return shape, deformer_shape_idx
+        return self.shape_list.get_selected_shape()
+
+    def refresh_enabled_blend_shape_target_list(self, blend_shape_target_list, deformer):
+        # Only enable this for blendShape deformers.
+        enable_list = isinstance(deformer, pm.nodetypes.BlendShape)
+        pm.optionMenuGrp(blend_shape_target_list.control_name, edit=True, enable=enable_list)
 
     def option_box_apply(self):
         pm.setParent(self.option_box)
 
-        deformer = self._get_selected_deformer()
+        deformer = self.deformer_list.get_selected_deformer()
         shape, deformer_shape_idx = self._get_selected_shape()
 
         axis = pm.radioButtonGrp('mpwAxis', q=True, select=True)
@@ -197,9 +128,6 @@ class UI(maya_helpers.OptionsBox):
 
         axis_of_symmetry = axes[axis]
 
-        # Get the shape we're updating weights for.
-        shape = deformer.outputShapeAtIndex(deformer_shape_idx)
-        
         # Make a symmetry mapping for the shape.
         index_mapping, unmapped_dst_vertices = vertex_mapping.make_vertex_symmetry_map(shape, threshold=0.01,
                 axis_of_symmetry=axis_of_symmetry, positive_to_negative=positive_to_negative)
@@ -222,7 +150,7 @@ class UI(maya_helpers.OptionsBox):
         For most deformers, this is just the painted weight attribute.  For blendShapes, this
         can be multiple attributes including blend shape target weights.
         """
-        deformer = self._get_selected_deformer()
+        deformer = self.deformer_list.get_selected_deformer()
         shape, deformer_shape_idx = self._get_selected_shape()
 
         # Find the attributes we're mirroring.
@@ -234,13 +162,12 @@ class UI(maya_helpers.OptionsBox):
             return [weights]
 
         # Get the selection from the blend shape target dropdown.
-        selected_target_idx = pm.optionMenuGrp('mpwBlendShapeTargets', q=True, select=True)
-        selected_target = self.src_blend_shape_map[selected_target_idx]
+        selected_target = self.blend_shape_target_list.get_selected_target()
 
         # Loop over each available selection, and see if we should add it to the output.
         input_target = deformer.attr('it').elementByLogicalIndex(deformer_shape_idx)
         attrs_to_map = []
-        for target in self.src_blend_shape_map.values():
+        for target in self.blend_shape_target_list.blend_shape_map.values():
             if target == '(all)':
                 continue
 
