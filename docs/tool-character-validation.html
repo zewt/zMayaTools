@@ -1,0 +1,107 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>Skeleton &gt; Validate Character</h1>
+
+This performs a number of checks on a character model to find common things that can
+cause issues.  Detecting these early, before complex rigging is laid on top of a
+mesh, can save a lot of work later.
+
+<h2>Usage</h2>
+
+Select one or more mesh.  Select Skeleton &gt; Validate Character and click Apply.
+<p>
+A window will show the results.  Most messages can be clicked to focus on the
+relevant nodes or components.
+
+<h2>Scene requirements</h2>
+All joints in the skeleton must have joint labels.  Symmetric joints on the left
+and right side must have the same joint type, so they can be matched against each
+other.
+<p>
+Except for symmetry, joint types must be unique.  Rather than setting all fingers
+to "Finger", set fingers to "Other" and give them a unique name in "Other Type".
+This allows reliably matching joints to each other without any heuristics.
+<p>
+All joints marked Left or Right are expected to be symmetric, with a matching
+joint on the other side.  Joints marked "Center" are expected to be on the YZ
+plane.  Asymmetric joints that aren't in the center should have their side set
+to None.
+<p>
+The character must be Y-up, facing positive Z.
+<p>
+The skeleton should be in bind pose when it's checked.  A number of checks are performed
+to find unintentional deviations from the bind pose.
+
+<h2>Mesh validations</h2>
+
+<ul>
+<li>Detect nonmanifold vertices, nonmanifold edges and lamina edges.</li>
+<li>
+    Only one history mesh.  More than one mesh in history often indicates that construction
+    history has been left behind unintentionally.
+    <p>
+    Some rigs may cause false positives.
+</li>
+<li>
+    No vertex tweaks on the output mesh.  This can happen if the output mesh is modified, and
+    can result in problems during export.
+</li>
+<li>
+    No vertex tweaks on the mesh or on a tweak node.  These are mostly harmless, but can
+    make some operations not work, such as connecting a temporary mesh's outMesh to the inMesh
+    of the base mesh to copy data.
+</li>
+<li>
+The current output mesh is identical to the base mesh.  If the mesh isn't identical,
+something in the rigging is changing it.  Most character meshes should be identical to
+their base mesh when in bind pose.  (However, things like IK and HumanIK can cause this
+to not happen.)
+</li>
+<li>
+Meshes are topologically symmetric around edges on the YZ plane.  This is tested
+by attempting to activate topological symmetry (there's no API exposed for this).
+</li>
+<li>Mesh vertices are symmetric in world space across the YZ plane.</li>
+</ul>
+
+<h2>Skeleton validations</h2>
+
+If the mesh has a skeleton, these checks are performed.  Note that most checks are
+only performed on joints that are bound to the selected mesh, and helper joints in
+the skeleton that aren't bound are ignored.
+
+<ul>
+<li>
+    The current pose of the skeleton matches the pose the skeleton was in at bind time.
+    This doesn't depend on a bindPose node.
+</li>
+<li>The geometry transform matches what it was at bind time.</li>
+<li>Stub joints (non-bound leaf joints) have a zero joint orient.  Orient joints tends to
+give these a weird orientation.</li>
+<li>The rotation of all joints is zero.</li>
+<li>
+    All joints have labels.
+    <p>
+    This is very helpful for skin mirroring and copying, and is used for symmetry checks.
+</li>
+<li>
+    Except for left/right symmetric joints, labels aren't duplicated.  Maya may be able
+    to figure out duplicated joints based on the hierarchy, but that logic isn't exposed to
+    us, so we require unique labels.  For things like finger joints where Maya doesn't provide
+    enough labels, use "Other" and set the label directly.
+</li>
+<li>
+    Joints labelled left/right have a matching labelled joint on the other side.  Joints
+    labeleld "center" are at X = 0.  If you have joints that are asymmetric (no matching joint
+    and also not in the center), set them to side "None".
+</li>
+<li>Symmetric joints have symmetric positions and rotations, and have the same rotateOrder.</li>
+<li>
+    Vertices aren't weighted to more than 4 vertices.  This threshold can be changed in options.
+    Set this to 0 to disable this check.
+</li>
+</ul>
+

@@ -14,8 +14,16 @@ class PluginMenu(Menu):
         def run_eye_rig(unused):
             from zMayaTools.rigging import eye_rig
             eye_rig.create_eye_rig()
-        self.add_menu_item('zMayaTools_EyeRig', label='Eye Rig', parent=menu, insertAfter='hikWindowItem',
+        eye_rig = self.add_menu_item('zMayaTools_EyeRig', label='Eye Rig', parent=menu, insertAfter='hikWindowItem',
                 command=run_eye_rig)
+
+        def validate_character(unused):
+            from zMayaTools import validate_character
+            reload(validate_character)
+            validate_character.UI().run()
+
+        eye_rig = self.add_menu_item('zMayaTools_ValidateCharacter', label='Validate Character', parent=menu, insertAfter=eye_rig,
+                command=validate_character)
 
         for menu in ['mainDeformMenu', 'mainRigDeformationsMenu']:
             # Make sure the menu is built.
