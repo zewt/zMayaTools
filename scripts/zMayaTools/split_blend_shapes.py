@@ -188,7 +188,7 @@ def split_blend_shape_from_deformer(blend_shape, blendTarget,
 
         try:
             # Reset all weights to 0.
-            for idx in xrange(len(original_weights)):
+            for idx in original_weights.keys():
                 try:
                     # Don't try to set weights that are already 0, so we don't print warnings for connected blend
                     # shape weights that we don't actually need to change.
@@ -246,9 +246,8 @@ def split_blend_shape_from_deformer(blend_shape, blendTarget,
     
         finally:
             # Reset blend shape weights that we disabled.
-            for idx in xrange(len(original_weights)):
+            for idx, weight in original_weights.items():
                 try:
-                    weight = original_weights[idx]
                     attr = blend_shape.attr('weight').elementByLogicalIndex(idx)
                     if attr.get() == weight:
                             continue
