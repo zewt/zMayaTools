@@ -85,8 +85,17 @@ class OptionsBox(object):
 
         # We need to set both apply and apply and close explicitly.  Maya breaks apply and close
         # if apply is set to a Python function.
-        pm.button(pm.mel.eval('getOptionBoxApplyBtn()'), edit=True, command=lambda unused: self.option_box_apply())
-        pm.button(pm.mel.eval('getOptionBoxApplyAndCloseBtn()'), edit=True, command=lambda unused: self.option_box_apply_and_close())
+        def apply(unused):
+            self.option_box_save()
+            self.option_box_apply()
+
+        def apply_and_close(unused):
+            self.option_box_save()
+            self.option_box_apply()
+            pm.mel.eval('hideOptionBox()')
+            
+        pm.button(pm.mel.eval('getOptionBoxApplyBtn()'), edit=True, command=apply)
+        pm.button(pm.mel.eval('getOptionBoxApplyAndCloseBtn()'), edit=True, command=apply_and_close)
     
         # XXX: Is there a way for us to add a help link?
         pm.mel.eval('setOptionBoxCommandName("%s")' % self.title)
@@ -124,10 +133,6 @@ class OptionsBox(object):
         """
         raise NotImplemented
         
-    def option_box_apply_and_close(self):
-        self.option_box_apply()
-        pm.mel.eval('hideOptionBox()')
-
     def option_box_reset(self):
         self.optvars.reset()
         self.option_box_load()
