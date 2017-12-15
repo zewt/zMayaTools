@@ -52,7 +52,7 @@ def split_blend_shape(base_mesh, target_mesh, right_side=True, fade_distance=2, 
     for idx in xrange(len(new_target_pos)):
         cmds.xform('%s.vtx[%i]' % (target_mesh, idx), t=new_target_pos[idx], ws=True)
 
-def _getConnectedInputGeometry(blend_shape):
+def get_connected_input_geometry(blend_shape):
 	"""
 	Return an array of blend_shape's input plugs that have an input connection.
 	
@@ -98,7 +98,7 @@ def _copy_mesh_from_plug(path):
     mesh = OpenMaya.MFnMesh().copy(plug.asMObject())
     return pm.ls(OpenMaya.MFnTransform(mesh).partialPathName())[0]
 
-def getWeightFromAlias(blend_shape, alias):
+def get_weight_from_alias(blend_shape, alias):
     """
     Given a blend shape node and an aliased weight attribute, return the index in .weight to the
     alias.
@@ -171,7 +171,7 @@ def split_blend_shape_from_deformer(blend_shape, blendTarget,
             # same deformer as the source, we'll always use the same index as the source, so that
             # srcBlendShape.w[1] for the full blend shape corresponds to leftBlendShape.w[1] for the
             # left side blend shape.
-            weightIndex = getWeightFromAlias(blend_shape, blendTarget)
+            weightIndex = get_weight_from_alias(blend_shape, blendTarget)
             output_blend_shape_indexes = {
                 'L': weightIndex,
                 'R': weightIndex,
@@ -203,14 +203,14 @@ def split_blend_shape_from_deformer(blend_shape, blendTarget,
             blend_shape.attr(blendTarget).set(1)
        
             # Get a list of the inputGeometry plugs on the blend shape that are connected.
-            connected_input_geometry = _getConnectedInputGeometry(blend_shape)
+            connected_input_geometry = get_connected_input_geometry(blend_shape)
 
             # Split each mesh.
-            for inputGeom in connected_input_geometry:
+            for input_geom in connected_input_geometry:
                 # Figure out the outputGeometry for this inputGeometry.  Maya knows this
                 # via passThroughToMany, but I don't know how to access that information here.
                 # Search and replace input[*].inputGeometry -> outputGeometry[*].
-                output_geom = inputGeom.replace('.inputGeometry', '')
+                output_geom = input_geom.replace('.inputGeometry', '')
                 output_geom = output_geom.replace('.input', '.outputGeometry')
 
                 # Make a separate copy of the blended mesh for the left and right sides, and a copy of the input
@@ -218,7 +218,7 @@ def split_blend_shape_from_deformer(blend_shape, blendTarget,
                 # by other deformers.
                 new_mesh_base = _copy_mesh_from_plug(output_geom)
                 for side in ('L', 'R'):
-                    new_mesh = _copy_mesh_from_plug(inputGeom)
+                    new_mesh = _copy_mesh_from_plug(input_geom)
             
                     # Rename the blended nodes, since the name of this node will become the name of the
                     # blend shape target.
