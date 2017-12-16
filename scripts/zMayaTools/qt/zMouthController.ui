@@ -1,0 +1,292 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>zMouthController</class>
+ <widget class="QDialog" name="zMouthController">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>729</width>
+    <height>566</height>
+   </rect>
+  </property>
+  <property name="sizePolicy">
+   <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+    <horstretch>0</horstretch>
+    <verstretch>0</verstretch>
+   </sizepolicy>
+  </property>
+  <property name="windowTitle">
+   <string>Mouth Controller</string>
+  </property>
+  <layout class="QGridLayout" name="gridLayout">
+   <item row="3" column="0">
+    <widget class="QWidget" name="mainBox" native="true">
+     <layout class="QVBoxLayout" name="mainLayout">
+      <item>
+       <layout class="QHBoxLayout" name="horizontalLayout_Node">
+        <item>
+         <widget class="QComboBox" name="selectedNodeDropdown"/>
+        </item>
+        <item>
+         <widget class="QToolButton" name="selectNodeButton">
+          <property name="text">
+           <string>Select</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
+      </item>
+      <item>
+       <spacer name="verticalSpacer_2">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeType">
+         <enum>QSizePolicy::Fixed</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>5</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QLabel" name="noOutputs">
+        <property name="text">
+         <string>Connect outputs of the zMouthController to blend shape weights.</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+        <property name="margin">
+         <number>20</number>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QWidget" name="controls" native="true">
+        <layout class="QVBoxLayout">
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_Selection">
+           <item>
+            <widget class="QLabel" name="shape1WeightColor">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>20</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="soloShape1">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="../qt_resources/resources.qrc">
+               <normaloff>:/zMayaTools/icons/eye.png</normaloff>:/zMayaTools/icons/eye.png</iconset>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="setKeyShape1">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="../qt_resources/resources.qrc">
+               <normaloff>:/zMayaTools/icons/key.png</normaloff>:/zMayaTools/icons/key.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="shapeSelection1">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>1</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout">
+           <item>
+            <widget class="QLabel" name="shape2WeightColor">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+               <horstretch>0</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+             <property name="minimumSize">
+              <size>
+               <width>20</width>
+               <height>0</height>
+              </size>
+             </property>
+             <property name="text">
+              <string/>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="soloShape2">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="../qt_resources/resources.qrc">
+               <normaloff>:/zMayaTools/icons/eye.png</normaloff>:/zMayaTools/icons/eye.png</iconset>
+             </property>
+             <property name="checkable">
+              <bool>true</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="setKeyShape2">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="../qt_resources/resources.qrc">
+               <normaloff>:/zMayaTools/icons/key.png</normaloff>:/zMayaTools/icons/key.png</iconset>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QComboBox" name="shapeSelection2">
+             <property name="sizePolicy">
+              <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
+               <horstretch>1</horstretch>
+               <verstretch>0</verstretch>
+              </sizepolicy>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_SelectionWeight">
+           <item>
+            <widget class="DraggableProgressBar" name="selectionBar">
+             <property name="value">
+              <number>24</number>
+             </property>
+             <property name="alignment">
+              <set>Qt::AlignCenter</set>
+             </property>
+             <property name="textVisible">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="keySelection">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="../qt_resources/resources.qrc">
+               <normaloff>:/zMayaTools/icons/key.png</normaloff>:/zMayaTools/icons/key.png</iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_MainWeight">
+           <item>
+            <widget class="DraggableProgressBar" name="mainWeightBar">
+             <property name="value">
+              <number>24</number>
+             </property>
+             <property name="textVisible">
+              <bool>false</bool>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QToolButton" name="keyMainWeight">
+             <property name="text">
+              <string/>
+             </property>
+             <property name="icon">
+              <iconset resource="../qt_resources/resources.qrc">
+               <normaloff>:/zMayaTools/icons/key.png</normaloff>:/zMayaTools/icons/key.png</iconset>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+     </layout>
+    </widget>
+   </item>
+   <item row="2" column="0">
+    <widget class="QWidget" name="noNodes" native="true">
+     <layout class="QVBoxLayout" name="errorLayout">
+      <item>
+       <widget class="QLabel" name="text">
+        <property name="text">
+         <string>No zMouthController nodes in the scene.</string>
+        </property>
+        <property name="alignment">
+         <set>Qt::AlignCenter</set>
+        </property>
+        <property name="margin">
+         <number>20</number>
+        </property>
+       </widget>
+      </item>
+     </layout>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <customwidgets>
+  <customwidget>
+   <class>DraggableProgressBar</class>
+   <extends>QProgressBar</extends>
+   <header>zMayaTools/qt_widgets/draggable_progress_bar.h</header>
+  </customwidget>
+ </customwidgets>
+ <resources>
+  <include location="../qt_resources/resources.qrc"/>
+ </resources>
+ <connections/>
+</ui>

@@ -1,4 +1,4 @@
-import time
+import contextlib, time
 from pymel import core as pm
 from zMayaTools import util
 
@@ -218,4 +218,15 @@ class ProgressWindowMaya(util.ProgressWindow):
 
         pm.refresh()
         pm.refresh()
+
+@contextlib.contextmanager
+def undo(name='undo_on_exception'):
+    """
+    Run a block of code in an undo block.
+    """
+    pm.undoInfo(openChunk=True, undoName=name)
+    try:
+        yield
+    finally:
+        pm.undoInfo(closeChunk=True)
 

@@ -1,0 +1,134 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>zMouthController</h1>
+
+<h2>Introduction</h2>
+
+<div style="float: right; margin-left: 1em;">
+    <video src=https://s3.amazonaws.com/zmayatools/zMouthController.mp4 controls width=400 height=400></video>
+    <br>
+    <span style="font-size: .75em; float: right;">
+        <a href=https://sketchfab.com/models/86e58ee1bda5406480e30c796e1a2df4>"Head Expressions"</a>
+        by Phil McClenaghan (CC-BY) feat. Dark Helmet
+    </span>
+</div>
+
+zMouthController is a control rig for keyframing simple mouth animations.  It
+focuses on having a small number of simple controls, and is intended for simple
+cartoon animations.  (It isn't suitable for realistically styled animations.)
+<p>
+This controls a list of blend shape targets.  Any number of blend shapes can
+be controlled, with up to two active at any given time.  Regardless of how
+many blend shapes are available, only four attributes need to be keyframed:
+an attribute to select each of the two active blend shapes, one attribute to
+blend between those two blend shapes, and an attribute to enable the combination.
+<p>
+Blend shapes can be added without affecting existing scenes, and without adding
+any extra nodes to the scene.
+<h2>Usage</h2>
+
+Create a zMouthController node.  Connect blend shape weights to the output[] array
+in the node editor.
+<p>
+Open the keying interface with <code>Skeleton &gt; Mouth Controller</code>.
+
+<h2>UI</h2>
+
+<style>
+.ui-table {
+    border: 1px solid #C0C0C0;
+    border-collapse: collapse;
+    max-width: 800px;
+    margin-left: auto;
+    margin-right: auto;
+}
+.ui-table > tbody > tr > td {
+    padding: .75em;
+    margin: 0;
+    border: 1px solid #C0C0C0;
+}
+.ui-table > tbody > tr:nth-of-type(even) {
+        background: #f9f9f9;
+}
+.ui-table > tbody > tr > td:nth-child(1) {
+    width: 33%;
+}
+</style>
+
+<img src=images/zMouthController.png style="display: block; margin-left: auto; margin-right: auto;">
+<p>
+
+<table class="ui-table">
+    <tr>
+        <td>1 - Node selection</td>
+        <td>Choose the zMouthController node to edit.</td>
+    </tr>
+    <tr>
+        <td>2 - Select node</td>
+        <td>Select the node chosen in the node dropdown.</td>
+    </tr>
+    <tr>
+        <td>3 - Weighting display</td>
+        <td>
+            This gives a quick visualization of which shape is active.
+            <p>
+            Green indicates that the shape is selected, and black indicates that the shape is deselected.
+        </td>
+    </tr>
+    <tr>
+        <td>4 - Solo</td>
+        <td>
+            Solo the selected shape.  This allows quickly selecting a shape without modifying
+            the weights.
+        </td>
+    </tr>
+
+    <tr>
+        <td>5 - Key shape selection</td>
+        <td>Set a keyframe for the shape selection.</td>
+    </tr>
+
+    <tr>
+        <td>6 - Choose shape</td>
+        <td>Select the blend shape to use in each slot.</td>
+    </tr>
+
+    <tr>
+        <td>7 - Blend between shapes</td>
+        <td>
+            Select which of the two shapes is active.
+            <p>
+            When this bar is on the left, the first shape is active.  When it's on the
+            right, the second shape is active.
+        </td>
+    </tr>
+
+    <tr>
+        <td>8 - Key shape blending</td>
+        <td>Set a keyframe for shape blending.</td>
+    </tr>
+
+    <tr>
+        <td>9 - Mouth open/close weight</td>
+        <td>
+            Set how much to activiate the blended shape.
+            <p>
+            When this bar is on the left, the blend shape is disabled and the base shape
+            is displayed.  When it's on the right, the selected blend shapes are fully
+            active.
+            <p>
+            Since the base shape normally has a closed mouth, and the blend shapes open
+            the mouth in various ways, this controls how much to open the mouth.
+        </td>
+    </tr>
+
+    <tr>
+        <td>10 - Key open/close weight</td>
+        <td>Set a keyframe for the mouth open/close weight.</td>
+    </tr>
+
+</table>
+

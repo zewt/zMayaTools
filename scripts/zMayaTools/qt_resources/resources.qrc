@@ -1,0 +1,6 @@
+<RCC>
+  <qresource prefix="zMayaTools">
+    <file>icons/key.png</file>
+    <file>icons/eye.png</file>
+  </qresource>
+</RCC>
