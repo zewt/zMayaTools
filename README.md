@@ -1,4 +1,5 @@
 This is a collection of small tools for Maya.  For more information, see [the documentation](https://zewt.github.io/zMayaTools/index.html).
+Sample scenes are available in the [zMayaTools-samples](https://github.com/zewt/zMayaTools-samples) repository.
 
 zMayaUtils:
 
