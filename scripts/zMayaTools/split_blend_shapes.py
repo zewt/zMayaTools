@@ -183,7 +183,7 @@ def split_blend_shape_from_deformer(blend_shape, blendTarget,
         # Disconnect all incoming connections into the weights, so we can manipulate them.  We'll
         # reconnect them when we're done.
         existing_connections = pm.listConnections(blend_shape.attr('weight'), s=True, d=False, p=True, c=True) or []
-        for dst, src in zip(existing_connections[0::2], existing_connections[1::2]):
+        for dst, src in existing_connections:
             src.disconnect(dst)
 
         try:
@@ -257,7 +257,7 @@ def split_blend_shape_from_deformer(blend_shape, blendTarget,
                         log.error('Couldn\'t disable blend shape target: %s' % e)
 
             # Reconnect any incoming connections to the weights that we disconnected above.
-            for dst, src in zip(existing_connections[0::2], existing_connections[1::2]):
+            for dst, src in existing_connections:
                 src.connect(dst)
     finally:
         pm.undoInfo(closeChunk=True)
