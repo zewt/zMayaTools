@@ -14,4 +14,5 @@ Additional nodes:
 
 - zShelfMenu: Show Maya shelves as menus
 - zRigHandle: Clean, easy to select viewport rig handles
-- zOBBTransform: Estimate the transform applied by mesh deformations
+- zMouthController: A controller and UI for simple mouth animation
+
