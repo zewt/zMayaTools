@@ -551,7 +551,7 @@ class Validate(object):
 
             stub_joints.append(possible_stub_joint)
 
-        # log.info('Found stub joints: %s', ', '.join(joint.nodeName() for joint in stub_joints))
+        # log.debug('Found stub joints: %s', ', '.join(joint.nodeName() for joint in stub_joints))
         influences.extend(stub_joints)
 
         # Stub joints should have a zero jointOrient.  This is set to something random by orient joints,

@@ -227,10 +227,10 @@ class UI(maya_helpers.OptionsBox):
             for input_name, input_blend_shape in input_blend_shapes.items():
                 output_blend_shape = output_blend_shapes.get(input_name)
                 if output_blend_shape is None:
-                    log.info('No matching blend shape found for: %s' % input_name)
+                    log.warning('No matching blend shape found for: %s' % input_name)
                     continue
 
-                log.info('Mapped blend shape: %s' % (pm.aliasAttr(input_blend_shape, q=True)))
+                log.debug('Mapped blend shape: %s' % (pm.aliasAttr(input_blend_shape, q=True)))
                 input_target_group = input_target.attr('itg').elementByLogicalIndex(input_blend_shape.index())
                 output_target_group = output_target.attr('itg').elementByLogicalIndex(output_blend_shape.index())
                 input_weights = input_target_group.attr('targetWeights')

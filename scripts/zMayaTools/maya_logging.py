@@ -1,18 +1,22 @@
 import logging, sys
 from pymel import core as pm
+from maya import OpenMaya as om
 
 class MayaLogHandler(logging.Handler):
     def emit(self, record):
         s = self.format(record)
         if record.levelname == 'WARNING':
-            pm.warning(s)
+            om.MGlobal.displayWarning(s)
         elif record.levelname in ('ERROR', 'CRITICAL'):
-            # pm.error shows the error as red in the status bar, but it also only works if
-            # you let it throw an exception and kill your script.  It also shows a stack at
-            # the place it's called (here), which we don't want.  So, we need to use warning
-            # for errors.
-            pm.warning(s)
+            # Use MGlobal.displayError rather than pm.error, since for some reason pm.error
+            # throws an exception instead of just logging an error.
+            om.MGlobal.displayError(s)
         elif record.levelname == 'INFO':
+            # This prints the message as '# message #', and more importantly shows it in the
+            # status bar.
+            om.MGlobal.displayInfo(s)
+        elif record.levelname == 'DEBUG':
+            # This only prints to the script editor and not the status bar.
             print s
 
         # Write all messages to sys.__stdout__, which goes to the output window.  Only write
