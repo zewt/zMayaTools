@@ -18,6 +18,15 @@ def compile_all_layouts():
     
     qt_path = os.path.dirname(__file__) + '/qt/'
     qt_generated_path = os.path.dirname(__file__) + '/qt_generated/'
+
+    # If qt_generated/__init__.py doesn't exist, create it so the directory is treated
+    # as a module.  This isn't checked into the source tree so that all of the files in
+    # that directory can be safely deleted.
+    init_file = '%s/__init__.py' % qt_generated_path
+    if not os.access(init_file, os.R_OK):
+        open(init_file, 'w').close()
+
+    # Compile *.ui layout files.
     for fn in os.listdir(qt_path):
         if not fnmatch(fn, '*.ui'):
             continue
