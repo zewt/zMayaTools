@@ -509,9 +509,9 @@ class Validate(object):
         
     def check_skeleton(self):
         shapes = self.node.getShapes()
-
         base_mesh = shapes[-1]
         skin_clusters = pm.listFuture(base_mesh, type='skinCluster')
+
         if len(skin_clusters) > 1:
             self.log('Mesh has more than one skinCluster', nodes=skin_clusters)
         if not skin_clusters:
@@ -576,10 +576,9 @@ class Validate(object):
                 ), nodes=joints_with_nonzero_rotations)
 
         # All center joints should have an X value of 0.
-        error_threshold = 0.001
         for joint in joints_center:
             pos = pm.xform(joint, q=True, ws=True, t=True)
-            if abs(pos[0]) > error_threshold:
+            if abs(pos[0]) > self.config['error_threshold']:
                 self.log('Center joint %s is not aligned to the YZ plane: %f' % (joint.nodeName(), pos[0]), nodes=[joint])
 
         for left_joint, right_joint in symmetric_joints.iteritems():
@@ -587,11 +586,11 @@ class Validate(object):
             left_pos = pm.xform(left_joint, q=True, ws=True, t=True)
             right_pos = pm.xform(right_joint, q=True, ws=True, t=True)
 
-            if (abs(left_pos[0] + right_pos[0]) > error_threshold or \
-                abs(left_pos[1] - right_pos[1]) > error_threshold or \
-                abs(left_pos[2] - right_pos[2]) > error_threshold):
-                #self.log('Joint positions aren\'t symmetric: %s, %s (%s, %s)' % (left_joint.nodeName(), right_joint.nodeName(), format_pos(left_pos), format_pos(right_pos)),
-                self.log('Joint positions aren\'t symmetric: %s, %s' % (left_joint.nodeName(), right_joint.nodeName()),
+            max_error_threshold = max(abs(left_pos[0] + right_pos[0]),
+                                      abs(left_pos[1] - right_pos[1]),
+                                      abs(left_pos[2] - right_pos[2]))
+            if max_error_threshold > self.config['error_threshold']:
+                self.log('Joint positions aren\'t symmetric: %s, %s (error: %f)' % (left_joint.nodeName(), right_joint.nodeName(), max_error_threshold),
                         nodes=[left_joint, right_joint])
 
             # Symmetric joints should have the same rotateOrder.
@@ -731,6 +730,7 @@ class UI(maya_helpers.OptionsBox):
 
     def options_box_setup(self):
         self.optvars.add('zValidateCharacterMaxInfluences', 'int', 4)
+        self.optvars.add('zValidateCharacterErrorThreshold', 'float', 0.001)
 
         self.option_box = pm.columnLayout(adjustableColumn=1)
         parent = self.option_box
@@ -739,18 +739,22 @@ class UI(maya_helpers.OptionsBox):
 #        pm.optionMenuGrp('cpwInputBlendShapeTargets', label='Blend shape target:', cc=lambda unused: input_blend_shape_changed())
 
         pm.intSliderGrp('valMaxInfluences', label='Max joint influences', field=True, min=0, max=10)
+        pm.floatSliderGrp('valErrorThreshold', label='Symmetry error threshold', field=True, fieldMinValue=0.00001, fieldMaxValue=10, min=0, max=0.1)
 
     def option_box_save(self):
         self.optvars['zValidateCharacterMaxInfluences'] = pm.intSliderGrp('valMaxInfluences', q=True, v=True)
+        self.optvars['zValidateCharacterErrorThreshold'] = pm.floatSliderGrp('valErrorThreshold', q=True, v=True)
 
     def option_box_load(self):
         pm.intSliderGrp('valMaxInfluences', edit=True, v=self.optvars['zValidateCharacterMaxInfluences'])
+        pm.floatSliderGrp('valErrorThreshold', edit=True, v=self.optvars['zValidateCharacterErrorThreshold'])
         
     def option_box_apply(self):
         pm.setParent(self.option_box)
 
         config = {
             'max_influences': pm.intSliderGrp('valMaxInfluences', q=True, v=True),
+            'error_threshold': pm.floatSliderGrp('valErrorThreshold', q=True, v=True),
         }
 
         nodes = pm.ls(sl=True)
