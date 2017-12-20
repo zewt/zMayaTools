@@ -112,5 +112,7 @@ class BlendShapeTargetList(object):
     
     def get_selected_target(self):
         selected_target_idx = pm.optionMenuGrp(self.control_name, q=True, select=True)
+        if not self.blend_shape_map:
+            return None
         return self.blend_shape_map[selected_target_idx]
 
