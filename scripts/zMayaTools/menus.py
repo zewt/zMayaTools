@@ -63,12 +63,11 @@ class Menu(object):
             return menu_items[start_idx:]
 
     @classmethod
-    def find_item_by_name(cls, menu_items, label_id, divider=False):
+    def find_item_by_name(cls, menu_items, text, divider=False):
         """
         Find an item with the given label, and return its index.  If it's not
         found, return the last element in the menu.
         """
-        text = pm.displayString(label_id, q=True, value=True)
         for idx, item in enumerate(menu_items):
             if divider and not pm.menuItem(item, q=True, divider=True):
                 continue
@@ -81,11 +80,11 @@ class Menu(object):
         return len(menu_items)-1
 
     @classmethod
-    def find_submenu_by_name(cls, section, label_id):
-        label = pm.displayString(label_id, q=True, value=True)
-        
+    def find_submenu_by_name(cls, section, label):
+        """
+        Find the submenu with the given label.
+        """
         for item in section:
-            # Find the "Blend Shape" submenu.
             if not pm.menuItem(item, q=True, subMenu=True):
                 continue
             if pm.menuItem(item, q=True, label=True) != label:

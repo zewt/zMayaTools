@@ -31,7 +31,7 @@ class PluginMenu(Menu):
 
             # Add "Mirror Weights" in the "Weights" section at the bottom of the Deform menu.
             menu_items = pm.menu(menu, q=True, ia=True)
-            section = self.find_menu_section_by_name(menu_items, 'm_ChaDeformationsMenu.kDeformWeights')
+            section = self.find_menu_section_by_name(menu_items, 'Weights')
 
             def run_mirror_painted_weights(unused):
                 from zMayaTools import mirror_painted_weights
@@ -58,8 +58,8 @@ class PluginMenu(Menu):
             # Find the "Edit" section in the Deform menu, then find the "Blend Shape" submenu inside
             # that section.
             menu_items = pm.menu(menu, q=True, ia=True)
-            section = self.find_menu_section_by_name(menu_items, 'm_ChaDeformationsMenu.kDeformEdit')
-            submenu = self.find_submenu_by_name(section, 'm_ChaDeformationsMenu.kEditBlendShape')
+            section = self.find_menu_section_by_name(menu_items, 'Edit')
+            submenu = self.find_submenu_by_name(section, 'Blend Shape')
                 
             def run_blend_shape_retargetting(unused):
                 from zMayaTools import blend_shape_retargetting

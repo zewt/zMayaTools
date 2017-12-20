@@ -549,9 +549,8 @@ class PluginMenu(Menu):
         pm.mel.eval('ModCreateMenu "mainCreateMenu"')
         menu = 'mainCreateMenu'
         menu_items = pm.menu(menu, q=True, ia=True)
-        section = self.find_menu_section_by_name(menu_items, 'm_ModCreateMenu.kCreateAids')
-        text = pm.displayString('m_ModCreateMenu.kCreateLocator', q=True, value=True)
-        idx = self.find_item_by_name(section, 'm_ModCreateMenu.kCreateLocator')
+        section = self.find_menu_section_by_name(menu_items, 'Construction Aids')
+        idx = self.find_item_by_name(section, 'Locator')
         self.add_menu_item('zRigHandle', label="Rig Handle", command=create_zRigHandle, insertAfter=section[idx], parent=menu)
 
 menu = PluginMenu()
