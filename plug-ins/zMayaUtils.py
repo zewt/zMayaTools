@@ -59,7 +59,7 @@ class PluginMenu(Menu):
             # that section.
             menu_items = pm.menu(menu, q=True, ia=True)
             section = self.find_menu_section_by_name(menu_items, 'Edit')
-            submenu = self.find_submenu_by_name(section, 'Blend Shape')
+            submenu = self.find_submenu_by_name(section, 'Blend Shape', default=menu)
                 
             def run_blend_shape_retargetting(unused):
                 from zMayaTools import blend_shape_retargetting

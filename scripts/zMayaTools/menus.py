@@ -41,9 +41,15 @@ class Menu(object):
         self.menu_items = []
 
     @classmethod
-    def find_menu_section_by_name(cls, menu_items, label_id):
+    def find_menu_section_by_name(cls, menu_items, label):
+        """
+        Given a list of menu items, return the subset within the section having the
+        given label.
+
+        If the label isn't found, return the entire list.
+        """
         # Find the section.
-        start_idx = cls.find_item_by_name(menu_items, label_id, divider=True)
+        start_idx = cls.find_item_by_name(menu_items, label, divider=True, return_last_item_by_default=False)
         if start_idx is None:
             return menu_items
 
@@ -63,10 +69,12 @@ class Menu(object):
             return menu_items[start_idx:]
 
     @classmethod
-    def find_item_by_name(cls, menu_items, text, divider=False):
+    def find_item_by_name(cls, menu_items, text, divider=False, return_last_item_by_default=True):
         """
-        Find an item with the given label, and return its index.  If it's not
-        found, return the last element in the menu.
+        Find an item with the given label, and return its index.
+        
+        If it's not found, return the last element in the menu if return_last_item_by_default
+        is true, otherwise return None.
         """
         for idx, item in enumerate(menu_items):
             if divider and not pm.menuItem(item, q=True, divider=True):
@@ -77,12 +85,17 @@ class Menu(object):
                 return idx
 
         log.warning('Couldn\'t find the "%s" menu section' % text)
-        return len(menu_items)-1
+        if return_last_item_by_default:
+            return len(menu_items)-1
+        else:
+            return None
 
     @classmethod
-    def find_submenu_by_name(cls, section, label):
+    def find_submenu_by_name(cls, section, label, default):
         """
         Find the submenu with the given label.
+
+        If it isn't found, return default.
         """
         for item in section:
             if not pm.menuItem(item, q=True, subMenu=True):
@@ -91,4 +104,7 @@ class Menu(object):
                 continue
 
             return item
+
+        log.warning('Couldn\'t find the "%s" submenu' % label)
+        return default
 
