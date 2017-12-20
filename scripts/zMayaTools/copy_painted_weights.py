@@ -97,10 +97,10 @@ class UI(maya_helpers.OptionsBox):
         pm.separator()
 
         pm.optionMenuGrp('cpwOutputDeformerList', label='Target deformer:', cc=lambda unused: deformer_node_changed('Output'))
-        self.output_deformer_list = DeformerList('cpwOutputDeformerList')
+        self.output_deformer_list = painted_weights_ui.DeformerList('cpwOutputDeformerList')
 
         pm.optionMenuGrp('cpwOutputShapeList', label='Shape:')
-        self.output_shape_list = DeformerShapeList('cpwOutputShapeList', self.output_deformer_list)
+        self.output_shape_list = painted_weights_ui.DeformerShapeList('cpwOutputShapeList', self.output_deformer_list)
 
         pm.optionMenuGrp('cpwOutputBlendShapeTargets', label='Blend shape target:')
         self.output_blend_shape_target_list = painted_weights_ui.BlendShapeTargetList('cpwOutputBlendShapeTargets', self.output_deformer_list)
