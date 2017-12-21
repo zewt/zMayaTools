@@ -126,9 +126,12 @@ def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend
         
         dst_blend_shape_name_to_index[target_name] = idx
 
-    def get_unused_blend_shape_index():
+    def get_unused_blend_shape_index(preferred_idx):
         # Return an index that isn't in use in dst_blend_shape_name_to_index.
         index_list = sorted(dst_blend_shape_name_to_index.values())
+        if preferred_idx not in index_list:
+            return preferred_idx
+
         for idx in xrange(0, len(index_list)+1):
             if idx not in index_list:
                 return idx
@@ -151,7 +154,10 @@ def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend
         if new_idx is None:
             # There's no existing blend shape by this name.  Find an unused one, and record that we've
             # used it.
-            new_idx = get_unused_blend_shape_index()
+            #
+            # If it's available, use the same blend shape index, so the new blendShape deformer is compatible
+            # with the old one in reference edits.
+            new_idx = get_unused_blend_shape_index(preferred_idx=idx)
             dst_blend_shape_name_to_index[target_name] = new_idx
 
         dst_weight = dst_blend_shape_node.attr('weight').elementByLogicalIndex(new_idx)
