@@ -10,7 +10,7 @@ log = maya_logging.get_log()
 
 # This only supports deformed meshes, and not NURBS surfaces or curves.
 # This only supports "closest component" matching, and should be used with cleanly mirrored meshes.
-def copy_attribute_with_map(src_weights, dst_weights, index_mapping):
+def copy_attribute_with_map(src_weights, dst_weights, index_mapping, default_value=1):
     # PyMel prints a "Could not create desired MFn" every time we read a weight.  To avoid spamming this thousands of times,
     # read all of the weights at once.  This is probably faster anyway.
     existing_src_indices = src_weights.getArrayIndices()
@@ -20,8 +20,6 @@ def copy_attribute_with_map(src_weights, dst_weights, index_mapping):
     existing_dst_indices = dst_weights.getArrayIndices()
     existing_dst_values = dst_weights.get()
     existing_dst_values = {index: value for index, value in zip(existing_dst_indices, existing_dst_values)}
-
-    default_value = 1
 
     # Set all values, using the default value if there are holes from having no matches.  This
     # lets Maya treat the data as an array instead of a mapping.
@@ -48,6 +46,7 @@ class UI(maya_helpers.OptionsBox):
 
     def options_box_setup(self):
         self.optvars.add('zMirrorPaintedWeightsThreshold', 'float', 0.02)
+        self.optvars.add('zMirrorPaintedWeightsDefaultValue', 'float', 1)
 
         self.option_box = pm.columnLayout(adjustableColumn=1)
         parent = self.option_box
@@ -107,6 +106,7 @@ class UI(maya_helpers.OptionsBox):
         pm.separator()
 
         pm.floatSliderGrp('cpwThreshold', label='Vertex matching threshold', field=True, v=0.01, min=0, max=.1, fieldMinValue=0, fieldMaxValue=1000)
+        pm.floatSliderGrp('cpwDefaultValue', label='Default value', field=True, v=1, min=0, max=1)
 
         # Populate fields.
         deformer_nodes = pm.ls(type=['wire', 'blendShape', 'weightGeometryFilter', 'skinCluster'])
@@ -126,9 +126,11 @@ class UI(maya_helpers.OptionsBox):
 
     def option_box_save(self):
         self.optvars['zMirrorPaintedWeightsThreshold'] = pm.floatSliderGrp('cpwThreshold', q=True, v=True)
+        self.optvars['zMirrorPaintedWeightsDefaultValue'] = pm.floatSliderGrp('cpwDefaultValue', q=True, v=True)
 
     def option_box_load(self):
         pm.floatSliderGrp('cpwThreshold', edit=True, v=self.optvars['zMirrorPaintedWeightsThreshold'])
+        pm.floatSliderGrp('cpwDefaultValue', edit=True, v=self.optvars['zMirrorPaintedWeightsDefaultValue'])
         
     def refresh_enabled_blend_shape_all(self):
         """
@@ -166,6 +168,7 @@ class UI(maya_helpers.OptionsBox):
         output_shape, _ = self.output_shape_list.get_selected_shape()
 
         threshold = pm.floatSliderGrp('cpwThreshold', q=True, v=True)
+        default_value = pm.floatSliderGrp('cpwDefaultValue', q=True, v=True)
 
         # Map vertex indices from the source shape to the destination shape.
         index_mapping, unmapped_dst_vertices = vertex_mapping.make_vertex_map(input_shape, output_shape, threshold=0.01)
@@ -181,7 +184,7 @@ class UI(maya_helpers.OptionsBox):
 
         # Do the copy.
         for src_attr, dst_attr in attrs_to_map:
-            copy_attribute_with_map(src_attr, dst_attr, index_mapping)
+            copy_attribute_with_map(src_attr, dst_attr, index_mapping, default_value=default_value)
 
         log.info( 'Copied %i %s' % (len(attrs_to_map), 'map' if len(attrs_to_map) == 1 else 'maps'))
 
