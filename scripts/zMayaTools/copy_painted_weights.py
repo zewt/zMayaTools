@@ -21,24 +21,23 @@ def copy_attribute_with_map(src_weights, dst_weights, index_mapping):
     existing_dst_values = dst_weights.get()
     existing_dst_values = {index: value for index, value in zip(existing_dst_indices, existing_dst_values)}
 
-    new_values = {}
+    default_value = 1
+
+    # Set all values, using the default value if there are holes from having no matches.  This
+    # lets Maya treat the data as an array instead of a mapping.
+    #
+    # If a destination vertex has no match, its source index will be -1 and we'll use default_value.
+    # If we do have a source match but it doesn't have a value set, assume the default value is 1.
+    new_values = []
     for dst, src in index_mapping.items():
-        # If there's no value in the source, don't create one at the destination.
-        if src not in existing_src_values:
-            continue
-        value = existing_src_values.get(src)
-        new_values[dst] = value
+        if src == -1:
+            value = default_value
+        else:
+            value = existing_src_values.get(src, 1)
+        new_values.append((dst, value))
 
-    # Set any indices that we're not going to set to 1.  This is silly.  How do you simply clear an array attribute?
     dst_weight_path = str(dst_weights)
-    for existing_dst_index in existing_dst_values.keys():
-        if existing_dst_index in new_values:
-            continue
-
-        # Use cmds to avoid "Could not create desired MFn" spam.
-        cmds.setAttr('%s[%i]' % (dst_weight_path, existing_dst_index), 1)
-
-    for index, value in new_values.items():
+    for index, value in new_values:
         cmds.setAttr('%s[%i]' % (dst_weight_path, index), value)
 
 class UI(maya_helpers.OptionsBox):

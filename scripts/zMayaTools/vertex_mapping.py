@@ -66,7 +66,7 @@ def make_vertex_symmetry_map(shape, threshold=0.01, axis_of_symmetry='x', positi
 def make_vertex_map(src_shape, dst_shape, threshold=0.01):
     """
     Given two shape, make a mapping from vertices on the first shape to matching vertices
-    on the second shape.
+    on the second shape.  Unmatched vertices will be mapped to -1.
     
     Return a map of {dst: src} vertex indices and a list of vertices that weren't matched.
     """
@@ -91,6 +91,7 @@ def make_vertex_map(src_shape, dst_shape, threshold=0.01):
         if distance > threshold:
             # We don't have a match.  Remember that this vertex was unmatched.
             unmapped_dst_vertices.add(dst_idx)
+            index_mapping[dst_idx] = -1
         else:
             index_mapping[dst_idx] = src_idx
             
