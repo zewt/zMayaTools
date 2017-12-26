@@ -3,7 +3,6 @@ Sample scenes are available in the [zMayaTools-samples](https://github.com/zewt/
 
 zMayaUtils:
 
-- Mirror deformer weights
 - Copy deformer weights
 - Retarget blend shapes
 - Split blend shapes into blended halves
