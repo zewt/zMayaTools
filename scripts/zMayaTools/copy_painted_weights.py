@@ -1,42 +1,14 @@
 from pymel import core as pm
+from maya import OpenMaya as om
 from maya import cmds
 import os, sys, time
-from zMayaTools import kdtree, maya_helpers, maya_logging, vertex_mapping
+from zMayaTools import kdtree, maya_helpers, maya_logging
+reload(maya_helpers)
 
 from zMayaTools.ui import painted_weights_ui
 reload(painted_weights_ui)
 
 log = maya_logging.get_log()
-
-# This only supports deformed meshes, and not NURBS surfaces or curves.
-# This only supports "closest component" matching, and should be used with cleanly mirrored meshes.
-def copy_attribute_with_map(src_weights, dst_weights, index_mapping, default_value=1):
-    # PyMel prints a "Could not create desired MFn" every time we read a weight.  To avoid spamming this thousands of times,
-    # read all of the weights at once.  This is probably faster anyway.
-    existing_src_indices = src_weights.getArrayIndices()
-    existing_src_values = src_weights.get()
-    existing_src_values = {index: value for index, value in zip(existing_src_indices, existing_src_values)}
-
-    existing_dst_indices = dst_weights.getArrayIndices()
-    existing_dst_values = dst_weights.get()
-    existing_dst_values = {index: value for index, value in zip(existing_dst_indices, existing_dst_values)}
-
-    # Set all values, using the default value if there are holes from having no matches.  This
-    # lets Maya treat the data as an array instead of a mapping.
-    #
-    # If a destination vertex has no match, its source index will be -1 and we'll use default_value.
-    # If we do have a source match but it doesn't have a value set, assume the default value is 1.
-    new_values = []
-    for dst, src in index_mapping.items():
-        if src == -1:
-            value = default_value
-        else:
-            value = existing_src_values.get(src, 1)
-        new_values.append((dst, value))
-
-    dst_weight_path = str(dst_weights)
-    for index, value in new_values:
-        cmds.setAttr('%s[%i]' % (dst_weight_path, index), value)
 
 class UI(maya_helpers.OptionsBox):
     title = 'Copy Painted Weights'
@@ -45,8 +17,7 @@ class UI(maya_helpers.OptionsBox):
         super(UI, self).__init__()
 
     def options_box_setup(self):
-        self.optvars.add('zMirrorPaintedWeightsThreshold', 'float', 0.02)
-        self.optvars.add('zMirrorPaintedWeightsDefaultValue', 'float', 1)
+        self.optvars.add('zMirrorPaintedWeightsSurfaceAssociation', 'int', 1) # default to closest point
 
         self.option_box = pm.columnLayout(adjustableColumn=1)
         parent = self.option_box
@@ -105,8 +76,28 @@ class UI(maya_helpers.OptionsBox):
 
         pm.separator()
 
-        pm.floatSliderGrp('cpwThreshold', label='Vertex matching threshold', field=True, v=0.01, min=0, max=.1, fieldMinValue=0, fieldMaxValue=1000)
-        pm.floatSliderGrp('cpwDefaultValue', label='Default value', field=True, v=1, min=0, max=1)
+        pm.radioButtonGrp('mpwSurfaceAssociation1',
+                select=True,
+                numberOfRadioButtons=1,
+                label='Surface Association:',
+                label1='Closest point on surface')
+
+        pm.radioButtonGrp('mpwSurfaceAssociation2',
+                numberOfRadioButtons=1,
+                label1='Ray cast',
+                shareCollection='mpwSurfaceAssociation1')
+
+        pm.radioButtonGrp('mpwSurfaceAssociation3',
+                numberOfRadioButtons=1,
+                label1='Closest component',
+                shareCollection='mpwSurfaceAssociation1')
+
+        pm.radioButtonGrp('mpwSurfaceAssociation4',
+                numberOfRadioButtons=1,
+                label1='UV space',
+                shareCollection='mpwSurfaceAssociation1')
+
+        pm.separator()
 
         # Populate fields.
         deformer_nodes = pm.ls(type=['wire', 'blendShape', 'weightGeometryFilter', 'skinCluster'])
@@ -125,12 +116,10 @@ class UI(maya_helpers.OptionsBox):
             return self.output_deformer_list.get_selected_deformer()
 
     def option_box_save(self):
-        self.optvars['zMirrorPaintedWeightsThreshold'] = pm.floatSliderGrp('cpwThreshold', q=True, v=True)
-        self.optvars['zMirrorPaintedWeightsDefaultValue'] = pm.floatSliderGrp('cpwDefaultValue', q=True, v=True)
+        self.optvars['zMirrorPaintedWeightsSurfaceAssociation'] = self.get_selected_surface_association_idx()
 
     def option_box_load(self):
-        pm.floatSliderGrp('cpwThreshold', edit=True, v=self.optvars['zMirrorPaintedWeightsThreshold'])
-        pm.floatSliderGrp('cpwDefaultValue', edit=True, v=self.optvars['zMirrorPaintedWeightsDefaultValue'])
+        pm.radioButtonGrp('mpwSurfaceAssociation%i' % self.optvars['zMirrorPaintedWeightsSurfaceAssociation'], e=True, select=True)
         
     def refresh_enabled_blend_shape_all(self):
         """
@@ -167,24 +156,81 @@ class UI(maya_helpers.OptionsBox):
         output_deformer = self.output_deformer_list.get_selected_deformer()
         output_shape, _ = self.output_shape_list.get_selected_shape()
 
-        threshold = pm.floatSliderGrp('cpwThreshold', q=True, v=True)
-        default_value = pm.floatSliderGrp('cpwDefaultValue', q=True, v=True)
+        # Find the selected surface association mode, and map it to a copySkinWeights argument.
+        surface_association = self.get_selected_surface_association_idx()
+        surface_association_modes = {
+            1: 'closestPoint',
+            2: 'rayCast',
+            3: 'closestComponent',
+            4: 'uvSpace',
+        }
+        surface_association = surface_association_modes[surface_association]
 
-        # Map vertex indices from the source shape to the destination shape.
-        index_mapping, unmapped_dst_vertices = vertex_mapping.make_vertex_map(input_shape, output_shape, threshold=0.01)
+        # Duplicate the input and output shapes.
+        input_shape_copy = pm.duplicate(input_shape)[0].getShape()
+        output_shape_copy = pm.duplicate(output_shape)[0].getShape()
 
-        if unmapped_dst_vertices:
-            log.warning('Warning: unmapped vertices: %s', ' '.join(str(idx) for idx in unmapped_dst_vertices))
-        if not index_mapping:
-            log.error('No symmetric vertices were matched')
-            return
-            
-        # Figure out which attributes to copy where.
-        attrs_to_map = self.get_selected_attrs()
+        # Create a temporary joint, and skin both shapes to it.  Disable weight normalization,
+        # or weights will get forced to 1 since we only have one joint.
+        temporary_joint = pm.createNode('joint')
+        input_shape_skin = pm.skinCluster([input_shape_copy, temporary_joint], removeUnusedInfluence=False, normalizeWeights=False)
+        output_shape_skin = pm.skinCluster([output_shape_copy, temporary_joint], removeUnusedInfluence=False, normalizeWeights=False)
+       
+        # Disable the skinClusters.  We're using them to transfer data, and we don't want them
+        # to influence the temporary meshes.
+        input_shape_skin.attr('envelope').set(0)
+        output_shape_skin.attr('envelope').set(0)
 
-        # Do the copy.
-        for src_attr, dst_attr in attrs_to_map:
-            copy_attribute_with_map(src_attr, dst_attr, index_mapping, default_value=default_value)
+        try:
+            # Figure out which attributes to copy where.
+            attrs_to_map = self.get_selected_attrs()
+
+            # Do the copy.
+            for src_attr, dst_attr in attrs_to_map:
+                if not maya_helpers.copy_weights_to_skincluster(src_attr, input_shape_skin, input_shape_copy):
+                    log.warning('Input has no deformer weights: %s', src_attr)
+                    continue
+
+                copy_options = {
+                    'sourceSkin': input_shape_skin,
+                    'destinationSkin': output_shape_skin,
+                    'noMirror': True,
+
+                    # Always use one-to-one joint association, since we're always copying the
+                    # two temporary joints.
+                    'influenceAssociation': 'oneToOne',
+                }
+
+                # If we're in UV space mode, find a UV set to copy.  Otherwise, set the association
+                # mode.
+                if surface_association == 'uvSpace':
+                    # Use the current UV set for each mesh.
+                    def get_current_uv_set(shape):
+                        uv_sets = pm.polyUVSet(shape, q=True, currentUVSet=True)
+                        if uv_sets:
+                            return uv_sets[0]
+                        else:
+                            return 'map1'
+
+                    input_shape_uv_set = get_current_uv_set(input_shape)
+                    output_shape_uv_set = get_current_uv_set(output_shape)
+                    copy_options['uvSpace'] = (input_shape_uv_set, output_shape_uv_set)
+                else:
+                    copy_options['surfaceAssociation'] = surface_association
+
+                pm.copySkinWeights(**copy_options)
+     
+                # Read the copied weights out of the skinCluster and copy them to the output attribute.
+                copied_weights = list(output_shape_skin.getWeights(output_shape_copy, 0))
+
+                dst_weight_path = str(dst_attr)
+                for index, value in enumerate(copied_weights):
+                    cmds.setAttr('%s[%i]' % (dst_weight_path, index), value)
+        finally:
+            # Clean up our temporary nodes.
+            pm.delete(input_shape_copy.getTransform())
+            pm.delete(output_shape_copy.getTransform())
+            pm.delete(temporary_joint)
 
         log.info( 'Copied %i %s' % (len(attrs_to_map), 'map' if len(attrs_to_map) == 1 else 'maps'))
 
@@ -263,4 +309,10 @@ class UI(maya_helpers.OptionsBox):
         output_attr = get_painted_attribute(output_deformer, selected_output_target, output_deformer_shape_idx)
         return [(input_attr, output_attr)]
 
+    def get_selected_surface_association_idx(self):
+        for i in xrange(1,5):
+            if pm.radioButtonGrp('mpwSurfaceAssociation%i' % i, q=True, select=True):
+                return i
+
+        return 1
 

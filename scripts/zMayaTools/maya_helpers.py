@@ -1,5 +1,6 @@
 import contextlib, time
 from pymel import core as pm
+from maya import OpenMaya as om
 from zMayaTools import util
 
 from zMayaTools import maya_logging
@@ -229,4 +230,28 @@ def undo(name='undo_on_exception'):
         yield
     finally:
         pm.undoInfo(closeChunk=True)
+
+def copy_weights_to_skincluster(src_attr, skin_cluster, shape):
+    src_indices = src_attr.getArrayIndices()
+    if not src_indices:
+        log.warning('Input has no deformer weights: %s', src_attr)
+        return False
+
+    src_values = src_attr.get()
+    src_index_count = max(src_indices)+1
+    
+    weights_array = om.MDoubleArray(src_index_count)
+
+    # Initialize all weights to 1, which is the default mask weight for values not
+    # in the array.
+    for index in xrange(src_index_count):
+        weights_array[index] = 1
+
+    for index, value in zip(src_indices, src_values):
+        weights_array[index] = value
+
+    skin_cluster.setWeights(shape, [0], weights_array, False)
+
+    return True
+
 
