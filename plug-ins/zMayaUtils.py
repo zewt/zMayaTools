@@ -31,7 +31,7 @@ class PluginMenu(Menu):
 
             # Add "Mirror Weights" in the "Weights" section at the bottom of the Deform menu.
             menu_items = pm.menu(menu, q=True, ia=True)
-            section = self.find_menu_section_by_name(menu_items, 'Weights')
+            mirror_weights = self.find_item_by_name(menu_items, 'Mirror Deformer Weights')
 
             def run_copy_painted_weights(unused):
                 from zMayaTools import copy_painted_weights
@@ -39,9 +39,9 @@ class PluginMenu(Menu):
                 ui = copy_painted_weights.UI()
                 ui.run()
 
-            self.add_menu_item('zMayaTools_CopyWeights_%s' % menu, label='Copy Weights...', parent=menu,
+            self.add_menu_item('zMayaTools_CopyWeights_%s' % menu, label='Copy Deformer Weights', parent=menu,
                     annotation='Copy painted weights from one mesh to another',
-                    insertAfter=section[-1],
+                    insertAfter=menu_items[mirror_weights],
                     command=run_copy_painted_weights)
             
             # Find the "Edit" section in the Deform menu, then find the "Blend Shape" submenu inside
