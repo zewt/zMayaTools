@@ -310,4 +310,3 @@ def lock_trs(node, lock='lock'):
     lock_rotate(node, lock=lock)
     lock_scale(node, lock=lock)
 
-print 'f'
