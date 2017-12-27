@@ -1,5 +1,6 @@
 from pymel import core as pm
 
+from zMayaTools import maya_helpers
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
 
@@ -36,18 +37,21 @@ def set_notes(node, note):
     pm.addAttr(node, sn='nts', ln='notes', dt='string')
     node.attr('notes').set(note, type='string')
 	
-def create_new_node(nodeType, nodeName=None, parent=None):
+def create_new_node(nodeType, nodeName=None, parent=None, nonkeyable=True):
     node = pm.createNode(nodeType)
 
     if 'shape' in pm.nodeType(node, inherited=True):
         # This is a shape node.  Move up to the transform node.
-        node = pm.listRelatives(node, p=True)[0]
+        node = node.getTransform()
 
     if nodeName:
         node = pm.rename(node, nodeName)
 
     if parent:
         node = pm.parent(node, parent, r=True)[0]
+
+    if nonkeyable:
+        maya_helpers.lock_trs(node, 'unkeyable')
 
     return node
 
@@ -210,9 +214,9 @@ def create_eye_rig():
         # do this without all this extra mess?
         attr_name = 'angle_%s' % ['left', 'right'][idx]
         create_vector_attribute(control_mesh, attr_name)
-        control_mesh.attr('%sX' % attr_name).set(e=True, keyable=True)
-        control_mesh.attr('%sY' % attr_name).set(e=True, keyable=True)
-        control_mesh.attr('%sZ' % attr_name).set(e=True, channelBox=False, keyable=False)
+        maya_helpers.lock_attr(control_mesh.attr('%sX' % attr_name), 'unkeyable')
+        maya_helpers.lock_attr(control_mesh.attr('%sY' % attr_name), 'unkeyable')
+        maya_helpers.lock_attr(control_mesh.attr('%sZ' % attr_name), 'lock')
 
         forwards_node = create_new_node('locator', nodeName='%s_Forwards' % shortName, parent=orient_inner_node)
         pm.xform(forwards_node, t=(0,0,10), os=True)

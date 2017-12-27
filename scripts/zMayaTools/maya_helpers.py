@@ -254,4 +254,60 @@ def copy_weights_to_skincluster(src_attr, skin_cluster, shape):
 
     return True
 
+def lock_attr(attr, lock='lock'):
+    """
+    If lock is 'lock', lock attr and hide it in the CB.
 
+    If lock is 'hide', hide it in the CB and make it unkeyable, but don't lock it.
+    We do this with the transform of control nodes which are visible in the viewport
+    but whose position doesn't matter, so you can still move them around and put them
+    where you want, without cluttering the CB.
+
+    If lock is "unkeyable", make it unkeyable but leave it in the CB.  This is for
+    internal nodes where the property is meaningful and which we need unlocked, but
+    that shouldn't be keyed by the user.
+
+    It's important to mark nodes under the Rig hierarchy as unkeyable or locked
+    if they're not user controls.  This prevents them from being added to character
+    sets and auto-keyed, which removes a huge amount of clutter.  It also prevents
+    accidental bad changes, such as using "preserve children" and accidentally moving
+    an alignment node when you think you're moving a control.
+    """
+    if lock == 'lock':
+        pm.setAttr(attr, lock=True, cb=False, keyable=False)
+    elif lock == 'hide':
+        pm.setAttr(attr, lock=False, cb=False, keyable=False)
+    elif lock == 'unkeyable':
+        pm.setAttr(attr, lock=False, cb=True, keyable=False)
+    elif lock == 'keyable':
+        pm.setAttr(attr, lock=False, cb=False, keyable=True)
+    else:
+        raise RuntimeError('Invalid lock state: %s' % lock)
+
+def lock_translate(node, lock='lock'):
+    for attr in ('translateX', 'translateY', 'translateZ'):
+        try:
+            lock_attr(node.attr(attr), lock=lock)
+        except pm.MayaAttributeError:
+            pass
+
+def lock_rotate(node, lock='lock'):
+    for attr in ('rotateX', 'rotateY', 'rotateZ'):
+        try:
+            lock_attr(node.attr(attr), lock=lock)
+        except pm.MayaAttributeError:
+            pass
+
+def lock_scale(node, lock='lock'):
+    for attr in ('scaleX', 'scaleY', 'scaleZ'):
+        try:
+            lock_attr(node.attr(attr), lock=lock)
+        except pm.MayaAttributeError:
+            pass
+
+def lock_trs(node, lock='lock'):
+    lock_translate(node, lock=lock)
+    lock_rotate(node, lock=lock)
+    lock_scale(node, lock=lock)
+
+print 'f'
