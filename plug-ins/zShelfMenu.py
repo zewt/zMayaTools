@@ -1,3 +1,4 @@
+import copy
 from maya import OpenMaya as om
 import pymel.core as pm
 from pprint import pprint
@@ -105,10 +106,6 @@ class Menu(object):
     and submenus even though they're functionally identical.
     """
     def update_menu(self, unused1, unused2):
-        # Clear the menu so it can be repopulated.
-        pm.setParent(self.menu_item, menu=True)
-        pm.menu(self.menu_item, e=True, deleteAllItems=True)
-    
         self.update_func(self.menu_item)
 
     def __init__(self, name, label, update_func, parent_menu=None):
@@ -223,41 +220,50 @@ def execute_menu_item(name, button_type):
 
     return func
  
+def get_shelf_submenus(shelf_button):
+    popup_menus = pm.shelfButton(shelf_button, q=True, popupMenuArray=True)
+    if not popup_menus:
+        return []
+
+    popup_menu = popup_menus[0]
+    popup_menu_items = pm.popupMenu(popup_menu, q=True, itemArray=True) or []
+
+    # Ignore popup items that are defaults, eg. "Open" and "Edit" that appear in the
+    # shelf context menu.
+    def is_default_menu_item(popup):
+        cmd = pm.menuItem(p, q=True, command=True)
+        return isinstance(cmd, basestring) and cmd.startswith('/*dSBRMBMI*/')
+    popup_menu_items = [p for p in  popup_menu_items if not is_default_menu_item(p)]
+
+    # popupMenu returns ambiguous paths.  Prefix the path to the popup menu to make
+    # sure we query the right thing.
+    popup_menu_items = [popup_menu + '|' + item for item in popup_menu_items]
+
+    # Replace any dividers with separator.
+    popup_menu_items = [separator if pm.menuItem(p, q=True, divider=True) else p for p in popup_menu_items]
+    
+    return popup_menu_items
+
 def create_shelf_button_menu(shelf, parent_menu=None):
     """
     Create a menu containing the buttons on a shelf.
     """
-    def add_shelf_item(parent_menu, shelf_button):
-        # See if this shelf button has any submenus.
-        popup_menus = pm.shelfButton(shelf_button, q=True, popupMenuArray=True)
-        popup_menu_items = []
-        if popup_menus:
-            popup_menu = popup_menus[0]
-            popup_menu_items = pm.popupMenu(popup_menu, q=True, itemArray=True) or []
+    latest_menu_cmds = {}
 
-            # Ignore popup items that are defaults, eg. "Open" and "Edit" that appear in the
-            # shelf context menu.
-            def is_default_menu_item(popup):
-                cmd = pm.menuItem(p, q=True, command=True)
-                return isinstance(cmd, basestring) and cmd.startswith('/*dSBRMBMI*/')
-            popup_menu_items = [p for p in  popup_menu_items if not is_default_menu_item(p)]
-
-            # popupMenu returns ambiguous paths.  Prefix the path to the popup menu to make
-            # sure we query the right thing.
-            popup_menu_items = [popup_menu + '|' + item for item in popup_menu_items]
-
-        has_popup_menu = len(popup_menu_items) > 0
- 
+    def add_shelf_item(parent_menu, menu_cmds, shelf_button):
         # Create a menuItem matching the shelfButton.
-        cmd = get_menu_item_params(shelf_button, pm.shelfButton)
-       
+        # See if this shelf button has any submenus.
+        popup_menu_items = get_shelf_submenus(shelf_button)
+
+        cmd = copy.copy(menu_cmds[shelf_button])
+
         # Set the command to run.  We always wrap commands, so we can read the current script.
         # This way, we always run the latest version of the script, even if it's in a torn-off
         # menu and the shelf script has been changed.
         cmd['command'] = execute_menu_item(shelf_button, pm.shelfButton)
         cmd['sourceType'] = 'python'
 
-        if has_popup_menu:
+        if popup_menu_items:
             cmd['subMenu'] = True
             cmd['tearOff'] = True
 
@@ -266,7 +272,6 @@ def create_shelf_button_menu(shelf, parent_menu=None):
             if with_option_button is not None:
                 pm.menuItem(name + '_opt', optionBox=True, command=with_option_button)
 
-        pm.setParent(parent_menu, menu=True)
         if popup_menu_items:
             # We can't show an option box if there's a popup menu.
             option_button_func = None
@@ -277,19 +282,22 @@ def create_shelf_button_menu(shelf, parent_menu=None):
 
         # If this shelf button has popup menu items, add them in a submenu.
         for popup_menu_item in popup_menu_items:
-            if pm.menuItem(popup_menu_item, q=True, divider=True):
+            if popup_menu_item is separator:
                 pm.menuItem(divider=True)
                 continue
 
-            cmd = get_menu_item_params(popup_menu_item, pm.menuItem)
+            subcmd = copy.copy(menu_cmds[popup_menu_item])
 
             # This function is just to capture popup_menu_item:
             def add_submenu_item(popup_menu_item):
-                cmd['command'] = execute_menu_item(popup_menu_item, pm.menuItem)
-                cmd['sourceType'] = 'python'
-                add_menu_item(popup_menu_item, cmd, with_option_button=lambda unused: shelf.show_popup_in_shelf_editor(shelf_button, popup_menu_item))
+                subcmd['command'] = execute_menu_item(popup_menu_item, pm.menuItem)
+                subcmd['sourceType'] = 'python'
+                add_menu_item(popup_menu_item, subcmd, with_option_button=lambda unused: shelf.show_popup_in_shelf_editor(shelf_button, popup_menu_item))
                 
             add_submenu_item(popup_menu_item)
+
+        if popup_menu_items:
+            pm.setParent('..', menu=True)
             
     def update_shelf_submenu(parent_menu):
         """
@@ -297,13 +305,44 @@ def create_shelf_button_menu(shelf, parent_menu=None):
         """
         shelf.refresh()
 
+        # Gather the menu items, including submenus.
+        pm.setParent(parent_menu, menu=True)
+        menu_cmds = {}
         for shelf_button in shelf.buttons:
-            pm.setParent(parent_menu, menu=True)
-            
+            if shelf_button is separator:
+                continue
+            menu_cmds[shelf_button] = get_menu_item_params(shelf_button, pm.shelfButton)
+
+            popup_menu_items = get_shelf_submenus(shelf_button)
+            for popup_menu_item in popup_menu_items:
+                if popup_menu_item is separator:
+                    continue
+                menu_cmds[popup_menu_item] = get_menu_item_params(popup_menu_item, pm.menuItem)
+
+            # Store the list of popup menu item names as a dummy entry in menu_cmds.  This
+            # won't be looked up by add_shelf_item.  This just makes sure that if the list of
+            # popups changes, menu_cmds will be different from latest_menu_cmds and we'll refresh
+            # the menu.
+            menu_cmds['__popups_%s' % shelf_button] = popup_menu_items
+
+        # If the menu hasn't changed since the last time it was displayed, don't update it.
+        # Updating menus is usually fast, but sometimes becomes very slow for no obvious reason.
+        if latest_menu_cmds == menu_cmds:
+            return
+
+        # Update latest_menu_cmds so we remember the latest update.
+        latest_menu_cmds.clear()
+        latest_menu_cmds.update(menu_cmds)
+
+        # Clear the menu.
+        pm.setParent(parent_menu, menu=True)
+        pm.menu(parent_menu, e=True, deleteAllItems=True)
+
+        for shelf_button in shelf.buttons:
             if shelf_button is separator:
                 pm.menuItem(divider=True)
             else:
-                add_shelf_item(parent_menu, shelf_button)
+                add_shelf_item(parent_menu, menu_cmds, shelf_button)
 
         pm.menuItem(divider=True)
 
@@ -322,6 +361,10 @@ def create_shelf_tab_menu(parent_menu=None):
         """
         Populate the shelves menu with one menu item per shelf tab.
         """
+        # Clear the menu so it can be repopulated.
+        pm.setParent(menu, menu=True)
+        pm.menu(menu, e=True, deleteAllItems=True)
+
         shelves = Shelf.get_shelves()
     
         for shelf in shelves:
