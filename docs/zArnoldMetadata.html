@@ -1,0 +1,37 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>zArnoldMetadata</h1>
+
+<h2>Introduction</h2>
+
+Arnold can output custom metadata to rendered EXR files.  However, the attributes to set
+these are all strings, so they can't actually be connected to data, so they can't actually
+be set to anything useful.  The zArnoldMetadata node converts from regular typed Maya
+attributes to Arnold's string fields.
+
+<h2>Attributes</h2>
+
+<ul>
+<li>
+    <b>name</b> - The name of the EXR metadata field to set.
+</li>
+<li>
+    <b>inputInt</b>, <b>inputFloat</b>, <b>inputVector2</b>, <b>inputMatrix</b> - The value to set.
+</li>
+<li>
+    <b>outputInt</b>, <b>outputFloat</b>, <b>outputVector2</b>, <b>outputMatrix</b> - The resulting header fields.
+</li>
+</ul>
+
+<h2>Example</h2>
+
+You can export a locator's transform to each rendered EXR file.  Create a zArnoldMetadata node,
+connect the locator's worldMatrix to inputMatrix, and connect zArnoldMetadata.outputMatrix to
+defaultArnoldDriver.customAttributes.
+<p>
+The locator can then be animated or parented to another object, and each rendered EXR file will
+include the position of the locator during that frame.
+
