@@ -184,10 +184,19 @@ class Validate(object):
             base_mesh = shapes[-1]
         else:
             base_mesh = shapes[0]
+
         tweaks = base_mesh.attr('pt')
         tweaked_vertices = []
         for tweak in tweaks:
-            if om.MVector(*tweak.get()).length() > 0.000001:
+            idx = tweak.index()
+
+            # twaek.get() should return the vector, but in some cases at least with deformed
+            # meshes it always returns (0,0,0).
+            x = tweak.attr('pntx').get()
+            y = tweak.attr('pnty').get()
+            z = tweak.attr('pntz').get()
+            vec = om.MVector(x, y, z)
+            if om.MVector(vec).length() > 0.000001:
                 tweaked_vertices.append(tweak.index())
 
         if tweaked_vertices:
