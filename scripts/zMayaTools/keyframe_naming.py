@@ -310,12 +310,13 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         self.ui = keyframe_naming.Ui_keyframe_naming()
         self.ui.setupUi(self)
 
-        self.ui.frameList.itemSelectionChanged.connect(self.selected_frame_changed)
         self.ui.removeFrame.clicked.connect(self.delete_selected_frame)
         self.ui.renameFrame.clicked.connect(self.rename_selected_frame)
         self.ui.addFrame.clicked.connect(self.add_new_frame)
         self.ui.frameList.itemDelegate().commitData.connect(self.frame_name_edited)
         self.ui.frameList.itemDelegate().closeEditor.connect(self.name_editor_closed)
+        self.ui.frameList.itemSelectionChanged.connect(self.selected_frame_changed)
+        self.ui.frameList.itemClicked.connect(self.selected_frame_changed)
 
         # Create the menu.  Why can't this be done in the designer?
         menu_bar = Qt.QMenuBar()
