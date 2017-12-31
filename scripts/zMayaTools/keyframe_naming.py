@@ -148,7 +148,7 @@ def delete_key_at_frame(frame):
     all_keys = get_all_keys()
 
     idx = pm.keyframe(keys.attr('keyframes'), q=True, valueChange=True, t=frame)
-    if idx is None:
+    if not idx:
         return
 
     # Remove the keyframe and any associated data.
