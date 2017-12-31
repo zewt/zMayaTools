@@ -13,11 +13,15 @@ def mtime(path):
         return 0
 
 def compile_all_layouts():
+    path = os.path.dirname(__file__)
+    compile_all_layouts_in_path(path)
+
+def compile_all_layouts_in_path(path):
     # Add the resource directory to QT for the zMayaTools prefix.  See fixup_ui_source.
-    Qt.QDir.setSearchPaths('zMayaTools', [os.path.dirname(__file__) + '/qt_resources'])
+    Qt.QDir.setSearchPaths('zMayaTools', [path + '/qt_resources'])
     
-    qt_path = os.path.dirname(__file__) + '/qt/'
-    qt_generated_path = os.path.dirname(__file__) + '/qt_generated/'
+    qt_path = path + '/qt/'
+    qt_generated_path = path + '/qt_generated/'
 
     # If qt_generated/__init__.py doesn't exist, create it so the directory is treated
     # as a module.  This isn't checked into the source tree so that all of the files in
@@ -74,7 +78,7 @@ def fixup_ui_source(data):
     # Remove the resources.qrc import, if any.
     resources_path = '../qt_resources/resources.qrc'
     resource_node = root.findall(".//resources/include[@location='%s']/.." % resources_path)
-    if resource_node is not None:
+    if resource_node:
         root.remove(resource_node[0])
 
     def replace_path(s):
