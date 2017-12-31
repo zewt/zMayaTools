@@ -64,7 +64,7 @@
       </layout>
      </item>
      <item>
-      <widget class="QListWidget" name="frameList">
+      <widget class="ListWidgetWithEnterPress" name="frameList">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
          <horstretch>1</horstretch>
@@ -80,6 +80,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>ListWidgetWithEnterPress</class>
+   <extends>QListWidget</extends>
+   <header>zMayaTools/qt_widgets/list_with_enter_press.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

@@ -1,10 +1,7 @@
-import logging
 from PySide2.QtCore import *
 from PySide2.QtGui import *
 from PySide2.QtWidgets import *
 import pymel.core as pm
-
-log = logging.getLogger('zKeying')
 
 class DraggableProgressBar(QProgressBar):
     # The first argument is true if we're in relative mode and the value should be added
