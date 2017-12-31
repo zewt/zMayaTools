@@ -101,6 +101,9 @@ def get_unused_name_index():
     Return the first unused index in the name list.
     """
     # Get the full key list, so we can find an unused slot.
+    #
+    # Note that we're looking at the entries actually referenced from keyframes and
+    # not just calling get(mi=True) on entries, so we'll reuse stale entries.
     name_indices = get_all_keys().values()
     name_indices.sort()
 
