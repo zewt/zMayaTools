@@ -1,0 +1,30 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>Animation &gt; Key &gt; Named Keyframes</h1>
+
+<h2>Introduction</h2>
+
+zKeyframeNaming allows bookmarking keyframes, and allows quick navigation.
+<p>
+Keyframe names can be exported as a custom EXR attribute with Arnold renders.
+
+<h2>Usage</h2>
+
+Open the Named Keyframes menu with <b>Animation &gt; Key &gt; Named Keyframes</b>.
+Click <b>Add</b> to add a keyframe at the current time.
+<p>
+Selecting frames from the list will jump to that frame.
+<p>
+<b>Edit &gt; Add Arnold Attribute</b> will add a custom attribute to the Arnold
+render settings, which will be included in rendered EXR files.  Arnold must already
+be loaded.
+
+<h2>Character sets</h2>
+
+The zKeyframeNaming node can be added to a character set.  Named keyframes will
+appear as keyframes in the time slider, and if keyframes are moved, their names
+will follow automatically.
+
