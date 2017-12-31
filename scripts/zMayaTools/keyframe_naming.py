@@ -388,6 +388,16 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         """
         self.set_selected_frame(pm.currentTime(q=True))
 
+    def cancel_rename(self):
+        """
+        If an entry is being renamed, cancel it.
+        """
+        if self.ui.frameList.state() != Qt.QAbstractItemView.EditingState:
+            return
+
+        item = self.get_selected_frame_item()
+        self.ui.frameList.closePersistentEditor(item)
+
     def add_new_frame(self):
         """
         Create a key if one doesn't exist already, and begin editing its name.
@@ -398,9 +408,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             # click Add, then select another frame and click Add without first
             # pressing enter for the first rename.  This usually only happens if
             # the window is docked into the main Maya window.
-            if self.ui.frameList.state() == Qt.QAbstractItemView.EditingState:
-                item = self.get_selected_frame_item()
-                self.ui.frameList.closePersistentEditor(item)
+            self.cancel_rename()
 
             idx = get_current_key_index()
             if idx is None:
@@ -423,6 +431,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         if item is None:
             return
 
+        self.cancel_rename()
         delete_key_at_frame(item.frame)
     
     def rename_selected_frame(self):
