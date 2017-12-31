@@ -69,13 +69,12 @@ def get_all_names():
     if keys is None:
         return {}
     
-    names = keys.attr('names')
+    entries = keys.attr('entries')
 
-    # We should be able to just call get()
     result = {}
-    for value in names:
-        idx = value.index()
-        result[idx] = value.get()
+    for entry in entries:
+        idx = entry.index()
+        result[idx] = entry.attr('name').get()
     return result
 
 def get_name_at_idx(idx):
@@ -88,11 +87,11 @@ def get_name_at_idx(idx):
     keys = get_singleton(create=False)
     if keys is None:
         return None
-    return keys.attr('names').elementByLogicalIndex(idx).get()
+    return keys.attr('entries').elementByLogicalIndex(idx).attr('name').get()
 
 def set_name(idx, name):
     keys = get_singleton()
-    attr = keys.attr('names').elementByLogicalIndex(idx)
+    attr = keys.attr('entries').elementByLogicalIndex(idx).attr('name')
     # Don't set the name if it isn't changing, so an undo entry isn't created.
     if attr.get() != name:
         attr.set(name)

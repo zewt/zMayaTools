@@ -16,14 +16,15 @@ class zKeyframeNaming(OpenMayaMPx.MPxNode):
             plug = plug.array()
 
         if plug == self.attr_arnold_attribute_out:
-            name_idx = dataBlock.inputValue(self.attr_keyframes).asInt()
-            names = dataBlock.inputArrayValue(self.attr_names)
+            key_idx = dataBlock.inputValue(self.attr_keyframes).asInt()
+            entries = dataBlock.inputArrayValue(self.attr_entries)
+            
             try:
-                names.jumpToElement(name_idx)
+                entries.jumpToElement(key_idx)
             except RuntimeError: # No element at given index
                 name = 'unnamed'
             else:
-                name = names.inputValue().asString()
+                name = entries.inputValue().child(self.attr_names).asString()
 
             output = dataBlock.outputValue(plug)
             output.setString("STRING frameName %s" % name)
@@ -36,6 +37,7 @@ class zKeyframeNaming(OpenMayaMPx.MPxNode):
     def initialize(cls):
         nAttr = om.MFnNumericAttribute()
         typedAttr = om.MFnTypedAttribute()
+        cmpAttr = om.MFnCompoundAttribute()
 
         cls.attr_arnold_attribute_out = typedAttr.create('arnoldAttributeOut', 'aao', om.MFnData.kString)
         typedAttr.setWritable(False)
@@ -48,10 +50,15 @@ class zKeyframeNaming(OpenMayaMPx.MPxNode):
         cls.addAttribute(cls.attr_keyframes)
         cls.attributeAffects(cls.attr_keyframes, cls.attr_arnold_attribute_out)
 
-        cls.attr_names = typedAttr.create('names', 'nms', om.MFnData.kString)
-        typedAttr.setArray(True)
+        cls.attr_names = typedAttr.create('name', 'nm', om.MFnData.kString)
         cls.addAttribute(cls.attr_names)
         cls.attributeAffects(cls.attr_names, cls.attr_arnold_attribute_out)
+
+        cls.attr_entries = cmpAttr.create('entries', 'en')
+        cmpAttr.addChild(cls.attr_names)
+        cmpAttr.setArray(True)
+        cls.addAttribute(cls.attr_entries)
+        cls.attributeAffects(cls.attr_entries, cls.attr_arnold_attribute_out)
 
     @classmethod
     def creator(cls):
