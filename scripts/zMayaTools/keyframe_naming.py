@@ -309,8 +309,6 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
 
         self.ui = keyframe_naming.Ui_keyframe_naming()
         self.ui.setupUi(self)
-        # Disable double clicking to rename.  Use the rename button instead.
-        # self.ui.frameList.setEditTriggers(0)
 
         self.ui.frameList.itemSelectionChanged.connect(self.selected_frame_changed)
         self.ui.removeFrame.clicked.connect(self.delete_selected_frame)

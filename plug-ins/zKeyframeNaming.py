@@ -11,6 +11,10 @@ reload(keyframe_naming)
 class zKeyframeNaming(OpenMayaMPx.MPxNode):
     pluginNodeId = keyframe_naming.plugin_node_id
 
+    def postConstructor(self):
+        self.setExistWithoutInConnections(True)
+        self.setExistWithoutOutConnections(True)
+
     def compute(self, plug, dataBlock):
         if plug.isElement():
             plug = plug.array()
