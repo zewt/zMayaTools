@@ -126,9 +126,15 @@ def create_key_at_current_time():
     if idx is not None:
         return idx
 
-    # There's no key at the current frame.  Find an unused name index and create it.
-    idx = get_unused_name_index()
-    pm.setKeyframe(keys, at='keyframes', value=idx, inTangentType='stepnext', outTangentType='step')
+    with maya_helpers.undo('Create named keyframe'):
+        # There's no key at the current frame.  Find an unused name index and create it.
+        idx = get_unused_name_index()
+        pm.setKeyframe(keys, at='keyframes', value=idx, inTangentType='stepnext', outTangentType='step')
+
+        # Keyframes can be deleted by the user, which leaves behind stale entries.  Remove
+        # any leftover data in the slot we're using.
+        pm.removeMultiInstance(keys.attr('entries').elementByLogicalIndex(idx))
+
     return idx
 
 def delete_key_at_frame(frame):
@@ -145,7 +151,10 @@ def delete_key_at_frame(frame):
     if idx is None:
         return
 
-    pm.cutKey(keys.attr('keyframes'), t=frame)
+    # Remove the keyframe and any associated data.
+    with maya_helpers.undo('Delete named keyframe'):
+        pm.cutKey(keys.attr('keyframes'), t=frame)
+        pm.removeMultiInstance(keys.attr('entries').elementByLogicalIndex(idx[0]))
 
 def connect_to_arnold():
     """
