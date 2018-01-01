@@ -195,87 +195,6 @@ def connect_to_arnold():
     output.connect(input)
     log.info('Arnold attribute created.')
 
-class TimeChangeListener(object):
-    """
-    Helper to receive a callback when the scene time changes.
-
-    By default, callbacks are paused during playback to avoid impacting playback
-    performance.  To always receive callbacks, set pause_during_playback to true.
-
-    register() must be called to begin receiving callbacks.  unregister() must be
-    called to clean up listeners before unloading code.
-    """
-    def __init__(self, callback, pause_during_playback=True):
-        self.playing_back_job = None
-        self.playback_callback_id = None
-        self.callback = callback
-        self._pause_during_playback = pause_during_playback
-
-    def register(self):
-        """
-        Register the time changed listener if we're not currently in playback.
-
-        We deregister this listener during playback, so we only update when scrubbing the timeline
-        and don't slow down playback.
-        """
-        if self.playing_back_job is None:
-            self.playing_back_job = pm.scriptJob(conditionTrue=('playingBack', self._playback_stopped))
-
-        if self._enable_time_listener() and self.playback_callback_id is None:
-            self._register_time_changed_listener()
-
-    def unregister(self):
-        if self.playing_back_job is not None:
-            pm.scriptJob(kill=self.playing_back_job)
-            self.playing_back_job = None
-        
-        self._unregister_time_changed_listener()
-
-    def _time_changed(self, unused):
-        # We want to unregister the time changed listener during playback, but there seems
-        # to be no way to get a callback when playback starts.  scriptJob('playingBack') isn't
-        # even called.
-        #
-        # If we unregister here, we'll register again when playback ends via scriptJob('playingBack').
-        if not self._enable_time_listener():
-            self._unregister_time_changed_listener()
-            return
-
-        self.callback()
-
-    def _register_time_changed_listener(self):
-        if self.playback_callback_id is not None:
-            return
-
-        self.playback_callback_id = om.MEventMessage.addEventCallback('timeChanged', self._time_changed)
-
-    def _unregister_time_changed_listener(self):
-        if self.playback_callback_id is None:
-            return
-
-        msg = om.MMessage()
-        msg.removeCallback(self.playback_callback_id)
-        self.playback_callback_id = None
-
-    def _enable_time_listener(self):
-        if not self._pause_during_playback:
-            return True
-
-        return not pm.play(q=True, state=True)
-
-    def _playback_stopped(self):
-        if not self._enable_time_listener():
-            self._unregister_time_changed_listener()
-            return
-        
-        # This is called when playback mode is exited (as well as when scrubbing is released, which
-        # we don't care about).  Register the time changed listener, which we only use when not in
-        # playback.
-        self._register_time_changed_listener()
-
-        # Make sure we refresh to show the state when playback stopped.
-        self.callback()
-
 class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
     def __init__(self):
         super(KeyframeNamingWindow, self).__init__()
@@ -299,7 +218,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         self._currently_setting_selection = False
         self._listening_to_anim_curve = None
 
-        self.time_change_listener = TimeChangeListener(self._time_changed)
+        self.time_change_listener = maya_helpers.TimeChangeListener(self._time_changed)
 
         # Make sure zKeyframeNaming has been generated.
         qt_helpers.compile_all_layouts()

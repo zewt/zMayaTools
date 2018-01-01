@@ -95,8 +95,6 @@ class KeyingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         self.weight_node = None
         self.shown = False
         self.callback_ids = om.MCallbackIdArray()
-        self.playback_callback_id = None
-        self.playing_back_job = None
 
         self._currently_refreshing = False
 
@@ -109,6 +107,8 @@ class KeyingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         }
         '''
         self.setStyleSheet(style)
+
+        self.time_change_listener = maya_helpers.TimeChangeListener(self._time_changed, pause_during_playback=False)
 
         # Make sure zMouthController has been generated.
         qt_helpers.compile_all_layouts()
@@ -252,15 +252,7 @@ class KeyingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         if self.weight_node is not None:
             self.callback_ids.append(om.MNodeMessage.addAttributeChangedCallback(self.weight_node.__apimobject__(), self._weight_node_changed, None))
 
-        # Annoying: attribute change messages aren't sent while scrubbing the timeline.  This seems to be
-        # an attempt to reduce calls during playback, but it's dumb because it means we have to refresh
-        # every frame during playback since we can't tell when a change is actually made.
-        #
-        # playingBack isn't actually called when we enter playback mode (?!), so we test that in
-        # timeChanged.
-        self.playing_back_job = pm.scriptJob(conditionFalse=('playingBack', self._playback_stopped))
-
-        self._register_time_changed_listener()
+        self.time_change_listener.register()
 
     def _weight_nodes_changed(self, node, data):
         # A zMouthController node was added or removed, so refresh the list.  Queue this instead of doing
@@ -291,38 +283,10 @@ class KeyingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             msg.removeCallbacks(self.callback_ids)
             self.callback_ids.clear()
 
-        if self.playing_back_job is not None:
-            pm.scriptJob(kill=self.playing_back_job)
-            self.playing_back_job = None
-
-        self._unregister_time_changed_listener()
-
-    def _register_time_changed_listener(self):
-        """
-        Register the time changed listener if we're not currently in playback.
-
-        We deregister this listener during playback, so we only update when scrubbing the timeline
-        and don't slow down playback.
-        """
-        if not self.shown or self.weight_node is None:
-            return
-        if self.playback_callback_id is not None:
-            return
-        if not self._enable_time_listener():
-            return
-
-        self.playback_callback_id = om.MEventMessage.addEventCallback('timeChanged', self._time_changed)
+        self.time_change_listener.register()
 
     def _enable_time_listener(self):
         return pm.play(q=True, state=True) or True
-
-    def _unregister_time_changed_listener(self):
-        if self.playback_callback_id is None:
-            return
-
-        msg = om.MMessage()
-        msg.removeCallback(self.playback_callback_id)
-        self.playback_callback_id = None
 
     def _weight_node_changed(self, msg, plug, otherPlug, data):
         # For some reason, this is called once per output, but not actually called for changed inputs.
@@ -337,21 +301,7 @@ class KeyingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         if msg & (om.MNodeMessage.kAttributeSet|om.MNodeMessage.kAttributeEval):
             self._async_refresh()
 
-    def _playback_stopped(self):
-        # This is called when playback mode is exited (as well as when scrubbing is released, which
-        # we don't care about).  Register the time changed listener, which we only use when not in
-        # playback.
-        self._register_time_changed_listener()
-
-        # Make sure we refresh to show the state when playback stopped.
-        self._async_refresh()
-
-    def _time_changed(self, unused):
-        if not self._enable_time_listener():
-            # Unregister this event during playback.
-            self._unregister_time_changed_listener()
-            return
-
+    def _time_changed(self):
         # During editing and timeline scrubbing, update the UI when values change.
         self._async_refresh()
 
