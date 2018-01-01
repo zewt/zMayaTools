@@ -498,10 +498,10 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         self.callback_ids.append(msg.addNodeAddedCallback(self._keyframe_naming_nodes_changed, 'zKeyframeNaming', None))
         self.callback_ids.append(msg.addNodeRemovedCallback(self._keyframe_naming_nodes_changed, 'zKeyframeNaming', None))
         self.callback_ids.append(msg.addConnectionCallback(self._connection_changed, None))
-        self.callback_ids.append(om.MNodeMessage.addNameChangedCallback(om.MObject(), self._node_renamed))
         node = get_singleton(create=False)
 
         if node is not None:
+            self.callback_ids.append(om.MNodeMessage.addNameChangedCallback(node.__apimobject__(), self._node_renamed))
             self.callback_ids.append(om.MNodeMessage.addAttributeChangedCallback(node.__apimobject__(), self._keyframe_node_changed, None))
             anim_curve = self._get_keyframe_anim_curve()
             self._listening_to_anim_curve = anim_curve
@@ -556,7 +556,40 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             #return pm.PyNode(result[0])
             return result[0]
 
+    def _check_file_loading(self):
+        """
+        Unregister our scene callbacks during file loads.  We don't want to slow file operations
+        by having callbacks run while loading large scenes, and for some reason registering callbacks
+        during file I/O can cause problems with array data not being set.
+
+        However, there's no callback for when isOpeningFile or isReadingFile change value, and
+        MSceneMessage is a pain for dealing with reference loads.
+
+        Handle this by just unregistering our callbacks the first time we're called during a
+        file load, and reregistering them in the idle loop, which will happen after the file
+        load finishes.  Return true if we're currently in a file load and the current callback
+        should stop.
+        """
+        # isOpeningFile is true while opening a file, but not while loading a reference.
+        # isReadingFile is true while loading references, but not while loading files.
+        if not om.MFileIO.isOpeningFile() and not om.MFileIO.isReadingFile():
+            return False
+
+        def reestablish_callbacks():
+            self._register_listeners()
+            self.refresh()
+
+        self._unregister_listeners()
+
+        # Reregister our listeners once the file operation finishes.
+        qt_helpers.run_async_once(reestablish_callbacks)
+        
+        return True
+
     def _connection_changed(self, src_plug, dst_plug, made, data):
+        if self._check_file_loading():
+            return
+
         # If a keyframe node is connected or disconnected from zKeyframeNaming.keyframes,
         # we need to reestablish listeners to listen for keyframe changes.
         #
