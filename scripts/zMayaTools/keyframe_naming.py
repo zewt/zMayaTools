@@ -128,7 +128,10 @@ def create_key_at_current_time():
 
     with maya_helpers.undo('Create named keyframe'):
         # There's no key at the current frame.  Find an unused name index and create it.
+        # We have to set the value, then set the keyframe.  If we just call setKeyframe,
+        # the value won't be set correctly if it's in a character set.
         idx = get_unused_name_index()
+        keys.attr('keyframes').set(idx)
         pm.setKeyframe(keys, at='keyframes', value=idx, inTangentType='stepnext', outTangentType='step')
 
         # Keyframes can be deleted by the user, which leaves behind stale entries.  Remove
