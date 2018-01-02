@@ -213,6 +213,16 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
 #        redo.triggered.connect(lambda: pm.redo(redo=True))
 #        self.addAction(redo)
 
+        delete = Qt.QAction('Add', self)
+        delete.setShortcut(Qt.QKeySequence(Qt.Qt.Key_Insert))
+        delete.triggered.connect(self.add_new_frame)
+        self.addAction(delete)
+
+        delete = Qt.QAction('Delete', self)
+        delete.setShortcut(Qt.QKeySequence(Qt.Qt.Key_Delete))
+        delete.triggered.connect(self.delete_selected_frame)
+        self.addAction(delete)
+
         self.shown = False
         self.callback_ids = om.MCallbackIdArray()
 
