@@ -15,5 +15,5 @@ Additional nodes:
 - zRigHandle: Clean, easy to select viewport rig handles
 - zMouthController: A controller and UI for simple mouth animation
 - zArnoldMetadata: Dynamic EXR metadata with Arnold
-- zKeyframeNaming: Assign names to keyframes, with quick navigation
+- zKeyframeNaming: Bookmark keyframes, with quick navigation
 

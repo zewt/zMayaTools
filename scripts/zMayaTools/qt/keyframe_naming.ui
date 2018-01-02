@@ -20,7 +20,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>Named Keyframes</string>
+   <string>Keyframe Bookmarks</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="0" column="0">
