@@ -14,3 +14,10 @@ h1, h2 {
     border-bottom: 1px solid #eeeeee;
     padding-bottom: .3em;
 }
+
+.header-module {
+    font-size: .4em;
+    font-weight: normal;
+    font-weight: 500;
+}
+

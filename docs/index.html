@@ -44,7 +44,7 @@ Load the zMayaUtils plugin to add these helper tools:
         </tr>
 
         <tr>
-            <td><a href=tool-eye-rig.html>Skeleton &gt; Eye Rig</a></td>
+            <td><a href=tool-eye-rig.html>Skeleton &gt; Eye Rig</a> <a class=node href=#dependency>node</a></td>
             <td>A simple eye rig</td>
         </tr>
 
@@ -53,11 +53,6 @@ Load the zMayaUtils plugin to add these helper tools:
             <td>Detect common problems in character meshes and skinning</td>
         </tr>
     </tbody>
-</table>
-
-<h2>Nodes</h2>
-
-<table class=plugin-list>
     <tbody>
         <tr>
             <td>
@@ -68,23 +63,26 @@ Load the zMayaUtils plugin to add these helper tools:
 
         <tr>
             <td>
-                <a href=zRigHandle.html>zRigHandle</a>
+                <a href=zRigHandle.html>Create &gt; Rig Handle</a>
+                <a class=node href=#dependency>node</a>
             </td>
             <td>Clean, easy to select viewport rig handles</td>
         </tr>
 
         <tr>
             <td>
-                <a href=zMouthController.html>zMouthController</a>
+                <a href=zMouthController.html>Skeleton &gt; Mouth Controller</a>
+                <a class=node href=#dependency>node</a>
             </td>
             <td>A controller and UI for simple mouth animation</td>
         </tr>
 
         <tr>
             <td>
-                <a href=zKeyframeNaming.html>zKeyframeNaming</a>
+                <a href=zKeyframeNaming.html>Key &gt; Keyframe Bookmarks</a>
+                <a class=node href=#dependency>node</a>
             </td>
-            <td>Bookmark keyframes, with quick navigation</td>
+            <td>Save keyframes bookmarks, with quick navigation</td>
         </tr>
     <tbody>
 </table>
@@ -101,6 +99,7 @@ useful to somebody, so they don't rot away if I don't finish them up.
         <tr>
             <td>
                 <a href=zChooser.html>zChooser</a>
+                <a class=node href=#dependency>node</a>
             </td>
             <td>Activate one output in a list</td>
         </tr>
@@ -108,6 +107,7 @@ useful to somebody, so they don't rot away if I don't finish them up.
         <tr>
             <td>
                 <a href=zOBBTransform.html>zOBBTransform</a>
+                <a class=node href=#dependency>node</a>
             </td>
             <td>Estimate the transform applied by mesh deformations</td>
         </tr>
@@ -115,9 +115,25 @@ useful to somebody, so they don't rot away if I don't finish them up.
         <tr>
             <td>
                 <a href=zRBF.html>zRBF</a>
+                <a class=node href=#dependency>node</a>
             </td>
             <td>A basic RBF solver</td>
         </tr>
     </tbody>
 </table>
+
+<style>
+.node {
+    text-decoration: none;
+    vertical-align: super;
+    font-size: .6em;
+    color: #4000FF;    
+}
+</style>
+
+<h2 id=dependency>Node dependencies</h2>
+
+Features marked with <span class=node>node</span> add a node dependency to the scene,
+and errors will be displayed if the plugin isn't available.
+
 
