@@ -213,16 +213,6 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
 #        redo.triggered.connect(lambda: pm.redo(redo=True))
 #        self.addAction(redo)
 
-        delete = Qt.QAction('Add', self)
-        delete.setShortcut(Qt.QKeySequence(Qt.Qt.Key_Insert))
-        delete.triggered.connect(self.add_new_frame)
-        self.addAction(delete)
-
-        delete = Qt.QAction('Delete', self)
-        delete.setShortcut(Qt.QKeySequence(Qt.Qt.Key_Delete))
-        delete.triggered.connect(self.delete_selected_frame)
-        self.addAction(delete)
-
         self.shown = False
         self.callback_ids = om.MCallbackIdArray()
 
@@ -264,7 +254,21 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         add_arnold_attribute.triggered.connect(connect_to_arnold)
         edit_menu.addAction(add_arnold_attribute)
 
+        self.installEventFilter(self)
+
         # showEvent() will be called when we're actually displayed, and fill in the list.
+
+    def eventFilter(self, object, event):
+        if object is self:
+            if event.type() == Qt.QEvent.KeyPress:
+                if event.key() == Qt.Qt.Key_Delete:
+                    self.delete_selected_frame()
+                    return True
+                elif event.key() == Qt.Qt.Key_Insert:
+                    self.add_new_frame()
+                    return True
+
+        return super(KeyframeNamingWindow, self).eventFilter(object, event)
 
     def done(self, result):
         """
