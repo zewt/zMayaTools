@@ -226,9 +226,6 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         # Make sure zKeyframeNaming has been generated.
         qt_helpers.compile_all_layouts()
 
-        from qt_widgets import list_with_enter_press
-        reload(list_with_enter_press)
-
         from qt_generated import keyframe_naming
         reload(keyframe_naming)
 
@@ -242,7 +239,6 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         self.ui.frameList.itemDelegate().closeEditor.connect(self.name_editor_closed)
         self.ui.frameList.itemSelectionChanged.connect(self.selected_frame_changed)
         self.ui.frameList.itemClicked.connect(self.selected_frame_changed)
-        self.ui.frameList.enter_pressed.connect(self.rename_selected_frame)
 
         # Create the menu.  Why can't this be done in the designer?
         menu_bar = Qt.QMenuBar()
@@ -255,6 +251,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         edit_menu.addAction(add_arnold_attribute)
 
         self.installEventFilter(self)
+        self.ui.frameList.installEventFilter(self)
 
         # showEvent() will be called when we're actually displayed, and fill in the list.
 
@@ -267,6 +264,10 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
                 elif event.key() == Qt.Qt.Key_Insert:
                     self.add_new_frame()
                     return True
+        elif object is self.ui.frameList:
+            if event.type() == Qt.QEvent.KeyPress:
+                if event.key() == Qt.Qt.Key_Return:
+                    self.rename_selected_frame()
 
         return super(KeyframeNamingWindow, self).eventFilter(object, event)
 
