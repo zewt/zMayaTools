@@ -19,7 +19,7 @@ class zKeyframeNaming(OpenMayaMPx.MPxNode):
         if plug.isElement():
             plug = plug.array()
 
-        if plug == self.attr_arnold_attribute_out:
+        if plug in (self.attr_current_keyframe_name_out, self.attr_arnold_attribute_out):
             key_idx = dataBlock.inputValue(self.attr_keyframes).asInt()
             entries = dataBlock.inputArrayValue(self.attr_entries)
             
@@ -31,7 +31,10 @@ class zKeyframeNaming(OpenMayaMPx.MPxNode):
                 name = entries.inputValue().child(self.attr_names).asString()
 
             output = dataBlock.outputValue(plug)
-            output.setString("STRING frameName %s" % name)
+            if plug == self.attr_current_keyframe_name_out:
+                output.setString(name)
+            else:
+                output.setString("STRING frameName %s" % name)
             
             return
 
@@ -43,6 +46,12 @@ class zKeyframeNaming(OpenMayaMPx.MPxNode):
         typedAttr = om.MFnTypedAttribute()
         cmpAttr = om.MFnCompoundAttribute()
 
+        cls.attr_current_keyframe_name_out = typedAttr.create('currentKeyframeName', 'knn', om.MFnData.kString)
+        typedAttr.setWritable(False)
+        typedAttr.setStorable(False)
+        typedAttr.setChannelBox(True)
+        cls.addAttribute(cls.attr_current_keyframe_name_out)
+
         cls.attr_arnold_attribute_out = typedAttr.create('arnoldAttributeOut', 'aao', om.MFnData.kString)
         typedAttr.setWritable(False)
         typedAttr.setStorable(False)
@@ -53,16 +62,19 @@ class zKeyframeNaming(OpenMayaMPx.MPxNode):
         nAttr.setKeyable(True)
         cls.addAttribute(cls.attr_keyframes)
         cls.attributeAffects(cls.attr_keyframes, cls.attr_arnold_attribute_out)
+        cls.attributeAffects(cls.attr_keyframes, cls.attr_current_keyframe_name_out)
 
         cls.attr_names = typedAttr.create('name', 'nm', om.MFnData.kString)
         cls.addAttribute(cls.attr_names)
         cls.attributeAffects(cls.attr_names, cls.attr_arnold_attribute_out)
+        cls.attributeAffects(cls.attr_names, cls.attr_current_keyframe_name_out)
 
         cls.attr_entries = cmpAttr.create('entries', 'en')
         cmpAttr.addChild(cls.attr_names)
         cmpAttr.setArray(True)
         cls.addAttribute(cls.attr_entries)
         cls.attributeAffects(cls.attr_entries, cls.attr_arnold_attribute_out)
+        cls.attributeAffects(cls.attr_entries, cls.attr_current_keyframe_name_out)
 
     @classmethod
     def creator(cls):
