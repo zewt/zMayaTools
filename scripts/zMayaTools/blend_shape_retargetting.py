@@ -111,7 +111,7 @@ def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend
     copy_blend_shapes(src_blend_shape_node, duplicate_src_blend_shape)
 
     # Wrap dst_node_copy to src_node_copy, so the destination mesh follows blend shapes on the source mesh.
-    wrap_deformer(src_node_copy, dst_node_copy, auto_weight_threshold=True, falloff_mode=0)
+    wrap_deformer(src_node_copy, dst_node_copy, auto_weight_threshold=True, falloff_mode=0, use_cvwrap_if_available=True)
 
     # Find all blend shape names.  We require that blend shapes have a name, and always give
     # blend shapes the same name as their source.
@@ -237,7 +237,7 @@ def _create_cvwrap(control_object, target):
     Create a wrap deformer with cvwrap, if available.  If the cvwrap plugin isn't available,
     return None.
     """
-    if not load_plugin('cvwrap.mll', required=False):
+    if not maya_helpers.load_plugin('cvwrap.mll', required=False):
         return None
 
     old_selection = pm.ls(sl=True)
@@ -592,8 +592,10 @@ class UI(maya_helpers.OptionsBox):
         # Add the blend shape targets in the source blend shape to the list.
         src_blend_shape = pm.ls(src_blend_shape)[0]
 
+        weight_idx_list = src_blend_shape.weightIndexList()
         src_weights = src_blend_shape.attr('weight')
-        for weight in src_weights:
+        for weight_idx in weight_idx_list:
+            weight = src_weights.elementByLogicalIndex(weight_idx)
             target_name = pm.aliasAttr(weight, q=True)
 
             pm.textScrollList('blendShapeTargetList', edit=True, append=target_name)

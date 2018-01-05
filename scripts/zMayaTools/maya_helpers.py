@@ -312,6 +312,25 @@ def undo(name='undo_on_exception'):
     finally:
         pm.undoInfo(closeChunk=True)
 
+def load_plugin(plugin_name, required=True):
+    """
+    Load plugin_name, if available.  If required is true and the plugin isn't available, raise RuntimeError.
+
+    pm.loadPlugin() is slow if called when a plugin is already loaded.  This checks if the
+    plugin is loaded to avoid that.
+    """
+    if not pm.pluginInfo(plugin_name, q=True, loaded=True):
+        try:
+            pm.loadPlugin(plugin_name, quiet=True)
+        except RuntimeError as e:
+            pass
+
+    if not pm.pluginInfo(plugin_name, q=True, registered=True):
+        if required:
+            raise RuntimeError('Plugin "%s" isn\'t available.' % plugin_name)
+        return False
+    return True
+
 def copy_weights_to_skincluster(src_attr, skin_cluster, shape):
     src_indices = src_attr.getArrayIndices()
     if not src_indices:
