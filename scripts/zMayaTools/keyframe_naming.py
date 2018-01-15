@@ -35,6 +35,21 @@ def get_key_index_at_frame(frame):
     else:
         return None
 
+def find_frame_of_key(frame):
+    """
+    Return the nearest key on or before frame, or None if there aren't any.
+    """
+    keys = get_singleton(create=False)
+    if keys is None:
+        return None
+    
+    # Why is there no <= search?
+    frames = pm.findKeyframe(keys.attr('keyframes'), t=frame + 0.000001, which='previous')
+    if frames is None:
+        return None
+    if frames > frame:
+        return None
+    return frames
 
 def get_current_key_index():
     """
