@@ -1,0 +1,68 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>zFileSwitch</h1>
+
+<h2>Introduction</h2>
+
+zFileSwitch allows specifying separate low- and high-resolution paths for a texture.
+The low-res one can be used in the viewport, to reduce memory usage and scene load
+times, and the high-res one can be used in renders.
+
+<h2>Usage</h2>
+
+Create a zFileSwitch node.  Connect its output attribute to your file node's
+fileTextureName attribute.
+<p>
+In the attribute editor, set the high-res and low-res texture paths.  Note that
+if one doesn't exist, the other will be used automatically.
+<p>
+Toggle <b>Use High Res</b> to switch the current texture.  To do this automatically,
+create a render setup.  Right-click the render setup layer and select <b>Import User
+Templates &gt; zFileSwitch</b>.  This will import settings to set Use High Res
+only during renders.
+<p>
+Click <b>Refresh</b> to reload the selected texture.
+
+<h2>Attributes</h2>
+
+<ul>
+<li>
+    <b>output</b> - The currently selected path.  This should be connected to the
+    fileTextureName attribute of a file node.
+</li>
+<li>
+    <b>highResolution</b> - A path to the high-resolution texture.
+</li>
+<li>
+    <b>lowResolution</b> - A path to the low-resolution texture.
+</li>
+<li>
+    <b>useHighRes</b> - If set, the high-res texture will be used.  Otherwise, the low-res one
+    will be used.
+</li>
+<li>
+    <b>override</b> - If set to "Off", useHighRes will be used normally.  If "Force high-res"
+    or "Force low-res" is selected, the given texture will be used, ignoring useHighRes.  This
+    allows switching to one of the two textures without disconnecting useHighRes.
+</li>
+</ul>
+
+<h2>Limitations</h2>
+
+<ul>
+    <li>
+        File textures can't reload their textures if their path attribute is connected.
+        This is a bug in the file node, not zFileSwitch.  Use Refresh in the zFileSwitch
+        attribute editor instead.
+    </li>
+    <li>
+        Not all rendering features handle render setup local render overrides.  If this
+        isn't supported, the render setup won't switch off the viewport override.  Render
+        Sequence does support this.  You can also use a separate render setup for rendering
+        if needed.
+    </li>
+</ul>
+

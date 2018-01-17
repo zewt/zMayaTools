@@ -1,0 +1,45 @@
+[
+  {
+    "collection": {
+      "children": [
+        {
+          "absOverride": {
+            "attrValue": {
+              "connectable": true, 
+              "type": "Bool", 
+              "value": true
+            }, 
+            "attribute": "useHighRes", 
+            "localRender": false, 
+            "name": "useHighRes_Renders", 
+            "selfEnabled": true
+          }
+        }, 
+        {
+          "absOverride": {
+            "attrValue": {
+              "connectable": true, 
+              "type": "Bool", 
+              "value": false
+            }, 
+            "attribute": "useHighRes", 
+            "localRender": true, 
+            "name": "useHighRes_Viewport", 
+            "selfEnabled": true
+          }
+        }
+      ], 
+      "isolateSelected": false, 
+      "name": "zFileSwitchHighResInRenders", 
+      "selector": {
+        "simpleSelector": {
+          "customFilterValue": "zFileSwitch", 
+          "pattern": "*", 
+          "staticSelection": "", 
+          "typeFilter": 8
+        }
+      }, 
+      "selfEnabled": true
+    }
+  }
+]

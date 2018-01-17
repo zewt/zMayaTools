@@ -16,4 +16,5 @@ Additional nodes:
 - zMouthController: A controller and UI for simple mouth animation
 - zArnoldMetadata: Dynamic EXR metadata with Arnold
 - zKeyframeNaming: Bookmark keyframes, with quick navigation
+- zFileSwitch: Switch between texturse for viewport and rendering
 

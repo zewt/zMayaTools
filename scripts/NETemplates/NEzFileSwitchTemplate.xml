@@ -1,0 +1,28 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<templates>
+	<using package='maya'/>
+	<template name='NEzFileSwitch'>
+		<attribute name='output' type='maya.string'>
+			<label>Output</label>
+		</attribute>
+		<attribute name='highResolution' type='maya.string'>
+			<label>High Resolution</label>
+		</attribute>
+		<attribute name='lowResolution' type='maya.string'>
+			<label>Low Resolution</label>
+		</attribute>
+		<attribute name='override' type='maya.enum'>
+			<label>Override</label>
+		</attribute>
+		<attribute name='useHighRes' type='maya.bool'>
+			<label>Use High Res</label>
+		</attribute>
+	</template>
+	<view name='NEDefault' template='NEzFileSwitch'>
+		<property name='output'/>
+		<property name='useHighRes'/>
+		<property name='override'/>
+		<property name='highResolution'/>
+		<property name='lowResolution'/>
+	</view>
+</templates>
