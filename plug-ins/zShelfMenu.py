@@ -94,9 +94,13 @@ class Shelf(object):
 
         # Find the index of the popup.
         popup_names = wnd.updateMenuItemList()
-        idx = popup_names.index(popup)
-        if idx != -1:
-            wnd.updateMenuItemList(idx+1)
+        popup_name = popup.split('|')[-1]
+        try:
+            idx = popup_names.index(popup_name)
+        except ValueError:
+            return
+
+        wnd.updateMenuItemList(idx+1)
 
 class Menu(object):
     """
