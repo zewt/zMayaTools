@@ -338,7 +338,7 @@ class zRigHandle(om.MPxSurfaceShape):
             return True
 
         def getShapeIdx(self):
-            return om.MPlug(self.thisMObject(), self.shapeAttr).asInt()
+            return om.MPlug(self.thisMObject(), self.shapeAttr).asShort()
             
 	def getShape(self):
             # If the shape isn't cached, cache it now.
