@@ -5,6 +5,7 @@ from maya.app.general import mayaMixin
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from zMayaTools import qt_helpers, maya_logging, maya_helpers, Qt
 import bisect, os, sys, time
+from collections import defaultdict
 from pprint import pprint, pformat
 
 log = maya_logging.get_log()
@@ -24,7 +25,13 @@ def get_singleton(create=True):
     assert len(nodes) == 1
     return nodes[0]
 
-def get_key_index_at_frame(frame):
+def _get_key_index_at_frame(frame):
+    """
+    Get the key index for the current frame.
+
+    If there's no key at the current frame, return None rather than the value of
+    the most recent frame.
+    """
     keys = get_singleton(create=False)
     if keys is None:
         return None
@@ -34,6 +41,12 @@ def get_key_index_at_frame(frame):
         return int(idx[0])
     else:
         return None
+
+def key_exists_at_frame(frame):
+    """
+    Return true if a key is set at the given frame.
+    """
+    return _get_key_index_at_frame(frame) is not None
 
 def find_frame_of_key(frame):
     """
@@ -51,16 +64,7 @@ def find_frame_of_key(frame):
         return None
     return frames
 
-def get_current_key_index():
-    """
-    Get the key index for the current frame.
-
-    If there's no key at the current frame, return None rather than the value of
-    the most recent frame.
-    """
-    current_time = pm.currentTime(q=True)
-    return get_key_index_at_frame(current_time)
-    
+   
 def get_all_keys():
     """
     Return the time and name index of all named keys.
@@ -104,14 +108,32 @@ def get_name_at_idx(idx):
         return None
     return keys.attr('entries').elementByLogicalIndex(idx).attr('name').get()
 
-def set_name(idx, name):
-    keys = get_singleton()
+def get_name_at_frame(frame):
+    idx = _get_key_index_at_frame(frame)
+    if idx is None:
+        return None
+
+    return get_name_at_idx(idx)
+
+def set_name_at_frame(frame, name):
+    keys = get_singleton(False)
+    if keys is None:
+        return
+
+    # Run index cleanup if needed before making changes to the frame.
+    cleanup_duplicate_indices()    
+
+    idx = _get_key_index_at_frame(frame)
+    if idx is None:
+        return
+
     attr = keys.attr('entries').elementByLogicalIndex(idx).attr('name')
+
     # Don't set the name if it isn't changing, so an undo entry isn't created.
     if attr.get() != name:
         attr.set(name)
 
-def get_unused_name_index():
+def _get_unused_name_index():
     """
     Return the first unused index in the name list.
     """
@@ -130,28 +152,36 @@ def get_unused_name_index():
         prev_idx = idx
     return prev_idx + 1
 
-def create_key_at_current_time():
+   
+def create_key_at_time(frame):
     """
-    Create a key at the current time.  If a key already exists, return its index.
+    Create a key at the given time.  If a key already exists, return its index.
     """
     keys = get_singleton()
     
-    # Find the name index for the current frame, if it already exists.
-    idx = get_current_key_index()
+    # Find the name index for frame, if it already exists.
+    idx = _get_key_index_at_frame(frame)
     if idx is not None:
         return idx
 
-    with maya_helpers.undo('Create named keyframe'):
-        # There's no key at the current frame.  Find an unused name index and create it.
-        # We have to set the value, then set the keyframe.  If we just call setKeyframe,
-        # the value won't be set correctly if it's in a character set.
-        idx = get_unused_name_index()
-        keys.attr('keyframes').set(idx)
-        pm.setKeyframe(keys, at='keyframes', value=idx, inTangentType='stepnext', outTangentType='step')
+    # There's no key at the current frame.  Find an unused name index and create it.
+    # We have to set the value, then set the keyframe.  If we just call setKeyframe,
+    # the value won't be set correctly if it's in a character set.
+    idx = _get_unused_name_index()
+    keys.attr('keyframes').set(idx)
 
-        # Keyframes can be deleted by the user, which leaves behind stale entries.  Remove
-        # any leftover data in the slot we're using.
-        pm.removeMultiInstance(keys.attr('entries').elementByLogicalIndex(idx))
+    # Disable auto-keyframe while we do this.  Otherwise, a keyframe will also
+    # be added at the current frame (which seems like a bug).
+    with maya_helpers.disable_auto_keyframe():
+        pm.setKeyframe(keys, at='keyframes', time=frame, value=idx)
+
+    # setKeyframe can do this, but it's buggy: outTangentType='step' isn't applied if
+    # we add a key before any other existing keys.
+    pm.keyTangent(keys, time=frame, inTangentType='stepnext', outTangentType='step')
+
+    # Keyframes can be deleted by the user, which leaves behind stale entries.  Remove
+    # any leftover data in the slot we're using.
+    pm.removeMultiInstance(keys.attr('entries').elementByLogicalIndex(idx))
 
     return idx
 
@@ -163,6 +193,10 @@ def delete_key_at_frame(frame):
     be added to character sets by the user.
     """
     keys = get_singleton()
+
+    # Run index cleanup if needed before making changes to the frame.
+    cleanup_duplicate_indices()    
+
     all_keys = get_all_keys()
 
     idx = pm.keyframe(keys.attr('keyframes'), q=True, valueChange=True, t=frame)
@@ -170,9 +204,39 @@ def delete_key_at_frame(frame):
         return
 
     # Remove the keyframe and any associated data.
-    with maya_helpers.undo('Delete named keyframe'):
-        pm.cutKey(keys.attr('keyframes'), t=frame)
-        pm.removeMultiInstance(keys.attr('entries').elementByLogicalIndex(idx[0]))
+    pm.cutKey(keys.attr('keyframes'), t=frame)
+    pm.removeMultiInstance(keys.attr('entries').elementByLogicalIndex(idx[0]))
+
+def cleanup_duplicate_indices():
+    """
+    Clean up duplicate entries in the key index.
+
+    If the user copies and pastes keyframe indices in the graph editor, we'll
+    end up with multiple frames pointing at the same name entry.  If we edit
+    those entries without cleaning it up first, we'll cause unwanted changes.
+    """
+    keys = get_singleton()
+    
+    all_keys = get_all_keys()
+    keys_by_index = defaultdict(list)
+    for frame, index in all_keys.items():
+        keys_by_index[index].append(frame)
+
+    for idx, frames in keys_by_index.items():
+        if len(frames) < 2:
+            continue
+            
+        # Sort frames, so we always leave the first one alone and adjust the rest.
+        frames.sort()
+
+        name = get_name_at_idx(idx)
+        for frame in frames[1:]:
+            # Delete the duplicate index and create a new one with the same name.
+            pm.cutKey(keys.attr('keyframes'), t=frame)
+            create_key_at_time(frame)
+            set_name_at_frame(frame, name)
+           
+    return True
 
 def connect_to_arnold():
     """
@@ -365,11 +429,10 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             # the window is docked into the main Maya window.
             self.cancel_rename()
 
-            idx = get_current_key_index()
-            if idx is None:
-                idx = create_key_at_current_time()
+            if not key_exists_at_frame(pm.currentTime(q=True)):
                 frame = pm.currentTime(q=True)
-                set_name(idx, 'Frame %i' % frame)
+                create_key_at_time(frame)
+                set_name_at_frame(frame, 'Frame %i' % frame)
                 
             # Our listeners will refresh automatically, but that won't happen until later.  Refresh
             # immediately, so we can initiate editing on the new item.
@@ -387,7 +450,8 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             return
 
         self.cancel_rename()
-        delete_key_at_frame(item.frame)
+        with maya_helpers.undo('Delete keyframe bookmark'):
+            delete_key_at_frame(item.frame)
     
     def rename_selected_frame(self):
         """
@@ -590,11 +654,8 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             return
         item = items[0]
 
-        idx = get_key_index_at_frame(item.frame)
-        if idx is None:
-            return
-
-        set_name(idx, item.text())
+        with maya_helpers.undo('Rename keyframe bookmark'):
+            set_name_at_frame(item.frame, item.text())
 
     def name_editor_closed(self, editor, hint):
         # We don't refresh while editing, so we don't clobber the user's edits.  Refresh

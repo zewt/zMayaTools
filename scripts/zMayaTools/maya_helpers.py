@@ -312,6 +312,18 @@ def undo(name='undo_on_exception'):
     finally:
         pm.undoInfo(closeChunk=True)
 
+@contextlib.contextmanager
+def disable_auto_keyframe():
+    """
+    Disable auto-keyframe within a with block.
+    """
+    original_auto_keyframe = pm.autoKeyframe(q=True, state=True)
+    try:
+        pm.autoKeyframe(state=False)
+        yield
+    finally:
+        pm.autoKeyframe(state=original_auto_keyframe)
+
 def load_plugin(plugin_name, required=True):
     """
     Load plugin_name, if available.  If required is true and the plugin isn't available, raise RuntimeError.
