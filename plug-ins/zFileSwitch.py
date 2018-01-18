@@ -65,10 +65,12 @@ class zFileSwitch(OpenMayaMPx.MPxNode):
         cls.addAttribute(cls.attr_output)
 
         cls.attr_low_res = typedAttr.create('lowResolution', 'lr', om.MFnData.kString)
+        typedAttr.setUsedAsFilename(True)
         cls.addAttribute(cls.attr_low_res)
         cls.attributeAffects(cls.attr_low_res, cls.attr_output)
 
         cls.attr_high_res = typedAttr.create('highResolution', 'hr', om.MFnData.kString)
+        typedAttr.setUsedAsFilename(True)
         cls.addAttribute(cls.attr_high_res)
         cls.attributeAffects(cls.attr_high_res, cls.attr_output)
 
@@ -267,12 +269,19 @@ def initializePlugin(mobject):
     plugin = OpenMayaMPx.MFnPlugin(mobject)
     plugin.registerNode('zFileSwitch', zFileSwitch.pluginNodeId, zFileSwitch.creator, zFileSwitch.initialize, OpenMayaMPx.MPxNode.kDependNode)
 
+    # Register with the file path editor.
+    pm.filePathEditor(temporary=True, registerType='zFileSwitch.lowResolution')
+    pm.filePathEditor(temporary=True, registerType='zFileSwitch.highResolution')
+
     menu.add_menu_items()
     copy_render_setup_template()
 
 def uninitializePlugin(mobject):
     plugin = OpenMayaMPx.MFnPlugin(mobject)
     plugin.deregisterNode(zFileSwitch.pluginNodeId)
+
+    pm.filePathEditor(temporary=True, deregisterType='zFileSwitch.lowResolution')
+    pm.filePathEditor(temporary=True, deregisterType='zFileSwitch.highResolution')
 
     menu.remove_menu_items()
 
