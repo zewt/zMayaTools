@@ -69,7 +69,7 @@ class zFileSwitch(OpenMayaMPx.MPxNode):
         cls.addAttribute(cls.attr_high_res)
         cls.attributeAffects(cls.attr_high_res, cls.attr_output)
 
-        cls.attr_use_high_res = nAttr.create('useHighRes', 'uhr', om.MFnNumericData.kBoolean, True)
+        cls.attr_use_high_res = nAttr.create('useHighRes', 'uhr', om.MFnNumericData.kBoolean, False)
         typedAttr.setChannelBox(True)
         cls.addAttribute(cls.attr_use_high_res)
         cls.attributeAffects(cls.attr_use_high_res, cls.attr_output)
