@@ -4,6 +4,7 @@ import maya.OpenMaya as om
 import maya.OpenMayaRender as omr
 import pymel.core as pm
 from pymel.tools import py2mel
+from zMayaTools.menus import Menu
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
@@ -25,7 +26,9 @@ class zFileSwitch(OpenMayaMPx.MPxNode):
             # the high-res path first.
             low_res_path = dataBlock.inputValue(self.attr_low_res).asString()
             high_res_path = dataBlock.inputValue(self.attr_high_res).asString()
-            paths = [low_res_path, high_res_path]
+            paths = []
+            if low_res_path: paths.append(low_res_path)
+            if high_res_path: paths.append(high_res_path)
             if use_high_res:
                 paths.reverse()
 
@@ -39,7 +42,7 @@ class zFileSwitch(OpenMayaMPx.MPxNode):
                     break
             else:
                 # Neither file existed, so use the first choice.
-                path = paths[0]
+                path = paths[0] if paths else ''
 
             output = dataBlock.outputValue(plug)
             output.setString(path)
@@ -108,16 +111,6 @@ def copy_render_setup_template():
     rs_path = pm.optionVar(q='renderSetup_userTemplateDirectory')
     output_path = rs_path + '/zFileSwitch.json'
     shutil.copyfile(input_path, output_path)
-
-def initializePlugin(mobject):
-    plugin = OpenMayaMPx.MFnPlugin(mobject)
-    plugin.registerNode('zFileSwitch', zFileSwitch.pluginNodeId, zFileSwitch.creator, zFileSwitch.initialize, OpenMayaMPx.MPxNode.kDependNode)
-
-    copy_render_setup_template()
-
-def uninitializePlugin(mobject):
-    plugin = OpenMayaMPx.MFnPlugin(mobject)
-    plugin.deregisterNode(zFileSwitch.pluginNodeId)
 
 # AE:
 from maya import OpenMaya as om
@@ -224,4 +217,63 @@ def zFileSwitchRefreshReplace(attr):
         pm.callbacks(executeCallbacks=True, hook='textureReload %s' % path)
     pm.button('refreshFileSwitch', e=True, command=refresh)
 py2mel.py2melProc(zFileSwitchRefreshReplace)
+
+# Menu:
+def add_file_switch(node):
+    name = node.fileTextureName
+    existing_connections = name.listConnections(s=True, d=False)
+    if existing_connections:
+        conn = existing_connections[0]
+        if isinstance(conn, pm.nodetypes.ZFileSwitch):
+            return conn
+
+        log.warning('%s is already connected', node)
+        return None
+
+    # Create the zFileSwitch, set both textures to the file node's path, and connect it to the file.
+    # Name the switch after the file node.
+    switch = pm.createNode('zFileSwitch', name='switch_%s' % node.nodeName())
+    switch.highResolution.set(name.get())
+    switch.lowResolution.set(name.get())
+    switch.attr('output').connect(name)
+    return switch
+    
+def add_file_switch_to_selection(unused):
+    nodes = pm.ls(sl=True, type='file')
+    if not nodes:
+        print 'Select one or more file nodes'
+        return
+
+    results = []
+    for node in nodes:
+        switch = add_file_switch(node)
+        if switch is not None:
+            results.append(switch)
+
+    pm.select(results)
+
+class PluginMenu(Menu):
+    def add_menu_items(self):
+        # Add "File Switch" inside "Tools" in the Rendering > Texturing menu.
+        pm.mel.eval('RenTexturingMenu "mainRenTexturingMenu"')
+        menu = 'mainRenTexturingMenu'
+        self.add_menu_item('zFileSwitch_section', divider=True, label='File Switch', parent=menu)
+        self.add_menu_item('zFileSwitch', label='Create File Switch', parent=menu,
+                command=add_file_switch_to_selection,
+                annotation='Select one or more file nodes to create a high/low resolution texture switch')
+
+menu = PluginMenu()
+def initializePlugin(mobject):
+    plugin = OpenMayaMPx.MFnPlugin(mobject)
+    plugin.registerNode('zFileSwitch', zFileSwitch.pluginNodeId, zFileSwitch.creator, zFileSwitch.initialize, OpenMayaMPx.MPxNode.kDependNode)
+
+    menu.add_menu_items()
+    copy_render_setup_template()
+
+def uninitializePlugin(mobject):
+    plugin = OpenMayaMPx.MFnPlugin(mobject)
+    plugin.deregisterNode(zFileSwitch.pluginNodeId)
+
+    menu.remove_menu_items()
+
 
