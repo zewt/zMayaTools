@@ -84,6 +84,7 @@ class zFileSwitch(OpenMayaMPx.MPxNode):
         enumAttr.addField('Force low-res', 1)
         enumAttr.addField('Force high-res', 2)
         enumAttr.setDefault('Off')
+        enumAttr.setKeyable(True)
         cls.addAttribute(cls.attr_override)
         cls.attributeAffects(cls.attr_override, cls.attr_output)
 
