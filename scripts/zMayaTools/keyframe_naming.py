@@ -298,6 +298,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         self.frames_in_list = []
         self._currently_refreshing = False
         self._currently_setting_selection = False
+        self._listening_to_singleton = None
         self._listening_to_anim_curve = None
 
         self.time_change_listener = maya_helpers.TimeChangeListener(self._time_changed)
@@ -513,12 +514,13 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         msg = om.MDGMessage()
         self.callback_ids.append(msg.addNodeAddedCallback(self._keyframe_naming_nodes_changed, 'zKeyframeNaming', None))
         self.callback_ids.append(msg.addNodeRemovedCallback(self._keyframe_naming_nodes_changed, 'zKeyframeNaming', None))
-        self.callback_ids.append(msg.addConnectionCallback(self._connection_changed, None))
         node = get_singleton(create=False)
 
         if node is not None:
             self.callback_ids.append(om.MNodeMessage.addNameChangedCallback(node.__apimobject__(), self._node_renamed))
-            self.callback_ids.append(om.MNodeMessage.addAttributeChangedCallback(node.__apimobject__(), self._keyframe_node_changed, None))
+            self.callback_ids.append(om.MNodeMessage.addAttributeChangedCallback(node.__apimobject__(), self._singleton_node_changed, None))
+            self._listening_to_singleton = node
+
             anim_curve = self._get_keyframe_anim_curve()
             self._listening_to_anim_curve = anim_curve
 
@@ -536,23 +538,32 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             self.callback_ids.clear()
 
         self.time_change_listener.unregister()
+        self._listening_to_singleton = None
         self._listening_to_anim_curve = None
 
     def _keyframe_keys_changed(self, *args):
         self._async_refresh()
 
     def _keyframe_naming_nodes_changed(self, node, data):
-        # A zKeyframeNaming node was added or removed, so refresh the list.  Queue this instead of doing
-        # it now, since node removed callbacks happen before the node is actually deleted.
-        qt_helpers.run_async_once(self.refresh)
+        """
+        A zKeyframeNaming node was created or deleted.  See if we need to update
+        our listeners, and refresh the UI.
+        """
+        # Queue this instead of doing it now, since node removed callbacks happen
+        # before the node is actually deleted.
+        qt_helpers.run_async_once(self._reregister_listeners_if_needed)
 
     def _node_renamed(self, node, old_name, unused):
-        # A node was renamed.  Refresh the node list if it's a zKeyframeNaming node.
-        dep_node = om.MFnDependencyNode(node)
-        if dep_node.typeId() != plugin_node_id:
-            return
-        
-        qt_helpers.run_async_once(self.refresh)
+        """
+        A zKeyframeNaming node was renamed.  Refresh the node list if it's a zKeyframeNaming node.
+
+        Note that we only listen to see if a known node was renamed, which means we'll notice
+        if a zKeyframeNaming node is renamed away from the singleton, but not if it's renamed
+        back.  To see those, we'd need to listen to all renames in the scene, which would cause
+        a performance hit for a very rare edge case.  Unlike MDGMessage, MNodeMessage doesn't
+        let us filter by node type.
+        """
+        qt_helpers.run_async_once(self._reregister_listeners_if_needed)
 
     @classmethod
     def _get_keyframe_anim_curve(cls):
@@ -588,7 +599,12 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         """
         # isOpeningFile is true while opening a file, but not while loading a reference.
         # isReadingFile is true while loading references, but not while loading files.
-        if not om.MFileIO.isOpeningFile() and not om.MFileIO.isReadingFile():
+        def in_file_io():
+            return om.MFileIO.isOpeningFile() or om.MFileIO.isReadingFile() or  \
+                om.MFileIO.isWritingFile() or om.MFileIO.isNewingFile() or \
+                om.MFileIO.isImportingFile()
+
+        if not in_file_io():
             return False
 
         def reestablish_callbacks():
@@ -602,7 +618,13 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         
         return True
 
-    def _connection_changed(self, src_plug, dst_plug, made, data):
+    def _reregister_listeners_if_needed(self):
+        """
+        This is called when our zKeyframeNaming node or its singleton may have changed.
+        Check if we need to reestablish listeners with the new nodes, and refresh the
+        UI.
+        """
+        # If we're in file I/O, just shut down listeners until it's done.
         if self._check_file_loading():
             return
 
@@ -613,9 +635,11 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         # We can't just look at the plugs, since there might be other nodes in between, like
         # character sets.  Instead, we have to look at the actual animation curve node and
         # see if it's changed.
+        singleton = get_singleton(create=False)
         anim_curve = self._get_keyframe_anim_curve()
-        if anim_curve is self._listening_to_anim_curve:
-            # The animation curve we're interested hasn't changed.
+        if singleton is self._listening_to_singleton and anim_curve is self._listening_to_anim_curve:
+            # Neither the singleton nor the animCurve have changed.  Just refresh the UI.
+            self.refresh()
             return
 
         if not self.callback_ids.length():
@@ -625,9 +649,9 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         # Reset listeners and refresh the display.
         self._unregister_listeners()
         self._register_listeners()
-        qt_helpers.run_async_once(self.refresh)
-        
-    def _keyframe_node_changed(self, msg, plug, otherPlug, data):
+        self.refresh()
+            
+    def _singleton_node_changed(self, msg, plug, otherPlug, data):
         # For some reason, this is called once per output, but not actually called for changed inputs.
         # It seems to not notice when a value has changed because its input key connection has changed.
         #
@@ -637,8 +661,24 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         # to the output to trigger an evaluation.  Note that Set usually comes from the main thread, but
         # Eval tends to come from a worker thread, so we depend on the async dispatching to move this to
         # the main thread.
-        if msg & (om.MNodeMessage.kAttributeSet|om.MNodeMessage.kAttributeEval):
-            self._async_refresh()
+        if msg & (
+                om.MNodeMessage.kConnectionMade |
+                om.MNodeMessage.kConnectionBroken |
+                om.MNodeMessage.kAttributeSet |
+                om.MNodeMessage.kAttributeEval):
+            # kConnectionMade and kConnectionBroken will tell us when we've been connected
+            # or disconnected and should refresh our listeners in case we have a new animCurve.
+            #
+            # However, they're not sent if we're already connected to a character set and the
+            # character set gets connected to an animCurve, or any other in-between
+            # proxy of animCurves (the time editor does this as well).  We could detect
+            # this with MDGMessage.addConnectionCallback, but that's called on every
+            # connection change in the scene, which is too slow when things like render
+            # setups are making wide-scale changes to the scene.
+            #
+            # Most of the time a new animCurve is connected, it'll change the current value,
+            # which will cause kAttributeSet or kAttributeEval to be sent.
+            qt_helpers.run_async_once(self._reregister_listeners_if_needed)
 
     def _async_refresh(self):
         """
