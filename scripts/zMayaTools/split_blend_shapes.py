@@ -1,4 +1,4 @@
-import re
+import math, re
 import pymel.core as pm
 import maya.cmds as cmds
 import maya.OpenMaya as OpenMaya
@@ -49,7 +49,17 @@ def split_blend_shape(base_mesh, target_mesh, right_side=True, fade_distance=2, 
         delta = [target_pos[idx][i] - base_pos[idx][i] for i in range(3)]
         new_target_pos.append([base_pos[idx][i] + delta[i]*p for i in range(3)])
 
+    def distance_squared(a, b):
+        p0 = math.pow(a[0]-b[0], 2)
+        p1 = math.pow(a[1]-b[1], 2)
+        p2 = math.pow(a[2]-b[2], 2)
+        return math.pow(p0 + p1 + p2, 1)
+
     for idx in xrange(len(new_target_pos)):
+        old = target_pos[idx]
+        new = new_target_pos[idx]
+        if distance_squared(old, new) < 0.0001:
+            continue
         cmds.xform('%s.vtx[%i]' % (target_mesh, idx), t=new_target_pos[idx], ws=True)
 
 def get_connected_input_geometry(blend_shape):
