@@ -309,7 +309,7 @@ class UI(maya_helpers.OptionsBox):
         pm.floatSliderGrp('sbsPlaneOrigin', label='Plane origin', v=0, min=0, max=1000)
         pm.textFieldGrp('sbsNamingPattern', label='Naming pattern')
 
-    def fill_blend_target(self):
+    def fill_blend_target(self, unused=True):
         # Clear the existing target list.
         for item in pm.optionMenu('sbsTargetList|OptionMenu', q=True, itemListLong=True):
             pm.deleteUI(item)
