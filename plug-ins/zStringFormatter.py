@@ -68,7 +68,6 @@ class zStringFormatter(OpenMayaMPx.MPxNode):
 
         # The name affects all outputs.
         cls.attr_format = typedAttr.create('format', 'fmt', om.MFnData.kString)
-        typedAttr.setChannelBox(True)
         cls.addAttribute(cls.attr_format)
         cls.attributeAffects(cls.attr_format, cls.attr_output)
 
