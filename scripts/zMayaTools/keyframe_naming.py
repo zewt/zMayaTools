@@ -294,6 +294,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
 
         self.shown = False
         self.callback_ids = om.MCallbackIdArray()
+        self._reregister_callback_queued = False
 
         self.frames_in_list = []
         self._currently_refreshing = False
@@ -504,9 +505,6 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         qt_helpers.run_async_once(self.set_selected_frame_from_current_time)
 
     def _register_listeners(self):
-        if not self.shown:
-            return
-
         # Stop if we've already registered listeners.
         if self.callback_ids.length():
             return
@@ -551,7 +549,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         """
         # Queue this instead of doing it now, since node removed callbacks happen
         # before the node is actually deleted.
-        qt_helpers.run_async_once(self._reregister_listeners_if_needed)
+        self._async_check_listeners()
 
     def _node_renamed(self, node, old_name, unused):
         """
@@ -563,7 +561,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         a performance hit for a very rare edge case.  Unlike MDGMessage, MNodeMessage doesn't
         let us filter by node type.
         """
-        qt_helpers.run_async_once(self._reregister_listeners_if_needed)
+        self._async_check_listeners()
 
     @classmethod
     def _get_keyframe_anim_curve(cls):
@@ -585,51 +583,47 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             #return pm.PyNode(result[0])
             return result[0]
 
-    def _check_file_loading(self):
-        """
-        Unregister our scene callbacks during file loads.  We don't want to slow file operations
-        by having callbacks run while loading large scenes, and for some reason registering callbacks
-        during file I/O can cause problems with array data not being set.
+    # isOpeningFile is true while opening a file, but not while loading a reference.
+    # isReadingFile is true while loading references, but not while loading files.
+    @staticmethod
+    def in_file_io():
+        return om.MFileIO.isOpeningFile() or om.MFileIO.isReadingFile() or  \
+            om.MFileIO.isWritingFile() or om.MFileIO.isNewingFile() or \
+            om.MFileIO.isImportingFile()
 
-        However, there's no callback for when isOpeningFile or isReadingFile change value, and
-        MSceneMessage is a pain for dealing with reference loads.
 
-        Handle this by just unregistering our callbacks the first time we're called during a
-        file load, and reregistering them in the idle loop, which will happen after the file
-        load finishes.  Return true if we're currently in a file load and the current callback
-        should stop.
-        """
-        # isOpeningFile is true while opening a file, but not while loading a reference.
-        # isReadingFile is true while loading references, but not while loading files.
-        def in_file_io():
-            return om.MFileIO.isOpeningFile() or om.MFileIO.isReadingFile() or  \
-                om.MFileIO.isWritingFile() or om.MFileIO.isNewingFile() or \
-                om.MFileIO.isImportingFile()
-
-        if not in_file_io():
-            return False
-
-        def reestablish_callbacks():
-            self._register_listeners()
-            self.refresh()
-
-        self._unregister_listeners()
-
-        # Reregister our listeners once the file operation finishes.
-        qt_helpers.run_async_once(reestablish_callbacks)
-        
-        return True
-
-    def _reregister_listeners_if_needed(self):
+    def _check_listeners(self):
         """
         This is called when our zKeyframeNaming node or its singleton may have changed.
         Check if we need to reestablish listeners with the new nodes, and refresh the
         UI.
         """
-        # If we're in file I/O, just shut down listeners until it's done.
-        if self._check_file_loading():
+        # We should have our listeners registered if we're visible and we're not
+        # in the middle of file I/O.
+        in_file_io = self.in_file_io()
+        should_be_listening = self.shown and not in_file_io
+        if not should_be_listening:
+            # If we're listening, stop.
+            self._unregister_listeners()
+
+            # If we're in file I/O, we want to reestablish listeners once the operation
+            # completes.  Queue a job to come back here and recheck during idle (if
+            # we don't already have one waiting).
+            if in_file_io and not self._reregister_callback_queued:
+                print 'queue for after file io'
+                def reestablish_callbacks():
+                    print 'file io completed'
+                    self._reregister_callback_queued = False
+                    self._check_listeners()
+
+                qt_helpers.run_async_once(reestablish_callbacks)
+                self._reregister_callback_queued = True
+            
+            # If we're not listening anyway, 
             return
 
+        # We do want to be listening.
+        #
         # If a keyframe node is connected or disconnected from zKeyframeNaming.keyframes,
         # we need to reestablish listeners to listen for keyframe changes.
         #
@@ -639,20 +633,23 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         # see if it's changed.
         singleton = get_singleton(create=False)
         anim_curve = self._get_keyframe_anim_curve()
-        if singleton is self._listening_to_singleton and anim_curve is self._listening_to_anim_curve:
-            # Neither the singleton nor the animCurve have changed.  Just refresh the UI.
-            self.refresh()
+        if singleton is not self._listening_to_singleton or anim_curve is not self._listening_to_anim_curve:
+            # One of our nodes have changed.
+            self._unregister_listeners()
+
+        # If we're (still) listening, then we're done.
+        if self.callback_ids.length():
             return
 
-        if not self.callback_ids.length():
-            # Our listeners are unregistered anyway, so don't register them.
-            return
-
-        # Reset listeners and refresh the display.
-        self._unregister_listeners()
+        # Register our listeners.
         self._register_listeners()
+
+        # Since we weren't listening, the UI may be out of date and should be refreshed.
         self.refresh()
-            
+        
+    def _async_check_listeners(self):
+        qt_helpers.run_async_once(self._check_listeners)
+        
     def _singleton_node_changed(self, msg, plug, otherPlug, data):
         # For some reason, this is called once per output, but not actually called for changed inputs.
         # It seems to not notice when a value has changed because its input key connection has changed.
@@ -680,7 +677,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             #
             # Most of the time a new animCurve is connected, it'll change the current value,
             # which will cause kAttributeSet or kAttributeEval to be sent.
-            qt_helpers.run_async_once(self._reregister_listeners_if_needed)
+            qt_helpers.run_async_once(self._check_listeners)
 
     def _async_refresh(self):
         """
@@ -716,10 +713,8 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             return
         self.shown = True
 
-        self._register_listeners()
-
         # Refresh when we're displayed.
-        self._async_refresh()
+        self._async_check_listeners()
 
         super(KeyframeNamingWindow, self).showEvent(event)
 
@@ -728,7 +723,9 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             return
         self.shown = False
 
-        self._unregister_listeners()
+        # Refresh when we're hidden.
+        self._async_check_listeners()
+
         super(KeyframeNamingWindow, self).hideEvent(event)
 
     def dockCloseEventTriggered(self):
