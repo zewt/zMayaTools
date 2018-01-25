@@ -422,3 +422,16 @@ def lock_trs(node, lock='lock'):
     lock_rotate(node, lock=lock)
     lock_scale(node, lock=lock)
 
+from pymel.tools.py2mel import py2melProc as origPy2melProc
+def py2melProc(returnType='', procName=None, argTypes=None):
+    """
+    A wrapper t make pymel's py2melProc work properly as a decorator.
+    
+    Note that py2melProc is only partially implemented and can only be used for very
+    simple cases.
+    """
+    def wrapper(function):
+        function.mel_proc_name = origPy2melProc(function, returnType=returnType, procName=procName, argTypes=argTypes)
+        return function
+    return wrapper
+

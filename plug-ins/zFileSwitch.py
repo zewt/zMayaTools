@@ -3,8 +3,8 @@ import maya.OpenMayaMPx as OpenMayaMPx
 import maya.OpenMaya as om
 import maya.OpenMayaRender as omr
 import pymel.core as pm
-from pymel.tools import py2mel
 from zMayaTools.menus import Menu
+from zMayaTools import maya_helpers
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
@@ -117,8 +117,8 @@ def copy_render_setup_template():
 
 # AE:
 from maya import OpenMaya as om
-from pymel.tools import py2mel
 
+@maya_helpers.py2melProc
 def AEzFileSwitchTemplate(nodeName):
     pm.editorTemplate(beginScrollLayout=True)
     pm.editorTemplate(beginLayout='File Switch Attributes', collapse=False)
@@ -136,8 +136,8 @@ def AEzFileSwitchTemplate(nodeName):
     pm.mel.eval('AEabstractBaseCreateTemplate %s' % nodeName)
     pm.editorTemplate(addExtraControls=True)
     pm.editorTemplate(endScrollLayout=True)
-py2mel.py2melProc(AEzFileSwitchTemplate)
 
+@maya_helpers.py2melProc
 def AEzFileSwitchPathNew(fileAttribute):
     pm.setUITemplate('attributeEditorTemplate', pst=True)
     pm.columnLayout(adj=True)
@@ -157,8 +157,8 @@ def AEzFileSwitchPathNew(fileAttribute):
     pm.setUITemplate(ppt=True)
 
     AEzFileSwitchPathReplace(fileAttribute)
-py2mel.py2melProc(AEzFileSwitchPathNew)
 
+@maya_helpers.py2melProc
 def AEzFileSwitchPathReplace(fileAttribute):
     def open_file_browser(unused):
         old_path = pm.getAttr(fileAttribute)
@@ -192,9 +192,8 @@ def AEzFileSwitchPathReplace(fileAttribute):
     pm.button('browseFileSwitch', e=True, command=open_file_browser)
     return True
 
-py2mel.py2melProc(AEzFileSwitchPathReplace)
-
 # The "Refresh" button.  This just dirties the output attribute, so it gets reevaluated.
+@maya_helpers.py2melProc
 def zFileSwitchRefreshNew(attr):
     # Is there a less dumb way to align the button sensibly?
     pm.rowLayout(nc=5, cl5=("center", "center", "center", "center", "center"))
@@ -207,8 +206,7 @@ def zFileSwitchRefreshNew(attr):
         
     zFileSwitchRefreshReplace(attr)
 
-py2mel.py2melProc(zFileSwitchRefreshNew)
-
+@maya_helpers.py2melProc
 def zFileSwitchRefreshReplace(attr):
     def refresh(unused):
         # Dirty the .output attribute to force it to be reevaluated, so if a file exists
@@ -219,7 +217,6 @@ def zFileSwitchRefreshReplace(attr):
         path = pm.getAttr(attr)
         pm.callbacks(executeCallbacks=True, hook='textureReload %s' % path)
     pm.button('refreshFileSwitch', e=True, command=refresh)
-py2mel.py2melProc(zFileSwitchRefreshReplace)
 
 # Menu:
 def add_file_switch(node):
