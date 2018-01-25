@@ -573,7 +573,9 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
 
         A raw MObject is returned.
         """
-        keys = get_singleton()
+        keys = get_singleton(create=False)
+        if keys is None:
+            return None
 
         result = om.MObjectArray()
         oma.MAnimUtil.findAnimation(keys.attr('keyframes').__apimplug__(), result)
