@@ -1,12 +1,24 @@
 from pymel import core as pm
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
+import maya.OpenMayaUI as omui
 from maya.app.general import mayaMixin
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from zMayaTools import qt_helpers, maya_logging, maya_helpers, Qt
+from zMayaTools.menus import Menu
 import bisect, os, sys, time
 from collections import defaultdict
 from pprint import pprint, pformat
+
+# Run this to reload the UI for development (this won't reload the plugin):
+# def go():
+#     from zMayaTools import keyframe_naming
+#     keyframe_naming.menu.remove_menu_items()
+#     keyframe_naming.menu.hide()
+#     reload(keyframe_naming)
+#     keyframe_naming.menu.add_menu_items()
+#     keyframe_naming.menu.show()
+# go()
 
 log = maya_logging.get_log()
 
@@ -310,16 +322,16 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         from qt_generated import keyframe_naming
         reload(keyframe_naming)
 
-        self.ui = keyframe_naming.Ui_keyframe_naming()
-        self.ui.setupUi(self)
+        self._ui = keyframe_naming.Ui_keyframe_naming()
+        self._ui.setupUi(self)
 
-        self.ui.removeFrame.clicked.connect(self.delete_selected_frame)
-        self.ui.renameFrame.clicked.connect(self.rename_selected_frame)
-        self.ui.addFrame.clicked.connect(self.add_new_frame)
-        self.ui.frameList.itemDelegate().commitData.connect(self.frame_name_edited)
-        self.ui.frameList.itemDelegate().closeEditor.connect(self.name_editor_closed)
-        self.ui.frameList.itemSelectionChanged.connect(self.selected_frame_changed)
-        self.ui.frameList.itemClicked.connect(self.selected_frame_changed)
+        self._ui.removeFrame.clicked.connect(self.delete_selected_frame)
+        self._ui.renameFrame.clicked.connect(self.rename_selected_frame)
+        self._ui.addFrame.clicked.connect(self.add_new_frame)
+        self._ui.frameList.itemDelegate().commitData.connect(self.frame_name_edited)
+        self._ui.frameList.itemDelegate().closeEditor.connect(self.name_editor_closed)
+        self._ui.frameList.itemSelectionChanged.connect(self.selected_frame_changed)
+        self._ui.frameList.itemClicked.connect(self.selected_frame_changed)
 
         # Create the menu.  Why can't this be done in the designer?
         menu_bar = Qt.QMenuBar()
@@ -332,7 +344,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         edit_menu.addAction(add_arnold_attribute)
 
         self.installEventFilter(self)
-        self.ui.frameList.installEventFilter(self)
+        self._ui.frameList.installEventFilter(self)
 
         # showEvent() will be called when we're actually displayed, and fill in the list.
 
@@ -345,7 +357,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
                 elif event.key() == Qt.Qt.Key_Insert:
                     self.add_new_frame()
                     return True
-        elif object is self.ui.frameList:
+        elif object is self._ui.frameList:
             if event.type() == Qt.QEvent.KeyPress:
                 if event.key() == Qt.Qt.Key_Return:
                     self.rename_selected_frame()
@@ -364,7 +376,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         Return the QListWidgetItem for the frame selected in the list, or None if
         nothing is selected.
         """
-        selection = self.ui.frameList.selectedItems()
+        selection = self._ui.frameList.selectedItems()
         if not selection:
             return None
 
@@ -390,16 +402,16 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         """
         # Binary search for the nearest frame on or before frame.
         idx = max(bisect.bisect_right(self.frames_in_list, frame) - 1, 0)
-        if idx >= self.ui.frameList.count():
+        if idx >= self._ui.frameList.count():
             return
 
-        item = self.ui.frameList.item(idx)
+        item = self._ui.frameList.item(idx)
 
         # Let selected_frame_changed know that we're setting the selection explicitly, so
         # it shouldn't sync the scene time up with it.
         self._currently_setting_selection = True
         try:
-            self.ui.frameList.setCurrentItem(item)
+            self._ui.frameList.setCurrentItem(item)
         finally:
             self._currently_setting_selection = False
 
@@ -413,11 +425,11 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         """
         If an entry is being renamed, cancel it.
         """
-        if self.ui.frameList.state() != Qt.QAbstractItemView.EditingState:
+        if self._ui.frameList.state() != Qt.QAbstractItemView.EditingState:
             return
 
         item = self.get_selected_frame_item()
-        self.ui.frameList.closePersistentEditor(item)
+        self._ui.frameList.closePersistentEditor(item)
 
     def add_new_frame(self):
         """
@@ -463,21 +475,21 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         if not selection:
             return
 
-        self.ui.frameList.editItem(selection)
+        self._ui.frameList.editItem(selection)
 
     def refresh(self):
         if not self.shown:
             return
 
         # Don't refresh while editing.
-        if self.ui.frameList.state() == Qt.QAbstractItemView.EditingState:
+        if self._ui.frameList.state() == Qt.QAbstractItemView.EditingState:
             return
 
         self._currently_refreshing = True
         try:
             all_keys = get_all_keys()
             all_names = get_all_names()
-            self.ui.frameList.clear()
+            self._ui.frameList.clear()
             self.frames_in_list = []
 
             # Add keys in chronological order.
@@ -488,7 +500,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
                 item.frame = frame
                 item.setFlags(item.flags() | Qt.Qt.ItemIsEditable)
 
-                self.ui.frameList.addItem(item)
+                self._ui.frameList.addItem(item)
 
                 self.frames_in_list.append(frame)
 
@@ -688,7 +700,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
 
     def frame_name_edited(self, widget):
         # How do you find out which item was edited?  QT's documentation is useless.
-        items = self.ui.frameList.selectedItems()
+        items = self._ui.frameList.selectedItems()
         if not items:
             return
         item = items[0]
@@ -735,4 +747,92 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
     def close(self):
         self.cleanup()
         super(KeyframeNamingWindow, self).close()
+
+class PluginMenu(Menu):
+    def __init__(self):
+        super(PluginMenu, self).__init__()
+        self._ui = None
+
+    def _open_ui(self, restore):
+        if restore:
+            # We're being reopened, and a layout has already been created.
+            restored_control = omui.MQtUtil.getCurrentParent()
+            print 'restoring into', restored_control
+        else:
+            print 'not restoring'
+
+        if self._ui is None:
+            self._ui = KeyframeNamingWindow()
+            def closed():
+                print 'closed'
+                self._ui = None
+            self._ui.destroyed.connect(closed)
+
+        if restore:
+            # We're restoring into an existing layout.  Just add the control that was created
+            # for us, and show() will be called automatically.
+            ptr = omui.MQtUtil.findControl(self._ui.objectName())
+            omui.MQtUtil.addWidgetToMayaLayout(long(ptr), long(restored_control))
+        else:
+            # Disable retain, or we won't be able to create the window again after reloading the script
+            # with an "Object's name 'DialogWorkspaceControl' is not unique" error.
+            #
+            # Watch out: this function has *args and *kwargs which should be there, which causes it to
+            # silently eat unknown parameters instead of throwing an error.
+            self._ui.setDockableParameters(dockable=True, retain=False,
+                plugins='zKeyframeNaming.py',
+                uiScript='import zMayaTools.keyframe_naming; zMayaTools.keyframe_naming.menu.restore()'
+            )
+
+            # If we just set plugins (which is really workspaceControl -requiredPlugin), the control
+            # will be closed on launch.  We need to enable checksPlugins too to work around this.
+            control_name = self._ui.objectName() + 'WorkspaceControl'
+            pm.workspaceControl(control_name, e=True, checksPlugins=True)
+
+            self._ui.show()
+
+    def show(self):
+        """
+        Show the UI.
+        """
+        self._open_ui(restore=False)
+        
+    def hide(self):
+        """
+        Hide the UI.
+        """
+        if self._ui is not None:
+            self._ui.hide()
+        
+    def restore(self):
+        """
+        This is called by Maya via uiScript when a layout is restored.
+        """
+        self._open_ui(True)
+
+    def add_menu_items(self):
+        menu = 'MayaWindow|mainKeysMenu'
+
+        # Make sure the menu is built.
+        pm.mel.eval('AniKeyMenu "%s";' % menu)
+
+        def show_window(unused):
+            self.show()
+
+        menu_items = pm.menu(menu, q=True, ia=True)
+        section = self.find_menu_section_by_name(menu_items, 'Edit')
+        self.add_menu_item('zMayaTools_zKeyframeNaming', label='Keyframe Bookmarks', parent=menu, insertAfter=section[-1],
+                command=lambda unused: self.show())
+
+    def remove_menu_items(self):
+        super(PluginMenu, self).remove_menu_items()
+
+        if self._ui is None:
+            return
+
+        # If the keying window is open when the module is unloaded, close it.
+        self._ui.close()
+        self._ui = None
+
+menu = PluginMenu()
 
