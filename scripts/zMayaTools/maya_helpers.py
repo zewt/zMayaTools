@@ -313,6 +313,21 @@ def undo(name='undo_on_exception'):
         pm.undoInfo(closeChunk=True)
 
 @contextlib.contextmanager
+def without_undo():
+    """
+    Run a block of code with undo disabled.
+
+    This should only be used by operations that have no actual effect on the scene.
+    It's useful if a script makes temporary changes or nodes in the scene and cleans
+    them up when it's done, to avoid creating pointless undo chunks.
+    """
+    pm.undoInfo(stateWithoutFlush=False)
+    try:
+        yield
+    finally:
+        pm.undoInfo(stateWithoutFlush=True)
+
+@contextlib.contextmanager
 def disable_auto_keyframe():
     """
     Disable auto-keyframe within a with block.
