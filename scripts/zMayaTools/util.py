@@ -1,9 +1,6 @@
 class ProgressWindow(object):
-    def __init__(self):
+    def __init__(self, total_progress_values=10, title=''):
         self._cancel = False
-
-    def show(self, title, total_progress_values):
-        pass
 
     def hide(self):
         pass
@@ -15,12 +12,24 @@ class ProgressWindow(object):
         if self._cancel:
             raise CancelledException()
 
-    def set_main_progress(self, job):
+    def update(self, advance_by=1, text=''):
+        """
+        Advance the progress bar.
+
+        This should be called at the start of a task.  For example,
+
+        progress = ProgressWindow(10)
+        for idx in xrange(10:
+            progress.update()
+            work()
+        """
         # Check for cancellation when we update progress.
         self.check_cancellation()
 
-    def set_task_progress(self, label, percent=None, force=False):
-        # Check for cancellation when we update progress.
-        self.check_cancellation()
+    def __enter__(self, *args, **kwargs):
+        return self
+
+    def __exit__(self, exc, e, tb):
+        self.hide()
 
 

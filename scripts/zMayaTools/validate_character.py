@@ -772,16 +772,13 @@ class UI(maya_helpers.OptionsBox):
             return
         
         all_results = []
-        progress = maya_helpers.ProgressWindowMaya()
-        progress.show('Validating Character', len(nodes))
-        try:
+        with maya_helpers.ProgressWindowMaya(len(nodes), title='Validating Character',
+                with_titles=True, with_secondary_progress=True, with_cancel=True) as progress:
             for node in nodes:
-                progress.set_main_progress('Validating mesh: %s' % node.nodeName())
+                progress.update(text='Validating mesh: %s' % node.nodeName())
                 validator = Validate(config, node, progress)
                 warnings = validator.run()
                 all_results.append((node, warnings))
-        finally:
-            progress.hide()
 
         idx_to_node = {}
         def select_nodes():

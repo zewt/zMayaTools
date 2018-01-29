@@ -139,27 +139,42 @@ class OptionsBox(object):
         self.option_box_load()
 
 class ProgressWindowMaya(util.ProgressWindow):
-    main_progress_value = 0
+    def __init__(self, total_progress_values, title='Progress...',
+            # Show a title above the main progress bar.  (If a secondary progress bar is displayed,
+            # it will always have a title.)
+            with_titles=False,
 
-    def __init__(self):
+            # Show a secondary progress bar, which can be updated with set_task_progress.
+            with_secondary_progress=False,
+
+            # Show a cancel button.
+            with_cancel=False):
         super(ProgressWindowMaya, self).__init__()
         self.window = None
         self.last_refresh = None
-
-    def show(self, title, total_progress_values):
-        super(ProgressWindowMaya, self).show(title, total_progress_values)
+        self.main_progress_value = -1
+        self.with_titles = with_titles
+        self.with_secondary_progress = with_secondary_progress
 
         self.window = pm.window(title=title)
         pm.columnLayout()
         
-        pm.text('status', w=300, align='left')
+        if self.with_titles:
+            pm.text('status', w=300, align='left')
         self.progressControl1 = pm.progressBar(maxValue=total_progress_values, width=300)
 
-        pm.text('status2', w=300, align='left')
-        self.progressControl2 = pm.progressBar(maxValue=100, width=300, pr=5)
-        pm.button(label='Cancel', command=self._cancel_clicked)
+        if self.with_secondary_progress:
+            pm.text('status2', w=300, align='left')
+            self.progressControl2 = pm.progressBar(maxValue=100, width=300, pr=5)
+
+        if with_cancel:
+            pm.button(label='Cancel', command=self._cancel_clicked)
+
         pm.showWindow(self.window)
         pm.refresh()
+
+        # Advance from -1 to 0.
+        self.update()
 
     def hide(self):
         super(ProgressWindowMaya, self).hide()
@@ -171,31 +186,36 @@ class ProgressWindowMaya(util.ProgressWindow):
         log.debug('Cancel button clicked')
         self.cancel()
 
-    def set_main_progress(self, job):
-        super(ProgressWindowMaya, self).set_main_progress(job)
+    def update(self, advance_by=1, text=''):
+        super(ProgressWindowMaya, self).update(advance_by, text)
         
         # Reset the sub-task refresh timer when we change the main task.
         self.last_refresh = None
         self.last_task_percent = 0
         
-        log.info(job)
+        if text:
+            log.info(text)
 
         if self.window is None:
             return
 
-        pm.text('status', e=True, label=job)
-        pm.text('status2', e=True, label='')
+        if self.with_titles:
+            pm.text('status', e=True, label=text)
         pm.progressBar(self.progressControl1, edit=True, progress=self.main_progress_value)
-        pm.progressBar(self.progressControl2, edit=True, progress=0)
+
+        if self.with_secondary_progress:
+            pm.text('status2', e=True, label='')
+            pm.progressBar(self.progressControl2, edit=True, progress=0)
 
         # Hack: The window sometimes doesn't update if we don't call this twice.
         pm.refresh()
         pm.refresh()
 
-        self.main_progress_value += 1
+        self.main_progress_value += advance_by
 
     def set_task_progress(self, label, percent=None, force=False):
-        super(ProgressWindowMaya, self).set_task_progress(label, percent=percent, force=force)
+        # Check for cancellation when we update progress.
+        self.check_cancellation()
 
 #        log.debug(label)
 
