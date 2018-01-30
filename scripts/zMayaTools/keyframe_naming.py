@@ -179,12 +179,12 @@ def create_key_at_time(frame):
     # There's no key at the current frame.  Find an unused name index and create it.
     # We have to set the value, then set the keyframe.  If we just call setKeyframe,
     # the value won't be set correctly if it's in a character set.
-    idx = _get_unused_name_index()
-    keys.attr('keyframes').set(idx)
-
+    #
     # Disable auto-keyframe while we do this.  Otherwise, a keyframe will also
     # be added at the current frame (which seems like a bug).
     with maya_helpers.disable_auto_keyframe():
+        idx = _get_unused_name_index()
+        keys.attr('keyframes').set(idx)
         pm.setKeyframe(keys, at='keyframes', time=frame, value=idx)
 
     # setKeyframe can do this, but it's buggy: outTangentType='step' isn't applied if
@@ -219,6 +219,7 @@ def delete_key_at_frame(frame):
     pm.cutKey(keys.attr('keyframes'), t=frame)
     pm.removeMultiInstance(keys.attr('entries').elementByLogicalIndex(idx[0]))
 
+_running_cleanup = False
 def cleanup_duplicate_indices():
     """
     Clean up duplicate entries in the key index.
@@ -227,28 +228,44 @@ def cleanup_duplicate_indices():
     end up with multiple frames pointing at the same name entry.  If we edit
     those entries without cleaning it up first, we'll cause unwanted changes.
     """
-    keys = get_singleton()
-    
-    all_keys = get_all_keys()
-    keys_by_index = defaultdict(list)
-    for frame, index in all_keys.items():
-        keys_by_index[index].append(frame)
+    try:
+        # Make sure that if we call other functions and they recurse back into here,
+        # we don't run cleanup every time.
+        global _running_cleanup
+        if _running_cleanup:
+            return
+        _running_cleanup = True
+        
+        keys = get_singleton(create=False)
+        if keys is None:
+            return
 
-    for idx, frames in keys_by_index.items():
-        if len(frames) < 2:
-            continue
-            
+        all_keys = get_all_keys()
+        keys_by_index = defaultdict(list)
+        for frame, index in all_keys.items():
+            keys_by_index[index].append(frame)
+
+        # We only care about indices that are used on more than one frame.
         # Sort frames, so we always leave the first one alone and adjust the rest.
-        frames.sort()
+        keys_by_index = {idx: sorted(frames) for idx, frames in keys_by_index.iteritems() if len(frames) >= 2}
 
-        name = get_name_at_idx(idx)
-        for frame in frames[1:]:
-            # Delete the duplicate index and create a new one with the same name.
-            pm.cutKey(keys.attr('keyframes'), t=frame)
-            create_key_at_time(frame)
-            set_name_at_frame(frame, name)
-           
-    return True
+        # Get the names for each frame we're correcting.
+        names = {idx: get_name_at_idx(idx) for idx in keys_by_index.keys()}
+
+        # Delete the duplicate keyframes.  Once we do this, we'll be back in a clean
+        # state.
+        for idx, frames in keys_by_index.items():
+            for frame in frames[1:]:
+                pm.cutKey(keys.attr('keyframes'), t=frame)
+
+        # Create new keys at the frames we deleted, using the same name that it had previously.
+        for idx, frames in keys_by_index.items():
+            name = names[idx]
+            for frame in frames[1:]:
+                create_key_at_time(frame)
+                set_name_at_frame(frame, name)
+    finally:
+        _running_cleanup = False
 
 def connect_to_arnold():
     """
@@ -622,9 +639,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             # completes.  Queue a job to come back here and recheck during idle (if
             # we don't already have one waiting).
             if in_file_io and not self._reregister_callback_queued:
-                print 'queue for after file io'
                 def reestablish_callbacks():
-                    print 'file io completed'
                     self._reregister_callback_queued = False
                     self._check_listeners()
 
@@ -757,14 +772,10 @@ class PluginMenu(Menu):
         if restore:
             # We're being reopened, and a layout has already been created.
             restored_control = omui.MQtUtil.getCurrentParent()
-            print 'restoring into', restored_control
-        else:
-            print 'not restoring'
 
         if self._ui is None:
             self._ui = KeyframeNamingWindow()
             def closed():
-                print 'closed'
                 self._ui = None
             self._ui.destroyed.connect(closed)
 
