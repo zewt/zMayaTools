@@ -330,7 +330,7 @@ class zRigHandle(om.MPxSurfaceShape):
             # higher priority for selection than meshes that are in front of us.  Xray alone won't do
             # this.
             mask = om.MSelectionMask()
-            mask.addMask(om.MSelectionMask.kSelectMeshes)
+#            mask.addMask(om.MSelectionMask.kSelectMeshes)
             mask.addMask(om.MSelectionMask.kSelectJoints)
             return mask
 
