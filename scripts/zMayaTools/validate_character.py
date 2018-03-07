@@ -575,9 +575,14 @@ class Validate(object):
         # All joints should have zero rotations when in bind pose.
         joints_with_nonzero_rotations = []
         for influence in influences:
-            rot = influence.attr('r').get()
-            if om.MVector(rot).length() > 0.001:
+            # Treat rotations that are equivalent to zero as being zero.  This prevents warnings
+            # when joints have rotations like (0,360,0), which happens a lot when constraints or
+            # IK control the joint.
+            quat = om.MQuaternion()
+            om.MFnTransform(influence.__apimobject__()).getRotation(quat)
+            if not quat.isEquivalent(om.MQuaternion.identity, 0.001):
                 joints_with_nonzero_rotations.append(influence)
+
         if joints_with_nonzero_rotations:
             self.log('%i %s nonzero rotations' % (
                 len(joints_with_nonzero_rotations), 
