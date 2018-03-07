@@ -207,48 +207,43 @@ def create_eye_rig():
         # Now, create a helper to figure out the X/Y angle.  We don't need this for the eye
         # control itself, since an orient constraint will do that for us, but this gives us
         # a clean rotation value, which driven keys like eyelid controls can be placed against.
-        # XXX: This is terrible: a locator to get a vector, two decomposeMatrix nodes to get
-        # the world space of the locator and the orient locator, and an expression to call atan2
-        # to get the angle.  Also, expressions apparently can't even take vectors as inputs,
-        # and they can't read individual values of a matrix.  This is basic trig, how can we
-        # do this without all this extra mess?
         attr_name = 'angle_%s' % ['left', 'right'][idx]
         create_vector_attribute(control_mesh, attr_name)
         maya_helpers.lock_attr(control_mesh.attr('%sX' % attr_name), 'unkeyable')
         maya_helpers.lock_attr(control_mesh.attr('%sY' % attr_name), 'unkeyable')
         maya_helpers.lock_attr(control_mesh.attr('%sZ' % attr_name), 'lock')
 
+        origin_node = create_new_node('locator', nodeName='%s_Origin' % shortName, parent=container_node)
+        pm.xform(origin_node, ws=True, t=pm.xform(node, q=True, ws=True, t=True))
+
+        # When forwards_node points in this direction, the angle is zero.
+        initial_vector_node = create_new_node('locator', nodeName='%s_InitialVector' % shortName, parent=origin_node)
+        pm.xform(initial_vector_node, t=(0,0,10), os=True)
+        initial_vector_node.attr('visibility').set(False)
+
         forwards_node = create_new_node('locator', nodeName='%s_Forwards' % shortName, parent=orient_inner_node)
         pm.xform(forwards_node, t=(0,0,10), os=True)
         forwards_node.attr('visibility').set(False)
 
-        orient_decompose_node = create_new_node('decomposeMatrix', nodeName='%s_Orient_Decompose' % shortName)
-        forwards_decompose_node = create_new_node('decomposeMatrix', nodeName='%s_Forwards_Decompose' % shortName)
-        orient_node.attr('worldMatrix[0]').connect(orient_decompose_node.attr('inputMatrix'))
-        forwards_node.attr('worldMatrix[0]').connect(forwards_decompose_node.attr('inputMatrix'))
+        initial_vector_origin = pm.createNode('multMatrix', n='%s_InitialVectorOrigin' % shortName)
+        initial_vector_node.worldMatrix[0].connect(initial_vector_origin.matrixIn[0])
+        origin_node.worldInverseMatrix[0].connect(initial_vector_origin.matrixIn[1])
 
-        expr = """
-            float $v1X = %(orient_decompose_node)s.outputTranslateX;
-            float $v1Y = %(orient_decompose_node)s.outputTranslateY;
-            float $v1Z = %(orient_decompose_node)s.outputTranslateZ;
-            float $v2X = %(forwards_decompose_node)s.outputTranslateX;
-            float $v2Y = %(forwards_decompose_node)s.outputTranslateY;
-            float $v2Z = %(forwards_decompose_node)s.outputTranslateZ;
+        forwards_origin = pm.createNode('multMatrix', n='%s_ForwardsOrigin' % shortName)
+        forwards_node.worldMatrix[0].connect(forwards_origin.matrixIn[0])
+        origin_node.worldInverseMatrix[0].connect(forwards_origin.matrixIn[1])
 
-            float $x = $v2X - $v1X;
-            float $y = $v2Y - $v1Y;
-            float $z = $v2Z - $v1Z;
+        initial_decompose = pm.createNode('decomposeMatrix', n='%s_InitialDecompose' % shortName)
+        initial_vector_origin.matrixSum.connect(initial_decompose.inputMatrix)
 
-            %(control_mesh)s.%(attr)sX = -atan2($y, $z) * 180/3.14159;
-            %(control_mesh)s.%(attr)sY = atan2($x, $z)* 180/3.14159;
-        """
-        expr = expr % {
-            'orient_decompose_node': orient_decompose_node,
-            'forwards_decompose_node': forwards_decompose_node,
-            'control_mesh': control_mesh,
-            'attr': attr_name,
-        }
-        pm.expression(s=expr, ae=False, uc='all', o=control_mesh)
+        forwards_decompose = pm.createNode('decomposeMatrix', n='%s_ForwardsDecompose' % shortName)
+        forwards_origin.matrixSum.connect(forwards_decompose.inputMatrix)
+
+        angle_node = pm.createNode('angleBetween', n='%s_Angle' % shortName)
+        initial_decompose.outputTranslate.connect(angle_node.vector1)
+        forwards_decompose.outputTranslate.connect(angle_node.vector2)
+
+        angle_node.euler.connect(control_mesh.attr(attr_name))
         
     # Constrain the eye joints to the orient transform.
     for idx, node in enumerate(joints):
