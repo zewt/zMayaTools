@@ -1,4 +1,5 @@
 import contextlib, time
+from collections import namedtuple
 from pymel import core as pm
 from maya import OpenMaya as om
 from zMayaTools import util
@@ -6,6 +7,7 @@ from zMayaTools import util
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
 
+var_type = namedtuple('var_type', ('expected_type','maya_type'))
 class OptionVars(object):
     """
     A helper to simplify accessing Maya optionvars.
@@ -13,9 +15,10 @@ class OptionVars(object):
     This supports ints, floats and strings (arrays aren't supported).
     """
     _types = {
-        'int': int,
-        'float': (int, float),
-        'string': basestring,
+        'int': var_type(expected_type=int, maya_type='intValue'),
+        'float': var_type(expected_type=(float, int), maya_type='floatValue'),
+        'string': var_type(expected_type=basestring, maya_type='stringValue'),
+        'bool': var_type(expected_type=(bool, int), maya_type='intValue'),
     }
     def __init__(self):
         self.keys = {}
@@ -37,11 +40,12 @@ class OptionVars(object):
         data = self.keys.get(name)
         assert data is not None, 'Unknown option var name %s' % name
 
-        expected_class = self._types[data['type']]
+        item_type = self._types[data['type']]
+        expected_class = item_type.expected_type
         assert isinstance(value, expected_class), 'Option %s has type %s and can\'t be set to "%s"' % (name, data['type'], value)
 
         kwargs = {}
-        arg = data['type'] + 'Value' # intValue, floatValue or stringValue
+        arg = item_type.maya_type
         kwargs[arg] = (name, value)
         pm.optionVar(**kwargs)
 
@@ -55,9 +59,14 @@ class OptionVars(object):
         value = pm.optionVar(q=name)
 
         # Make sure the value is of the type we expect.  If it's not, return the default instead.
-        expected_class = self._types[data['type']]
+        item_type = self._types[data['type']]
+        expected_class = item_type.expected_type
         if not isinstance(value, expected_class):
             return data['default']
+
+        # For bool, cast to bool.
+        if data['type'] == 'bool':
+            value = bool(value)
 
         return value
 
