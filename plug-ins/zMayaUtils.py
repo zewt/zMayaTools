@@ -2,6 +2,8 @@ import os
 from pymel import core as pm
 from maya import OpenMaya as om
 from zMayaTools.menus import Menu
+from zMayaTools import maya_helpers, shelf_menus
+reload(shelf_menus)
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
@@ -12,6 +14,14 @@ if os.name == 'nt':
     reload(hide_output_window)
 
 class PluginMenu(Menu):
+    def __init__(self):
+        super(PluginMenu, self).__init__()
+
+        self.optvars = maya_helpers.OptionVars()
+        self.optvars.add('zShowShelfMenus', 'bool', False)
+
+        self.shelf_menu = None
+
     def add_menu_items(self):
         menu = 'MayaWindow|mainRigSkeletonsMenu'
 
@@ -75,6 +85,9 @@ class PluginMenu(Menu):
         # Add the "Hide Output Window" menu item.
         self.add_hide_output_window()
 
+        # Add "Show Shelf Menus".
+        self.add_show_shelf_menus()
+
     def add_hide_output_window(self):
         # Add "Show Output Window" at the end of the Windows menu.
         if os.name != 'nt':
@@ -85,15 +98,47 @@ class PluginMenu(Menu):
 
         def refresh_menu_item():
             label = 'Show Output Window' if hide_output_window.is_hidden() else 'Hide Output Window'
-            pm.menuItem(self.menu_item, e=True, label=label)
+            pm.menuItem(self.output_window_menu_item, e=True, label=label)
 
         def toggle_output_window(unused):
             hide_output_window.toggle()
             refresh_menu_item()
 
         pm.mel.eval('buildDeferredMenus')
-        self.menu_item = self.add_menu_item('zHideOutputWindow', parent='mainWindowMenu', command=toggle_output_window)
+        self.output_window_menu_item = self.add_menu_item('zHideOutputWindow', parent='mainWindowMenu', command=toggle_output_window)
         refresh_menu_item()
+
+    def add_show_shelf_menus(self):
+        # Add "Show Shelf Menus" at the end of the Windows menu.
+        self.shelf_menu = None
+
+        def refresh():
+            # Update the menu item.
+            label = 'Hide Shelf Menus' if self.optvars['zShowShelfMenus'] else 'Show Shelf Menus'
+            pm.menuItem(self.shelf_menus_menu_item, e=True, label=label)
+
+            # Show or hide the menu items.
+            if self.optvars['zShowShelfMenus'] and self.shelf_menu is None:
+                self.shelf_menu = shelf_menus.ShelfMenu()
+            elif not self.optvars['zShowShelfMenus'] and self.shelf_menu is not None:
+                self.shelf_menu.remove()
+                self.shelf_menu = None
+
+        def toggle_shelf_menus(unused):
+            self.optvars['zShowShelfMenus'] = not self.optvars['zShowShelfMenus']
+            refresh()
+
+        pm.mel.eval('buildDeferredMenus')
+        self.shelf_menus_menu_item = self.add_menu_item('zShowShelfMenus', parent='mainWindowMenu', command=toggle_shelf_menus)
+        refresh()
+
+    def remove_menu_items(self):
+        super(PluginMenu, self).remove_menu_items()
+
+        # Remove shelf menus.
+        if self.shelf_menu is not None:
+            self.shelf_menu.remove()
+            self.shelf_menu = None
 
 menu = PluginMenu()
 def initializePlugin(mobject):
