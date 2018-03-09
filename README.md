@@ -8,6 +8,7 @@ zMayaUtils:
 - Split blend shapes into blended halves
 - Eye orientation controller
 - Character validation
+- Hide the output window
 
 Additional nodes:
 

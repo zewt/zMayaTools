@@ -1,8 +1,15 @@
+import os
 from pymel import core as pm
+from maya import OpenMaya as om
 from zMayaTools.menus import Menu
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
+
+# Only import hide_output_window in Windows.
+if os.name == 'nt':
+    from zMayaTools import hide_output_window
+    reload(hide_output_window)
 
 class PluginMenu(Menu):
     def add_menu_items(self):
@@ -65,8 +72,34 @@ class PluginMenu(Menu):
                     annotation='Split a blend shape across a plane',
                     command=run_split_blend_shapes)
 
+        # Add the "Hide Output Window" menu item.
+        self.add_hide_output_window()
+
+    def add_hide_output_window(self):
+        # Add "Show Output Window" at the end of the Windows menu.
+        if os.name != 'nt':
+            return
+
+        # Activate the user's current preference.
+        hide_output_window.refresh_visibility()
+
+        def refresh_menu_item():
+            label = 'Show Output Window' if hide_output_window.is_hidden() else 'Hide Output Window'
+            pm.menuItem(self.menu_item, e=True, label=label)
+
+        def toggle_output_window(unused):
+            hide_output_window.toggle()
+            refresh_menu_item()
+
+        pm.mel.eval('buildDeferredMenus')
+        self.menu_item = self.add_menu_item('zHideOutputWindow', parent='mainWindowMenu', command=toggle_output_window)
+        refresh_menu_item()
+
 menu = PluginMenu()
 def initializePlugin(mobject):
+    if om.MGlobal.mayaState() != om.MGlobal.kInteractive:
+        return
+
     menu.add_menu_items()
 
 def uninitializePlugin(mobject):
