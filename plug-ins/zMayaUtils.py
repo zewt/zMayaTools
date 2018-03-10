@@ -26,21 +26,17 @@ class PluginMenu(Menu):
     def add_menu_items(self):
         menu = 'MayaWindow|mainRigSkeletonsMenu'
 
+
         # Make sure the menu is built.
         pm.mel.eval('ChaSkeletonsMenu "%s";' % menu)
 
-        def run_eye_rig(unused):
-            from zMayaTools.rigging import eye_rig
-            eye_rig.create_eye_rig()
-        eye_rig = self.add_menu_item('zMayaTools_EyeRig', label='Eye Rig', parent=menu, insertAfter='hikWindowItem',
-                command=run_eye_rig)
 
         def validate_character(unused):
             from zMayaTools import validate_character
             reload(validate_character)
             validate_character.UI().run()
 
-        eye_rig = self.add_menu_item('zMayaTools_ValidateCharacter', label='Validate Character', parent=menu, insertAfter=eye_rig,
+        validate = self.add_menu_item('zMayaTools_ValidateCharacter', label='Validate Character', parent=menu, insertAfter='hikWindowItem',
                 command=validate_character)
 
         for menu in ['mainDeformMenu', 'mainRigDeformationsMenu']:
@@ -83,13 +79,27 @@ class PluginMenu(Menu):
                     annotation='Split a blend shape across a plane',
                     command=run_split_blend_shapes)
 
-        # Add the "Hide Output Window" menu item.
+        self.add_rigging_tools()
         self.add_hide_output_window()
-
-        # Add "Show Shelf Menus".
         self.add_show_shelf_menus()
-
         self.add_controller_editor_menu_item()
+
+    def add_rigging_tools(self):
+        menu = 'MayaWindow|mainRigControlMenu'
+
+        # Make sure the menu is built.
+        pm.mel.eval('ChaControlsMenu "%s";' % menu)
+
+        # If this ends up having a bunch of rigging tools this can be a submenu, but
+        # for now just put this at the top.
+        divider = self.add_menu_item('zMayaTools_RiggingDivider', divider=True, parent=menu, label='zMayaUtils')
+
+        def run_eye_rig(unused):
+            from zMayaTools.rigging import eye_rig
+            eye_rig.create_eye_rig()
+            
+        eye_rig = self.add_menu_item('zMayaTools_EyeRig', label='Eye Rig', parent=menu, insertAfter=divider,
+                command=run_eye_rig)
 
     def add_hide_output_window(self):
         # Add "Show Output Window" at the end of the Windows menu.
@@ -136,11 +146,6 @@ class PluginMenu(Menu):
         refresh()
 
     def add_controller_editor_menu_item(self):
-        menu = 'MayaWindow|mainRigSkeletonsMenu'
-
-        # Make sure the menu is built.
-        pm.mel.eval('ChaSkeletonsMenu "%s";' % menu)
-
         def open_controller_editor(unused):
             reload(controller_editor)
             if self.controller_ui is None:
@@ -153,7 +158,17 @@ class PluginMenu(Menu):
             # with an "Object's name 'DialogWorkspaceControl' is not unique" error.
             self.controller_ui.show(dockable=True, retain=False)
 
+        menu = 'MayaWindow|mainRigControlMenu'
+
+        # Make sure the menu is built.
+        pm.mel.eval('ChaControlsMenu "%s";' % menu)
+
+        # Add "Edit Controllers" at the end of the "Controller" section of Control.
+        menu_items = pm.menu(menu, q=True, ia=True)
+        controller_section = self.find_menu_section_by_name(menu_items, 'Controller')
+
         self.add_menu_item('zMayaTools_ControllerEditor', label='Edit Controllers', parent=menu,
+                insertAfter=controller_section[-1],
                 command=open_controller_editor)
 
 
