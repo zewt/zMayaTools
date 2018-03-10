@@ -9,6 +9,7 @@ zMayaUtils:
 - Eye orientation controller
 - Character validation
 - Hide the output window
+- Pick walk controller editing
 
 Additional nodes:
 

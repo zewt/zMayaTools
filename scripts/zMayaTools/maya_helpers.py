@@ -32,6 +32,12 @@ class OptionVars(object):
             'default': default,
         }
 
+    def add_from(self, optvars):
+        """
+        Add all optvars from another OptionVars object.
+        """
+        self.keys.update(optvars.keys)
+
     def reset(self):
         for key, data in self.keys.items():
             pm.optionVar(remove=key)
@@ -465,6 +471,28 @@ def lock_trs(node, lock='lock'):
     lock_translate(node, lock=lock)
     lock_rotate(node, lock=lock)
     lock_scale(node, lock=lock)
+
+def create_attribute_proxy(node, attr):
+    """
+    Create a proxy for attr on node.  Return the new attribute.
+    """
+    # Be sure to assign both the long and short name.  Being inconsistent with the
+    # original attribute can lead to issues with the CB.
+    short_name = pm.attributeQuery(attr.attrName(), node=attr.node(), shortName=True)
+    long_name = pm.attributeQuery(attr.attrName(), node=attr.node(), longName=True)
+    pm.addAttr(node, ln=long_name, sn=short_name, proxy=attr)
+    return node.attr(long_name)
+    
+def add_attr(nodes, name, *args, **kwargs):
+    # Add the attribute to the first node.
+    pm.addAttr(nodes[0], ln=name, *args, **kwargs)
+    attr = nodes[0].attr(name)
+
+    # If there's more than one node, add proxies to the rest.
+    for node in nodes[1:]:
+        create_attribute_proxy(node, attr)
+
+    return attr
 
 from pymel.tools.py2mel import py2melProc as origPy2melProc
 def py2melProc(returnType='', procName=None, argTypes=None):

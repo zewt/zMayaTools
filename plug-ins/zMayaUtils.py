@@ -2,8 +2,8 @@ import os
 from pymel import core as pm
 from maya import OpenMaya as om
 from zMayaTools.menus import Menu
-from zMayaTools import maya_helpers, shelf_menus
-reload(shelf_menus)
+from zMayaTools import controller_editor, maya_helpers, shelf_menus
+reload(controller_editor)
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
@@ -21,6 +21,7 @@ class PluginMenu(Menu):
         self.optvars.add('zShowShelfMenus', 'bool', False)
 
         self.shelf_menu = None
+        self.controller_ui = None
 
     def add_menu_items(self):
         menu = 'MayaWindow|mainRigSkeletonsMenu'
@@ -88,6 +89,8 @@ class PluginMenu(Menu):
         # Add "Show Shelf Menus".
         self.add_show_shelf_menus()
 
+        self.add_controller_editor_menu_item()
+
     def add_hide_output_window(self):
         # Add "Show Output Window" at the end of the Windows menu.
         if os.name != 'nt':
@@ -132,6 +135,28 @@ class PluginMenu(Menu):
         self.shelf_menus_menu_item = self.add_menu_item('zShowShelfMenus', parent='mainWindowMenu', command=toggle_shelf_menus)
         refresh()
 
+    def add_controller_editor_menu_item(self):
+        menu = 'MayaWindow|mainRigSkeletonsMenu'
+
+        # Make sure the menu is built.
+        pm.mel.eval('ChaSkeletonsMenu "%s";' % menu)
+
+        def open_controller_editor(unused):
+            reload(controller_editor)
+            if self.controller_ui is None:
+                self.controller_ui = controller_editor.ControllerEditor()
+                def closed():
+                    self.controller_ui = None
+                self.controller_ui.destroyed.connect(closed)
+
+            # Disable retain, or we won't be able to create the window again after reloading the script
+            # with an "Object's name 'DialogWorkspaceControl' is not unique" error.
+            self.controller_ui.show(dockable=True, retain=False)
+
+        self.add_menu_item('zMayaTools_ControllerEditor', label='Edit Controllers', parent=menu,
+                command=open_controller_editor)
+
+
     def remove_menu_items(self):
         super(PluginMenu, self).remove_menu_items()
 
@@ -139,6 +164,10 @@ class PluginMenu(Menu):
         if self.shelf_menu is not None:
             self.shelf_menu.remove()
             self.shelf_menu = None
+
+        if self.controller_ui is not None:
+            self.controller_ui.close()
+            self.controller_ui = None
 
 menu = PluginMenu()
 def initializePlugin(mobject):

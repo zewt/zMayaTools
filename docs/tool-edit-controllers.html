@@ -1,0 +1,34 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>Control &gt; Edit Controllers</h1>
+<p>
+Edit pick walk controllers
+<p>
+<img src=tool-edit-controllers-screenshot.png style="display: block; margin-left: auto; margin-right: auto;">
+
+<h2>Introduction</h2>
+This provides a UI for editing Maya pick walk controllers.
+<p>
+Maya controllers allow configuring pick walking, which allows quickly navigating between
+rig controllers even when they're in different DAG hierarchies or have helper groups between
+them.
+<p>
+Controllers are a built-in feature of Maya.  This simply provides a UI to manipulate them.
+
+<h2>Usage</h2>
+
+Select <b>Control &gt; Edit Controllers</b> from the Rigging menu set.
+<p>
+Select a node and click <b>Create</b> to tag that object as a controller.
+<p>
+Controllers can be dragged underneath other controllers and reordered within
+their parent.  Pick walking with the keyboard arrow keys navigates between
+objects according to this hierarchy.
+<p>
+Click <b>Group</b> to create an empty controller with no object.  This can
+be used as a root control to allow left/right pick walking between controls
+that have no actual shared parent control.
+
