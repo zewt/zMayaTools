@@ -308,7 +308,7 @@ class Validate(object):
         try:
             pm.symmetricModelling(symmetry_edge, topoSymmetry=True)
         except RuntimeError as e:
-            self.log('Mesh isn\'t topologically symmetric', nodes=[self.node])
+            self.log('Mesh isn\'t topologically symmetric (selected %s as symmetry edge)' % symmetry_edge, nodes=[self.node])
             return
 
         # Disable topological symmetry.  We only activated it to see if it succeeds.
