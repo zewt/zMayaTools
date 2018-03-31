@@ -558,6 +558,10 @@ class Validate(object):
             if pm.listConnections(possible_stub_joint.attr('worldMatrix[0]'), s=False, d=True, type='skinCluster'):
                 continue
 
+            # If this joint has any children, don't treat it as a stub joint.
+            if len(pm.listRelatives(possible_stub_joint)) > 0:
+                continue
+
             stub_joints.append(possible_stub_joint)
 
         # log.debug('Found stub joints: %s', ', '.join(joint.nodeName() for joint in stub_joints))
