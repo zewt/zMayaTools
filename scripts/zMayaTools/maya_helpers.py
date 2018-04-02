@@ -418,7 +418,13 @@ def copy_weights_to_skincluster(src_attr, skin_cluster, shape):
 
 def lock_attr(attr, lock='lock'):
     """
-    If lock is 'lock', lock attr and hide it in the CB.
+    If lock is 'lock', lock attr and hide it in the CB.  This is for removing attributes
+    like translation on control nodes, where we don't want it cluttering the channel box.
+
+    If lock is "lock_visible", lock attr, but leave it in the CB.  This is for attributes
+    we don't want modified, but which are on nodes that aren't normally selected by the
+    user, like alignment nodes.  Leaving these in the channel box is convenient if they
+    need to be unlocked later, since the AE UI for doing this is cumbersome.
 
     If lock is 'hide', hide it in the CB and make it unkeyable, but don't lock it.
     We do this with the transform of control nodes which are visible in the viewport
@@ -437,6 +443,8 @@ def lock_attr(attr, lock='lock'):
     """
     if lock == 'lock':
         pm.setAttr(attr, lock=True, cb=False, keyable=False)
+    elif lock == 'lock_visible':
+        pm.setAttr(attr, lock=True, cb=True, keyable=False)
     elif lock == 'hide':
         pm.setAttr(attr, lock=False, cb=False, keyable=False)
     elif lock == 'unkeyable':
