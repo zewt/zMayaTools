@@ -39,6 +39,12 @@ def get_controller_parent(controller, get_plug=False):
         return None
     
 def get_controller_children(parent, disconnect_from_parent=False):
+    """
+    Return a list of all children of the given controller.
+
+    If disconnect_from_parent is true, disconnect the children list so edits can be
+    made.  Reassign the resulting list using assign_controller_children.
+    """
     all_children = []
     for children_plug in parent.children:
         children = children_plug.listConnections(s=True, d=False, t='controller', p=True)
@@ -50,6 +56,57 @@ def get_controller_children(parent, disconnect_from_parent=False):
             child.disconnect(children_plug)
 
     return all_children
+
+def assign_controller_children(parent, children):
+    """
+    Assign a controller's child list.
+
+    This is always called after disconnecting the list using
+    get_controller_children(disconnect_from_parent=True).  This doesn't connect
+    the prepopulate attribute.
+    """
+    for idx, child in enumerate(children):
+        child.parent.connect(parent.children[idx])
+
+def _remove_gaps_in_child_list(controller):
+    """
+    If there are gaps in the children array of a controller, pick walking doesn't
+    work.  Remove any gaps in the given controller's child list, preserving the
+    order of connections.
+    """
+    connections = []
+    any_gaps_seen = False
+    for entry in controller.children:
+        if not entry.isConnected():
+            any_gaps_seen = True
+            continue
+        connection = pm.listConnections(entry, s=True, d=False, p=True)[0]
+        connections.append(connection)
+
+    # If there weren't any gaps, we don't need to make any changes.
+    if not any_gaps_seen:
+        return
+
+    for entry in controller.children:
+        for connection in pm.listConnections(entry, s=True, d=False, p=True):
+            connection.disconnect(entry)
+
+    for idx, connection in enumerate(connections):
+        connection.connect(controller.children[idx])
+
+def remove_gaps_in_all_controllers():
+    """
+    Call remove_gaps_in_child_list in all non-referenced controllers to correct
+    any existing gaps.
+
+    This is only needed to correct any bad controller connections created by earlier
+    versions.
+    """
+    for controller in pm.ls(type='controller'):
+        if pm.referenceQuery(controller, isNodeReferenced=True):
+            continue
+
+        _remove_gaps_in_child_list(controller)
 
 def set_controller_parent(controller, parent, after=None):
     """
@@ -65,8 +122,13 @@ def set_controller_parent(controller, parent, after=None):
 
         if old_parent_plug is not None:
             # Unparent the controller from its old parent.
-            controller.parent.disconnect(old_parent_plug)
             old_parent_plug.node().prepopulate.disconnect(controller.prepopulate)
+
+            # We need to reconnect all children and not just disconnect the child, since the
+            # child list needs to remain contiguous.
+            all_children = get_controller_children(old_parent_plug.node(), disconnect_from_parent=True)
+            all_children.remove(controller.node())
+            assign_controller_children(old_parent_plug.node(), all_children)
 
         # If we're unparenting, we're done.
         if parent is None:
@@ -87,8 +149,7 @@ def set_controller_parent(controller, parent, after=None):
             all_children[idx:idx] = [controller]
 
         # Reconnect the children.
-        for idx, child in enumerate(all_children):
-            child.parent.connect(parent.children[idx])
+        assign_controller_children(parent, all_children)
 
 class ControllerListener(object):
     """
@@ -348,7 +409,22 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
         # Delete the selection.  This will automatically delete any controllers underneath
         # it.
         selected_controllers = [item.controller_node for item in self.ui.controllerTree.selectedItems()]
+        parents = []
+        for controller in selected_controllers:
+            connections = controller.parent.listConnections(s=False, d=True)
+            if connections:
+                parents.append(connections[0])
         pm.delete(selected_controllers)
+
+        # When controllers are deleted, they leave behind gaps in the controllers they were connected
+        # to.  This breaks pick walking.  Work around this by defragmenting any controller that used
+        # to be a parent of a deleted controller.
+        for controller in parents:
+            # Skip this controller if it doesn't exist, since it might have been deleted due to
+            # us deleting its only connection.
+            if not controller.exists():
+                continue
+            _remove_gaps_in_child_list(controller)
 
     def dragged_internally(self, source, target, indicator_position):
         self.dragged_controller(source.controller_node, target.controller_node if target is not None else None, indicator_position)
@@ -498,7 +574,6 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
 
         for node in nodes:
             controllers = node.message.listConnections(s=False, d=True, type='controller')
-            print controllers
             if not controllers:
                 continue
 
