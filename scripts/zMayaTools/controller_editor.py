@@ -581,6 +581,14 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
             if item is None:
                 continue
 
-            self.ui.controllerTree.setCurrentItem(item)
+            # Set currently_refreshing while we set the selection, so selection_changed doesn't try
+            # to sync Maya's selection list to the UI.  We're syncing in the other direction, and
+            # that causes multiple Maya selections to be reduced to one selection (since our tree
+            # view has multiple selection disabled), causing problems with pick walking.
+            self.currently_refreshing = True
+            try:
+                self.ui.controllerTree.setCurrentItem(item)
+            finally:
+                self.currently_refreshing = False
             break
         
