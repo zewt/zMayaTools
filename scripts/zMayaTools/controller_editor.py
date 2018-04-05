@@ -473,8 +473,9 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
         # the tree, or it'll create a bunch of undo entries.
         self.currently_refreshing = True
 
-        # Remember the selection, so we can restore it later if the selected node still exists.
+        # Remember the selection and expanded nodes, so we can restore it later if the selected node still exists.
         selected_controllers = [item.controller_node for item in self.ui.controllerTree.selectedItems()]
+        old_nodes = {node: item.isExpanded() for node, item in self.controllers_to_items.iteritems()}
         
         self.ui.controllerTree.clear()
         self.controllers_to_items = {}
@@ -508,7 +509,9 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
             else:
                 parent.addChild(item)
 
-            self.ui.controllerTree.expandItem(item)
+            # Expand the node if it's new or if it was expanded previously.
+            if old_nodes.get(node, True):
+                self.ui.controllerTree.expandItem(item)
  
              # If this controller was selected, reselect it.
             if node in selected_controllers:
