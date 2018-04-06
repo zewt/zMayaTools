@@ -1,7 +1,6 @@
 import sys, logging
 import maya.OpenMayaMPx as OpenMayaMPx
 import maya.OpenMaya as om
-import maya.api.OpenMayaRender as omr
 import pymel.core
 import math, traceback, time
 
