@@ -515,3 +515,120 @@ def py2melProc(returnType='', procName=None, argTypes=None):
         return function
     return wrapper
 
+# This set of helpers allows temporarily setting attributes, optionVars, etc., and
+# restoring them to their original state later.
+class SetAndRestore(object):
+    def __init__(self, value=None):
+        self.old_value = self.get()
+        if value is not None:
+            self.set(value)
+
+    def restore(self):
+        self.set(self.old_value)
+
+class SetAndRestoreAttr(SetAndRestore):
+    ConnectionWrapper = namedtuple('ConnectionWrapper', ['connection', 'value'])
+            
+    def __init__(self, attr, value=None, optional=False):
+        self.attr = attr
+        self.optional = optional
+        super(SetAndRestoreAttr, self).__init__(value)
+
+    def get(self):
+        try:
+            # See if this node is connected and needs to be disconnected to set the value.
+            connections = self.attr.listConnections(s=True, d=False, p=True)
+            assert len(connections) < 2 # can't have multiple inputs
+            if connections:
+                connection = connections[0]
+                connection.disconnect(self.attr)
+            else:
+                connection = None
+
+            # Include the original connection in the value, if any, so we can restore it later.
+            # Wrap this in a small helper class, so we can distinguish it.
+            return self.ConnectionWrapper(connection, pm.getAttr(self.attr))
+        except (pm.MayaNodeError, pm.MayaAttributeError):
+            if self.optional:
+                return None
+            raise
+
+    def set(self, value):
+        try:
+            connection = None
+
+            # If value is a ConnectionWrapper, it contains both the value and an optional connection
+            # to restore.  Otherwise, this is the value to set.
+            if isinstance(value, self.ConnectionWrapper):
+                connection = value.connection
+                value = value.value
+
+            # Restore the value.
+            pm.setAttr(self.attr, value)
+
+            if connection is not None:
+                connection.connect(self.attr)
+        except (pm.MayaNodeError, pm.MayaAttributeError):
+            if self.optional:
+                return
+            raise
+
+class SetAndRestoreOptionVar(SetAndRestore):
+    def __init__(self, var, value=None):
+        self.var = var
+        super(SetAndRestoreOptionVar, self).__init__(value)
+
+    def get(self):
+        if not pm.optionVar(exists=self.var):
+            return None
+        return pm.optionVar(q=self.var)
+
+    def set(self, value):
+        if value is None:
+            pm.optionVar(remove=self.var)
+        else:
+            pm.optionVar(sv=(self.var, value))
+
+class SetAndRestoreCmd(SetAndRestore):
+    def __init__(self, cmd, key, value=None):
+        self.cmd = cmd
+        self.key = key
+
+        super(SetAndRestoreCmd, self).__init__(value)
+
+    def get(self):
+        args = { 'q': True }
+        if self.key is not None:
+            args[self.key] = True
+        result = self.cmd(**args)
+
+        # Grr.  Why does this return an array?
+        if self.cmd is pm.renderSetupLocalOverride:
+            result = result[0]
+        return result
+    
+    def set(self, value):
+        args = []
+        kwargs = {}
+        if self.key is not None:
+            # eg. pm.ogs(pause=True)
+            kwargs[self.key] = value
+        else:
+            # eg. pm.currentTime(10)
+            args.append(value)
+        self.cmd(*args, **kwargs)
+
+@contextlib.contextmanager
+def restores(name='undo_on_exception'):
+    """
+    Run a block of code, restoring a list of scene changes at the end.
+    """
+    try:
+        restores = []
+        yield restores
+    finally:
+        # Restore changes.
+        for restore in reversed(restores):
+            restore.restore()
+
+
