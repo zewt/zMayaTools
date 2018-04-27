@@ -77,6 +77,35 @@ def duplicate_base_mesh(node):
 #    deformer_node.attr('outputGeometry[0]').connect(src_mesh_output.attr('inMesh'))
 #    mesh.attr('intermediateObject').set(1)
 
+def prep_for_retargetting(blend_shape, restores):
+    """
+    Prepare blend_shape for being used as the source for retargetting.
+
+    - We need to be able to set blend shape weights, so disconnect anything connected
+    to all weights.
+    - Make sure all weights and groups are visible, and all groups have a weight of 1, so
+    # they don't prevent us from enabling weights.
+    - Set all blend shape weights to 0, so we can enable them one at a time.
+
+    Changes will be added to restores, so they'll be reverted by maya_helpers.restores()
+    when we're done.
+    """
+    # Make sure the blendShape itself is turned on.
+    restores.append(maya_helpers.SetAndRestoreAttr(blend_shape.envelope, 1))
+    
+    for directory_entry in blend_shape.targetDirectory:
+        restores.append(maya_helpers.SetAndRestoreAttr(directory_entry.directoryVisibility, 1))
+
+        # Setting directoryParentVisibility will ensure that the directory isn't hidden from its
+        # parent being hidden, or from a blendShape group on the shapeEditorManager being hidden.
+        restores.append(maya_helpers.SetAndRestoreAttr(directory_entry.directoryParentVisibility, 1))
+
+        restores.append(maya_helpers.SetAndRestoreAttr(directory_entry.directoryWeight, 1))
+
+    for weight in blend_shape.weight:
+        # This will also disconnect anything connected to the weight.
+        restores.append(maya_helpers.SetAndRestoreAttr(weight, 0))
+
 def redst_blend_shapes(src_node, dst_node, src_blend_shape_node, dst_blend_shape_node, blend_shape_indices, connect_weights):
     try:
         pm.waitCursor(state=True)
@@ -90,7 +119,21 @@ def redst_blend_shapes(src_node, dst_node, src_blend_shape_node, dst_blend_shape
         pm.namespace(add='temp')
         pm.namespace(setNamespace='temp')
 
-        return redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend_shape_node, blend_shape_indices, connect_weights)
+        with maya_helpers.restores() as restores:
+            prep_for_retargetting(src_blend_shape_node, restores)
+            src_to_dst_weights = redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend_shape_node, blend_shape_indices)
+
+        # Copy or connect weights.  Do this after we finish the above, since we need to let maya_helpers.restores()
+        # restore the original weights before we copy them, or they'll all be set to 0.
+        for src_weight, dst_weight in src_to_dst_weights.items():
+            if connect_weights:
+                # Connect the source blend shape's weight to the target.
+                src_weight.connect(dst_weight)
+            else:
+                # Copy the source weight.
+                dst_weight.set(src_weight.get())
+
+        return src_to_dst_weights
     finally:
         pm.waitCursor(state=False)
 
@@ -100,18 +143,110 @@ def redst_blend_shapes(src_node, dst_node, src_blend_shape_node, dst_blend_shape
 
         pm.select(old_selection)
 
-def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend_shape_node, blend_shape_indices, connect_weights):
-    # Duplicate the base meshes.
-    src_node_copy = duplicate_base_mesh(src_node)
+def add_blend_shape_index_to_directory(directory_entry, idx):
+    """
+    Add idx to a blendShape.targetDirectory child list if it's not already present, and
+    remove it from all other directories.
+    """
+    # Add idx to directory_entry.
+    child_indices = directory_entry.childIndices.get() or []
+    if idx not in child_indices:
+        child_indices.append(idx)
+        directory_entry.childIndices.set(child_indices, type='Int32Array')
+
+    # Remove idx from all others.
+    for other_directory_entry in directory_entry.array():
+        if other_directory_entry == directory_entry:
+            continue
+
+        child_indices = other_directory_entry.childIndices.get() or []
+        if idx in child_indices:
+            child_indices.remove(idx)
+            other_directory_entry.childIndices.set(child_indices, type='Int32Array')
+
+    if idx >= 0:
+        # For blend shape targets, set parentDirectory to match.
+        directory_entry.node().parentDirectory[idx].set(directory_entry.index())
+
+def find_blend_shape_directory_by_blend_shape_idx(blend_shape, idx):
+    """
+    Find the target directory of the given blend shape index.
+
+    If it's not found, return the root directory.
+    """
+    for directory in blend_shape.targetDirectory:
+        # childIndices will be None if there are no entries.
+        if idx in (directory.childIndices.get() or []):
+            return directory
+
+    # If we can't find it, return the root directory.
+    return blend_shape.targetDirectory[0]
+
+def find_directory_entry_by_name(blend_shape, name):
+    """
+    Find and return the targetDirectory with the given name, or None if it doesn't exist.
+    """
+    for directory_entry in blend_shape.targetDirectory:
+        if directory_entry.directoryName.get() == name:
+            return directory_entry
+    return None
+
+def recursively_create_hierarchy(src_directory_entry, dst_blend_shape):
+    """
+    Create a matching blend shape directory hierarchy for dst_directory_entry in
+    dst_blend_shape.
+    
+    Return the corresponding targetDirectory in the destination blendShape node.
+    """
+    # If this is the root, stop.
+    if src_directory_entry.index() == 0:
+        return dst_blend_shape.targetDirectory[0]
+
+    # Recursively create the parent.  dst_directory_parent is the target directory of the parent.
+    parent_index = src_directory_entry.parentIndex.get()
+    parent_directory = src_directory_entry.array()[parent_index]
+    dst_directory_parent = recursively_create_hierarchy(parent_directory, dst_blend_shape)
+
+    # If a directory with the same name already exists in dst_blend_shape, use it.
+    dst_directory_entry = find_directory_entry_by_name(dst_blend_shape, src_directory_entry.directoryName.get())
+    if dst_directory_entry is not None:
+        return dst_directory_entry
+
+    # Create the directory, copying attributes from the source.
+    new_shape_directory_index = max(dst_blend_shape.targetDirectory.get(mi=True)) + 1
+    dst_directory_entry = dst_blend_shape.targetDirectory[new_shape_directory_index]
+    dst_directory_entry.directoryName.set(src_directory_entry.directoryName.get())
+    dst_directory_entry.directoryVisibility.set(dst_directory_parent.directoryVisibility.get())
+    dst_directory_entry.directoryParentVisibility.set(dst_directory_parent.directoryParentVisibility.get())
+    dst_directory_entry.directoryWeight.set(dst_directory_parent.directoryWeight.get())
+    dst_directory_entry.parentIndex.set(dst_directory_parent.index())
+
+    # Add the new directory to the childIndices list of the parent.  Groups are stored as
+    # the inverse of their index.  (Do this even if we're not newly creating the directory to
+    # make sure it's present, but use the existing directory index.)
+    add_blend_shape_index_to_directory(dst_directory_parent, -dst_directory_entry.index())
+
+    return dst_directory_entry
+
+def create_matching_blend_shape_directory(src_blend_shape, src_blend_shape_index, dst_blend_shape, dst_blend_shape_index):
+    """
+    Create a blend shape directory hierarchy in dst_blend_shape for dst_blend_shape_index,
+    matching the grouping of src_blend_shape_index in src_blend_shape, and add
+    dst_blend_shape_index to it.
+    """
+    # Find the target directory for the source blend shape.
+    src_directory = find_blend_shape_directory_by_blend_shape_idx(src_blend_shape, src_blend_shape_index)
+
+    # Create the directory hierarchy, and move the blend shape into it.
+    dst_directory_entry = recursively_create_hierarchy(src_directory, dst_blend_shape)
+    add_blend_shape_index_to_directory(dst_directory_entry, dst_blend_shape_index)
+
+def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend_shape_node, blend_shape_indices):
+    # Duplicate the destination mesh.
     dst_node_copy = duplicate_base_mesh(dst_node)
 
-    # Add a blend shape deformer to the duplicated source mesh, and copy blend shape
-    # targets to it from the source.
-    duplicate_src_blend_shape = pm.blendShape(src_node_copy)[0]
-    copy_blend_shapes(src_blend_shape_node, duplicate_src_blend_shape)
-
-    # Wrap dst_node_copy to src_node_copy, so the destination mesh follows blend shapes on the source mesh.
-    wrap_deformer(src_node_copy, dst_node_copy, auto_weight_threshold=True, falloff_mode=0, use_cvwrap_if_available=True)
+    # Wrap dst_node_copy to src_node, so the destination mesh follows blend shapes on the source mesh.
+    wrap_deformer(src_node, dst_node_copy, auto_weight_threshold=True, falloff_mode=0, use_cvwrap_if_available=True)
 
     # Find all blend shape names.  We require that blend shapes have a name, and always give
     # blend shapes the same name as their source.
@@ -138,6 +273,7 @@ def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend
         raise RuntimeError('Not reachable')
 
     # Do the actual retargetting.
+    src_to_dst_weights = {}
     for idx in blend_shape_indices:
         # Make sure that we aren't connected backwards, or this would create a cycle.
         src_weight = src_blend_shape_node.attr('weight').elementByLogicalIndex(idx)
@@ -168,7 +304,7 @@ def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend
 
         # Enable the blend shape target on the source object.  This will deform dst_node_copy through
         # the wrap deformer.
-        weight = duplicate_src_blend_shape.attr('w').elementByLogicalIndex(idx)
+        weight = src_blend_shape_node.attr('w').elementByLogicalIndex(idx)
         weight.set(1)
 
         # Duplicate dst_node_copy in its deformed state.
@@ -193,13 +329,16 @@ def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend
         # Disable the target.
         weight.set(0)
 
+        # Create a matching blend shape directory, and add the new blend shape to it.
+        create_matching_blend_shape_directory(src_blend_shape_node, idx, dst_blend_shape_node, new_idx)
+
         # We don't need the copied target.  Once we delete this, the blend shape will be baked into
         # the deformer.
         pm.delete(new_blend_shape_target)
 
-        # Connect the source blend shape's weight to the target.
-        if connect_weights:
-            src_weight.connect(dst_weight)
+        src_to_dst_weights[src_weight] = dst_weight
+
+    return src_to_dst_weights
 
 def _create_wrap(control_object, target,
         threshold=0,
@@ -207,7 +346,6 @@ def _create_wrap(control_object, target,
         influence_type=2, # 1 for point, 2 for face
         exclusive=False,
         auto_weight_threshold=False,
-        render_influences=True,
         falloff_mode=0): # 0 for volume, 1 for surface
     old_selection = pm.ls(sl=True)
 
@@ -221,7 +359,7 @@ def _create_wrap(control_object, target,
         'influence_type': influence_type,
         'exclusive': 1 if exclusive else 0,
         'auto_weight_threshold': 1 if auto_weight_threshold else 0,
-        'render_influences': 1 if render_influences else 0,
+        'render_influences': 1, # Never set this to 0.
         'falloff_mode': falloff_mode,
     }
 
@@ -258,18 +396,9 @@ def wrap_deformer(control_mesh, target,
         influence_type=2, # 1 for point, 2 for face
         exclusive=False,
         auto_weight_threshold=False,
-        render_influences=False,
         falloff_mode=0): # 0 for volume, 1 for surface
     # If any nodes are meshes, move up to the transform.
     selection = target.getParent() if target.nodeType() == 'mesh' else target
-
-    # Work around a bit of Maya nastiness.  Creating a wrap deformer doesn't hide the influence
-    # mesh normally, it turns a bunch of renderer flags off instead, to make it look like the
-    # mesh hasn't been changed and then screw you up later when you render.  We have to save and
-    # restore a bunch of properties manually to fix this.
-    attributes_hijacked_by_wrap = ('castsShadows', 'receiveShadows', 'motionBlur',
-            'primaryVisibility', 'visibleInReflections', 'visibleInRefractions')
-    saved_attrs = {attr: control_mesh.attr(attr).get() for attr in attributes_hijacked_by_wrap}
 
     control_transform = control_mesh.getParent() if control_mesh.nodeType() == 'mesh' else control_mesh
 
@@ -281,11 +410,7 @@ def wrap_deformer(control_mesh, target,
 
     if deformer_node is None:
         deformer_node = _create_wrap(control_transform, selection, threshold, max_distance, influence_type,
-            exclusive, auto_weight_threshold, render_influences, falloff_mode)
-
-    # Restore the attributes that wrap screwed up.
-    for attr, value in saved_attrs.items():
-        control_mesh.attr(attr).set(value)
+            exclusive, auto_weight_threshold, falloff_mode)
 
     return deformer_node
 
@@ -309,55 +434,6 @@ def copy_attr(src_attr, dst_attr):
     for cmd in command_list:
         pm.mel.eval(cmd)
     pm.select(old_selection)
-
-def copy_blend_shapes(src, dst):
-    """
-    Copy all blend shape targets from src to dst.
-    """
-    # Set the blend shape weights on the target to 0, so they show up in the CB.  Don't
-    # copy the weights from the source.
-    src_weights = src.attr('weight')
-    dst_weights = dst.attr('weight')
-    for weight_idx in src_weights.get(mi=True):
-        dst_weights.elementByLogicalIndex(weight_idx).set(0)
-
-    # Copy the targets.
-    copy_attr(src.attr('inputTarget'), dst.attr('inputTarget'))
-
-#    src_input_targets = src.attr('inputTarget')
-#    dst_input_targets = dst.attr('inputTarget')
-#
-#    for it_idx in src_input_targets.get(mi=True):
-#        src_input_target = src_input_targets.elementByLogicalIndex(it_idx)
-#        dst_input_target = dst_input_targets.elementByLogicalIndex(it_idx)
-#        continue
-#
-#        src_input_target_groups = src_input_target.attr('inputTargetGroup')
-#        dst_input_target_groups = dst_input_target.attr('inputTargetGroup')
-#        for itg_idx in src_input_target_groups.get(mi=True):
-#            src_input_target_group = src_input_target_groups.elementByLogicalIndex(itg_idx)
-#            dst_input_target_group = dst_input_target_groups.elementByLogicalIndex(itg_idx)
-#
-#            src_input_target_items = src_input_target_group.attr('inputTargetItem')
-#            dst_input_target_items = dst_input_target_group.attr('inputTargetItem')
-#            for iti_idx in src_input_target_items.get(mi=True):
-#                src_input_target_item = src_input_target_items.elementByLogicalIndex(iti_idx)
-#                dst_input_target_item = dst_input_target_items.elementByLogicalIndex(iti_idx)
-#
-#                for attr_name in ('inputGeomTarget', 'inputRelativePointsTarget',
-#                    'inputRelativeComponentsTarget', 'inputPointsTarget', 'inputComponentsTarget'):
-#                    src_attr = src_input_target_item.attr(attr_name)
-#                    dst_attr = dst_input_target_item.attr(attr_name)
-#
-#                    attr_type = src_attr.type()
-#
-#                    source = pm.listConnections(src_attr, s=True, d=False)
-#                    if source:
-#                        # Connect input connections.
-#                        assert len(source) == 1
-#                        source[0].connect(dst_attr)
-#                    else:
-#                        copy_attr(src_attr, dst)
 
 #class WrappedBlendShapes(object):
 #    """
