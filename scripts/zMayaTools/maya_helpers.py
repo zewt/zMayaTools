@@ -530,7 +530,7 @@ class SetAndRestoreAttr(SetAndRestore):
     ConnectionWrapper = namedtuple('ConnectionWrapper', ['connection', 'value'])
             
     def __init__(self, attr, value=None, optional=False):
-        self.attr = attr
+        self.attr = pm.PyNode(attr)
         self.optional = optional
         super(SetAndRestoreAttr, self).__init__(value)
 
