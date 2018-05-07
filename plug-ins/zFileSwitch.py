@@ -111,7 +111,17 @@ def copy_render_setup_template():
     # to it in the future.
     script_path = get_script_path()
     input_path = os.path.dirname(script_path) + '/../data/zFileSwitch.json'
-    rs_path = pm.optionVar(q='renderSetup_userTemplateDirectory')
+
+    # Use renderSetupPreferences to query the directory, since it works whether or
+    # not the optvar has been set yet and creates the directory if needed.  This isn't
+    # a documented API, so log and discard exceptions here so if this API stops working
+    # in the future it won't prevent the plugin from loading.
+    try:
+        from maya.app.renderSetup.model import renderSetupPreferences
+        rs_path = renderSetupPreferences.getUserTemplateDirectory()
+    except Exception as e:
+        log.exception(e)
+        return
     output_path = rs_path + '/zFileSwitch.json'
     shutil.copyfile(input_path, output_path)
 
