@@ -314,11 +314,9 @@ class Validate(object):
         # Disable topological symmetry.  We only activated it to see if it succeeds.
         pm.symmetricModelling(topoSymmetry=False)
 
-    def check_world_space_symmetry(self, shape, vertices):
+    def check_world_space_symmetry(self, shape, vertices, tolerance=0.001):
         """
         Check if a mesh is symmetric around YZ.
-
-        This doesn't tell us which vertices 
         """
         # Find all vertices that are on -X, or on the YZ plane.
         indices = []
@@ -332,9 +330,10 @@ class Validate(object):
         old_symmetry = pm.symmetricModelling(q=True, symmetry=True)
         old_about = pm.symmetricModelling(q=True, about=True)
         old_axis = pm.symmetricModelling(q=True, axis=True)
+        old_tolerance = pm.symmetricModelling(q=True, tolerance=True)
         
         try:
-            pm.symmetricModelling(e=True, symmetry=True, about='world', axis='x')
+            pm.symmetricModelling(e=True, symmetry=True, about='world', axis='x', tolerance=tolerance)
             pm.select(verts, symmetry=True)
 
             # Find the indices of any vertices that weren't selected.  This is a bit roundabout
@@ -352,7 +351,7 @@ class Validate(object):
         finally:
             pm.select(deselect=True)
             try:
-                pm.symmetricModelling(e=True, symmetry=old_symmetry, about=old_about, axis=old_axis)
+                pm.symmetricModelling(e=True, symmetry=old_symmetry, about=old_about, axis=old_axis, tolerance=old_tolerance)
             except RuntimeError:
                 # Ignore errors if the previous symmetry mode doesn't activate for some reason.
                 pass
@@ -733,7 +732,7 @@ class Validate(object):
         self.check_topological_symmetry(output, output_points)
 
         self.progress.set_task_progress('Checking world space symmetry', percent=0.6, force=True)
-        self.check_world_space_symmetry(output, output_points)
+        self.check_world_space_symmetry(output, output_points, self.config['vertex_error_threshold'])
 
         if not self.warnings:
             self.log('%s: OK' % self.node.nodeName(), nodes=[self.node])
@@ -749,6 +748,7 @@ class UI(maya_helpers.OptionsBox):
     def options_box_setup(self):
         self.optvars.add('zValidateCharacterMaxInfluences', 'int', 4)
         self.optvars.add('zValidateCharacterErrorThreshold', 'float', 0.001)
+        self.optvars.add('zValidateCharacterErrorVertexThreshold', 'float', 0.001)
 
         self.option_box = pm.columnLayout(adjustableColumn=1)
         parent = self.option_box
@@ -757,22 +757,26 @@ class UI(maya_helpers.OptionsBox):
 #        pm.optionMenuGrp('cpwInputBlendShapeTargets', label='Blend shape target:', cc=lambda unused: input_blend_shape_changed())
 
         pm.intSliderGrp('valMaxInfluences', label='Max joint influences', field=True, min=0, max=10)
-        pm.floatSliderGrp('valErrorThreshold', label='Symmetry error threshold', field=True, fieldMinValue=0.00001, fieldMaxValue=10, min=0, max=0.1)
+        pm.floatSliderGrp('valJointErrorThreshold', label='Symmetry error threshold (joints)', field=True, fieldMinValue=0.00001, fieldMaxValue=10, min=0, max=0.1)
+        pm.floatSliderGrp('valVertexErrorThreshold', label='Symmetry error threshold (vertices)', field=True, fieldMinValue=0.00001, fieldMaxValue=10, min=0, max=0.1)
 
     def option_box_save(self):
         self.optvars['zValidateCharacterMaxInfluences'] = pm.intSliderGrp('valMaxInfluences', q=True, v=True)
-        self.optvars['zValidateCharacterErrorThreshold'] = pm.floatSliderGrp('valErrorThreshold', q=True, v=True)
+        self.optvars['zValidateCharacterErrorThreshold'] = pm.floatSliderGrp('valJointErrorThreshold', q=True, v=True)
+        self.optvars['zValidateCharacterErrorVertexThreshold'] = pm.floatSliderGrp('valVertexErrorThreshold', q=True, v=True)
 
     def option_box_load(self):
         pm.intSliderGrp('valMaxInfluences', edit=True, v=self.optvars['zValidateCharacterMaxInfluences'])
-        pm.floatSliderGrp('valErrorThreshold', edit=True, v=self.optvars['zValidateCharacterErrorThreshold'])
+        pm.floatSliderGrp('valJointErrorThreshold', edit=True, v=self.optvars['zValidateCharacterErrorThreshold'])
+        pm.floatSliderGrp('valVertexErrorThreshold', edit=True, v=self.optvars['zValidateCharacterErrorVertexThreshold'])
         
     def option_box_apply(self):
         pm.setParent(self.option_box)
 
         config = {
             'max_influences': pm.intSliderGrp('valMaxInfluences', q=True, v=True),
-            'error_threshold': pm.floatSliderGrp('valErrorThreshold', q=True, v=True),
+            'error_threshold': pm.floatSliderGrp('valJointErrorThreshold', q=True, v=True),
+            'vertex_error_threshold': pm.floatSliderGrp('valVertexErrorThreshold', q=True, v=True),
         }
 
         nodes = pm.ls(sl=True)
