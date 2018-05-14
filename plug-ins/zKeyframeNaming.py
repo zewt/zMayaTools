@@ -27,6 +27,8 @@ class zKeyframeNaming(OpenMayaMPx.MPxNode):
                 entries.jumpToElement(key_idx)
             except RuntimeError: # No element at given index
                 name = 'unnamed'
+            except OverflowError: # Out of range
+                name = 'unnamed'
             else:
                 name = entries.inputValue().child(self.attr_names).asString()
 
