@@ -102,6 +102,15 @@ def prep_for_retargetting(blend_shape, restores):
 
         restores.append(maya_helpers.SetAndRestoreAttr(directory_entry.directoryWeight, 1))
 
+    for target_visibility in blend_shape.targetVisibility:
+        print target_visibility
+        restores.append(maya_helpers.SetAndRestoreAttr(target_visibility, 1))
+
+    # XXX: untested
+    for inbetween_info_group in blend_shape.inbetweenInfoGroup:
+        for inbetween_info in inbetween_info_group.inbetweenInfo:
+            restores.append(maya_helpers.SetAndRestoreAttr(inbetween_info.inbetweenVisibility, 1))
+
     for weight in blend_shape.weight:
         # This will also disconnect anything connected to the weight.
         restores.append(maya_helpers.SetAndRestoreAttr(weight, 0))
