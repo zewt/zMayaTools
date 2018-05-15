@@ -115,7 +115,7 @@ def prep_for_retargetting(blend_shape, restores):
         # This will also disconnect anything connected to the weight.
         restores.append(maya_helpers.SetAndRestoreAttr(weight, 0))
 
-def redst_blend_shapes(src_node, dst_node, src_blend_shape_node, dst_blend_shape_node, blend_shape_indices, connect_weights):
+def redst_blend_shapes(src_node, dst_node, src_blend_shape_node, dst_blend_shape_node, blend_shape_indices, connect_weights, use_cvwrap):
     try:
         pm.waitCursor(state=True)
 
@@ -130,7 +130,7 @@ def redst_blend_shapes(src_node, dst_node, src_blend_shape_node, dst_blend_shape
 
         with maya_helpers.restores() as restores:
             prep_for_retargetting(src_blend_shape_node, restores)
-            src_to_dst_weights = redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend_shape_node, blend_shape_indices)
+            src_to_dst_weights = redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend_shape_node, blend_shape_indices, use_cvwrap=use_cvwrap)
 
         # Copy or connect weights.  Do this after we finish the above, since we need to let maya_helpers.restores()
         # restore the original weights before we copy them, or they'll all be set to 0.
@@ -250,12 +250,13 @@ def create_matching_blend_shape_directory(src_blend_shape, src_blend_shape_index
     dst_directory_entry = recursively_create_hierarchy(src_directory, dst_blend_shape)
     add_blend_shape_index_to_directory(dst_directory_entry, dst_blend_shape_index)
 
-def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend_shape_node, blend_shape_indices):
+def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend_shape_node, blend_shape_indices,
+        use_cvwrap=True):
     # Duplicate the destination mesh.
     dst_node_copy = duplicate_base_mesh(dst_node)
 
     # Wrap dst_node_copy to src_node, so the destination mesh follows blend shapes on the source mesh.
-    wrap_deformer(src_node, dst_node_copy, auto_weight_threshold=True, falloff_mode=0, use_cvwrap_if_available=True)
+    wrap_deformer(src_node, dst_node_copy, auto_weight_threshold=True, falloff_mode=0, use_cvwrap_if_available=use_cvwrap)
 
     # Find all blend shape names.  We require that blend shapes have a name, and always give
     # blend shapes the same name as their source.
@@ -545,6 +546,9 @@ class UI(maya_helpers.OptionsBox):
         connect_weights_to_source = self.optvars['zBlendShapeRetargettingConnectWeightsToSource'] == 1
         pm.checkBoxGrp('connectWeightsToSource', edit=True, value1=connect_weights_to_source)
 
+        use_cvwrap = self.optvars['zBlendShapeRetargettingUseCvwrap'] == 1
+        pm.checkBoxGrp('useCvWrap', edit=True, value1=use_cvwrap)
+
         # optionMenuGrp will throw RuntimeError if the value doesn't exist, eg. the saved blendShape
         # node doesn't exist in the scene.
 #        def set_option_from_blend_shape_list(blend_shape_list, option_var):
@@ -558,6 +562,7 @@ class UI(maya_helpers.OptionsBox):
 
     def option_box_save(self):
         self.optvars['zBlendShapeRetargettingConnectWeightsToSource'] = pm.checkBoxGrp('connectWeightsToSource', q=True, value1=False)
+        self.optvars['zBlendShapeRetargettingUseCvwrap'] = pm.checkBoxGrp('useCvWrap', q=True, value1=False)
 
     def option_box_apply(self):
         # Get the selected blendShapes.
@@ -625,10 +630,12 @@ class UI(maya_helpers.OptionsBox):
     #        raise RuntimeError('Couldn\'t find a blend shape node on %s which is following %s' % (dst_node.name(), src_blend_shape.name()))
 
         connect_weights = pm.checkBoxGrp('connectWeightsToSource', q=True, value1=False)
-        redst_blend_shapes(src_node, dst_node, src_blend_shape, dst_blend_shape, blend_shape_indices, connect_weights=connect_weights)
+        use_cvwrap = pm.checkBoxGrp('useCvWrap', q=True, value1=False)
+        redst_blend_shapes(src_node, dst_node, src_blend_shape, dst_blend_shape, blend_shape_indices, connect_weights=connect_weights, use_cvwrap=use_cvwrap)
 
     def options_box_setup(self):
         self.optvars.add('zBlendShapeRetargettingConnectWeightsToSource', 'int', 0)
+        self.optvars.add('zBlendShapeRetargettingUseCvwrap', 'int', 1)
         
         parent = pm.columnLayout(adjustableColumn=True)
 
@@ -658,6 +665,7 @@ class UI(maya_helpers.OptionsBox):
         pm.separator()
        
         pm.checkBoxGrp('connectWeightsToSource', numberOfCheckBoxes=1, value1=False, label='Connect weights to source')
+        pm.checkBoxGrp('useCvWrap', numberOfCheckBoxes=1, value1=False, label='Use cvwrap instead of wrap')
 
         self.refresh_src_blend_shape_list()
 
