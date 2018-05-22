@@ -210,7 +210,9 @@ def execute_menu_item(name, button_type):
 
     button_type is either pm.shelfButton or pm.menuItem.
     """
-    def func(unused):
+    # This is called with an argument when it's executed from the menu, and with no argument
+    # if it's executed by pressing G.
+    def func(unused=None):
         command = button_type(name, q=True, command=True)
         sourceType = button_type(name, q=True, sourceType=True)
 
