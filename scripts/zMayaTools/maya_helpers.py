@@ -557,14 +557,22 @@ class SetAndRestoreAttr(SetAndRestore):
         try:
             connection = None
 
-            # If value is a ConnectionWrapper, it contains both the value and an optional connection
-            # to restore.  Otherwise, this is the value to set.
             if isinstance(value, self.ConnectionWrapper):
+                # If value is a ConnectionWrapper, it contains both the value and an optional connection
+                # to restore.  This is what we use in this class to restore values.
                 connection = value.connection
                 value = value.value
+            elif isinstance(value, pm.general.Attribute):
+                # If this is an attribute, connect to it.
+                connection = value
+                value = None
+            else:
+                # Otherwise, this is the value to set.
+                pass
 
             # Restore the value.
-            pm.setAttr(self.attr, value)
+            if value is not None:
+                pm.setAttr(self.attr, value)
 
             if connection is not None:
                 connection.connect(self.attr)

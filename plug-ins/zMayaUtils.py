@@ -66,6 +66,7 @@ class PluginMenu(Menu):
                 
             def run_blend_shape_retargetting(unused):
                 from zMayaTools import blend_shape_retargetting
+                reload(blend_shape_retargetting)
                 blend_shape_retargetting.UI().run()
 
             self.add_menu_item('zBlendShapeRetargetting_%s' % menu, label='Retarget Blend Shapes', parent=submenu,
@@ -83,6 +84,7 @@ class PluginMenu(Menu):
         self.add_hide_output_window()
         self.add_show_shelf_menus()
         self.add_controller_editor_menu_item()
+        self.add_channel_box_editing()
 
     def add_rigging_tools(self):
         menu = 'MayaWindow|mainRigControlMenu'
@@ -171,6 +173,27 @@ class PluginMenu(Menu):
                 insertAfter=controller_section[-1],
                 command=open_controller_editor)
 
+    def add_channel_box_editing(self):
+        def move_attr_up(unused):
+            from zMayaTools import attribute_reordering
+            reload(attribute_reordering)
+            attribute_reordering.move_selected_attr(down=False)
+
+        def move_attr_down(unused):
+            from zMayaTools import attribute_reordering
+            reload(attribute_reordering)
+            attribute_reordering.move_selected_attr(down=True)
+
+        # Add "Move Attributes Up" and "Move Attributes Down" to the bottom of Edit.
+        # Put this in a submenu, so the menu can be torn off while making a bunch of
+        # attribute edits.
+        menu = 'MayaWindow|mainEditMenu'
+        move_attribute_menu = self.add_menu_item('zMayaTools_MoveAttributes', label='Reorder Attributes', parent=menu,
+                subMenu=True, tearOff=True)
+        self.add_menu_item('zMayaTools_MoveAttributeUp', label='Move Attributes Up', parent=move_attribute_menu,
+                command=move_attr_up)
+        self.add_menu_item('zMayaTools_MoveAttributeDown', label='Move Attributes Down', parent=move_attribute_menu,
+                command=move_attr_down)
 
     def remove_menu_items(self):
         super(PluginMenu, self).remove_menu_items()

@@ -10,6 +10,7 @@ zMayaUtils:
 - Character validation
 - Hide the output window
 - Pick walk controller editing
+- Reorder channel box attributes
 
 Additional nodes:
 
