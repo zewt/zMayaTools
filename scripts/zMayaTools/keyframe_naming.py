@@ -349,6 +349,18 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         self._ui.frameList.itemDelegate().closeEditor.connect(self.name_editor_closed)
         self._ui.frameList.itemSelectionChanged.connect(self.selected_frame_changed)
         self._ui.frameList.itemClicked.connect(self.selected_frame_changed)
+        self._ui.frameList.setContextMenuPolicy(Qt.Qt.CustomContextMenu)
+
+        def context_menu(pos):
+            # Activate the context menu for the selected item.
+            item = self._ui.frameList.itemAt(pos)
+            if item is None:
+                return
+
+            keyframe_context_menu = self._create_keyframe_context_menu(item)
+            action = keyframe_context_menu.exec_(self._ui.frameList.mapToGlobal(pos))
+            
+        self._ui.frameList.customContextMenuRequested.connect(context_menu)
 
         # Create the menu.  Why can't this be done in the designer?
         menu_bar = Qt.QMenuBar()
@@ -447,6 +459,22 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
 
         item = self.get_selected_frame_item()
         self._ui.frameList.closePersistentEditor(item)
+
+    def _create_keyframe_context_menu(self, item):
+        keyframe_context_menu = Qt.QMenu()
+        time_slider_start = keyframe_context_menu.addAction('Set time slider start')
+        time_slider_start.triggered.connect(lambda: pm.playbackOptions(min=item.frame))
+
+        time_slider_end = keyframe_context_menu.addAction('Set time slider end')
+        time_slider_end.triggered.connect(lambda: pm.playbackOptions(max=item.frame))
+
+        time_render_start = keyframe_context_menu.addAction('Set render start')
+        time_render_start.triggered.connect(lambda: pm.PyNode('defaultRenderGlobals').startFrame.set(item.frame))
+
+        time_render_end = keyframe_context_menu.addAction('Set render end')
+        time_render_end.triggered.connect(lambda: pm.PyNode('defaultRenderGlobals').endFrame.set(item.frame))
+
+        return keyframe_context_menu
 
     def add_new_frame(self):
         """
