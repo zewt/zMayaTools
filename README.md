@@ -20,4 +20,5 @@ Additional nodes:
 - zArnoldMetadata: Dynamic EXR metadata with Arnold
 - zKeyframeNaming: Bookmark keyframes, with quick navigation
 - zFileSwitch: Switch between texturse for viewport and rendering
+- zNode: An empty DG node for storing custom data.
 
