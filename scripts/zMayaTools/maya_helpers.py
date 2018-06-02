@@ -1,4 +1,4 @@
-import contextlib, time
+import contextlib, functools, logging, time
 from collections import namedtuple
 from pymel import core as pm
 from maya import OpenMaya as om
@@ -639,4 +639,27 @@ def restores(name='undo_on_exception'):
         for restore in reversed(restores):
             restore.restore()
 
+class _FilterMFnWarnings(object):
+    def filter(self, record):
+        return 'Could not create desired MFn' not in record.msg
 
+def quiet_pymel_warnings(func):
+    """
+    PyMel prints a lot of spurious warnings like this when accessing nodes:
+        
+    Warning: pymel.core.general : Could not create desired MFn. Defaulting to MFnDependencyNode.
+    
+    This obscures actual warnings.  This wrapper temporarily silences this warning.
+    The logger will be returned to normal when we return.
+    """
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        pymel_logger = logging.getLogger('pymel.core.general')
+        temp_filter = _FilterMFnWarnings()
+        try:
+            pymel_logger.addFilter(temp_filter)
+            return func(*args, **kwargs)
+        finally:
+            pymel_logger.removeFilter(temp_filter)
+    return wrapper
+      
