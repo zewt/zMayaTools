@@ -171,7 +171,7 @@ class ProgressWindowMaya(util.ProgressWindow):
         self.with_titles = with_titles
         self.with_secondary_progress = with_secondary_progress
 
-        self.window = pm.window(title=title)
+        self.window = pm.window(title=title, minimizeButton=False, maximizeButton=False)
         pm.columnLayout()
         
         if self.with_titles:
