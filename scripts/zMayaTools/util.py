@@ -1,3 +1,9 @@
+def scale(x, l1, h1, l2, h2):
+    """
+    Scale x from the range [l1,h1] to the range [l2,h2].
+    """
+    return (x - l1) * (h2 - l2) / (h1 - l1) + l2
+
 class ProgressWindow(object):
     def __init__(self, total_progress_values=10, title=''):
         self._cancel = False
