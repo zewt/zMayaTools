@@ -214,8 +214,12 @@ class ProgressWindowMaya(util.ProgressWindow):
         if self.window is None:
             return
 
-        if self.with_titles:
-            pm.text('status', e=True, label=text)
+        if text:
+            if self.with_titles:
+                pm.text('status', e=True, label=text)
+            else:
+                self.window = pm.window(self.window, e=True, title=text)
+
         pm.progressBar(self.progressControl1, edit=True, progress=self.main_progress_value)
 
         if self.with_secondary_progress:
