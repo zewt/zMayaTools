@@ -333,7 +333,8 @@ def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend
         # alias, since that causes a crash.
         if target_name:
             old_alias = pm.aliasAttr(dst_weight, q=True)
-            pm.aliasAttr(dst_blend_shape_node.attr(old_alias), rm=True)
+            if old_alias:
+                pm.aliasAttr(dst_blend_shape_node.attr(old_alias), rm=True)
             pm.aliasAttr(target_name, dst_weight)
 
         # Disable the target.
