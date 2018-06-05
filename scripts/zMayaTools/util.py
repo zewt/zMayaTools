@@ -14,6 +14,16 @@ class ProgressWindow(object):
     def cancel(self):
         self._cancel = True
 
+    def set_total_progress_value(self, total_progress_values):
+        """
+        Change the number of total progress values.
+
+        Once progress has started the total shouldn't be changed, since progress
+        bars should never go backwards, but this can be useful to create the
+        window before the total amount of work to do is known.
+        """
+        raise NotImplementedError
+
     def check_cancellation(self):
         if self._cancel:
             raise CancelledException()

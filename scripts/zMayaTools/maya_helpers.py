@@ -176,7 +176,9 @@ class ProgressWindowMaya(util.ProgressWindow):
         
         if self.with_titles:
             pm.text('status', w=300, align='left')
+
         self.progressControl1 = pm.progressBar(maxValue=total_progress_values, width=300)
+        self.set_total_progress_value(total_progress_values)
 
         if self.with_secondary_progress:
             pm.text('status2', w=300, align='left')
@@ -190,6 +192,9 @@ class ProgressWindowMaya(util.ProgressWindow):
 
         # Advance from -1 to 0.
         self.update()
+
+    def set_total_progress_value(self, total_progress_values):
+        pm.progressBar(self.progressControl1, e=True, maxValue=total_progress_values)
 
     def hide(self):
         super(ProgressWindowMaya, self).hide()
