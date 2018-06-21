@@ -16,14 +16,11 @@ class MayaLogHandler(logging.Handler):
             # status bar.
             om.MGlobal.displayInfo(s)
         elif record.levelname == 'DEBUG':
-            # This only prints to the script editor and not the status bar.
-            print s
-
-        # Write all messages to sys.__stdout__, which goes to the output window.  Only write
-        # debug messages here.  The script editor is incredibly slow and can easily hang Maya
-        # for an hour if we have a lot of debug logging on, but the output window is reasonably
-        # fast.
-	sys.__stdout__.write('%s\n' % s)
+            # Write all messages to sys.__stdout__, which goes to the output window.  Only write
+            # debug messages here.  The script editor is incredibly slow and can easily hang Maya
+            # for an hour if we have a lot of debug logging on, but the output window is reasonably
+            # fast.
+            sys.__stdout__.write('%s\n' % s)
 
 log = None
 def get_log():
