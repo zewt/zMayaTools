@@ -671,4 +671,14 @@ def quiet_pymel_warnings(func):
         finally:
             pymel_logger.removeFilter(temp_filter)
     return wrapper
+
+def create_or_replace_runtime_command(name, *args, **kwargs):
+    """
+    A wrapper around pm.runTimeCommand that deletes the command if it already exists
+    before running the command.
+    """
+    # Delete the command if it already exists.
+    if pm.runTimeCommand(name, exists=True):
+        pm.runTimeCommand(name, e=True, delete=True)
+    pm.runTimeCommand(name, *args, **kwargs)
       
