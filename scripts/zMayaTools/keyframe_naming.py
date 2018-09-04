@@ -306,6 +306,10 @@ def connect_to_arnold():
     output.connect(input)
     log.info('Arnold attribute created.')
 
+def select_naming_node():
+    node = get_singleton(create=True)
+    pm.select(node)
+
 class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
     def __init__(self):
         super(KeyframeNamingWindow, self).__init__()
@@ -367,6 +371,11 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         self.layout().setMenuBar(menu_bar)
 
         edit_menu = menu_bar.addMenu('Edit')
+        menu_select_naming_node = Qt.QAction('Select zKeyframeNaming node', self)
+        menu_select_naming_node.setStatusTip('Select the zKeyframeNaming node, to edit keyframes in the graph editor')
+        menu_select_naming_node.triggered.connect(select_naming_node)
+        edit_menu.addAction(menu_select_naming_node)
+        
         add_arnold_attribute = Qt.QAction('Add Arnold attribute', self)
         add_arnold_attribute.setStatusTip('Add a custom Arnold attribute to export the current frame name to rendered EXR files')
         add_arnold_attribute.triggered.connect(connect_to_arnold)
