@@ -1,0 +1,101 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>
+    zStringFormatter
+    <br>
+    <span class=header-module>Module: <span class=module>zStringFormatter</span></span>
+</h1>
+
+<h2>Introduction</h2>
+
+zStringFormatter allows using Python string formatting to generate a string attribute.
+
+<h2>Use cases</h2>
+
+<ul>
+    <li>
+        <b>Dynamic texture filenames</b>
+        <br>
+        By formatting a filename string and connecting it to the file attribute of a
+        file node, you can dynamically control which texture is loaded.  For example,
+        you can have a "textureQualityLevel" attribute on a global control with a
+        value of 1-3, create a zStringFormatter for each texture that formats
+        a string such as "head q%i.png", and connect the output to a file node.
+        <p>
+        You can then select whether "head q1.png", "head q2.png" or "head q3.png"
+        is used with the control, or even animate the control to change the texture
+        over time.
+    </li>
+    <li>
+        <b>Export dynamic EXR attributes with Arnold</b>
+        <br>
+        Arnold can export custom attributes when rendering EXR files, but this is
+        controlled with string attributes, giving no way to export scene data.
+        This can be done with zStringFormatter by connecting to the
+        <code>defaultArnoldDriver.custom_attributes</code> array, and formatting a
+        string such as <code>"INT attributeName %i"</code>.
+        <p>
+        This allows exporting the current value of animated properties to EXR
+        metadata, to make it available to postprocessing scripts.
+    </li>
+</ul>
+<h2>Usage</h2>
+
+Create a zStringFormatter node.
+<p>
+In the attribute editor, add entries to the inputIntEntries, inputFloatEntries or
+inputStringEntries arrays, and set a name to use in the format string.  Set a value
+or connect it to a source attribute.
+<p>
+Set the format string.  Each input value's name will be available for substitution.
+For example, if an inputIntEntries exists with a name of "frame", the value can
+be substituted with the format string <code>"%(name)i"</code>.
+<p>
+See <a href=https://docs.python.org/2/library/stdtypes.html#string-formatting>String Formatting
+Operations</a> in the Python documentation for full details about string formatting.
+Some examples:
+<p>
+
+<table style="margin-left: 2em;">
+    <tr>
+        <td><code>%(name)i</code></td>
+        <td>an integer</td>
+        <td>1</td>
+    </tr>
+
+    <tr>
+        <td><code>%(name)03i</code></td>
+        <td>an integer padded to 3 digits</td>
+        <td>001</td>
+    </tr>
+
+    <tr>
+        <td><code>%(name)f</code></td>
+        <td>a float</td>
+        <td>1.5</td>
+    </tr>
+    <tr>
+        <td><code>%(name)s</code></td>
+        <td>a string</td>
+        <td>hello</td>
+    </tr>
+</table>
+
+<h2>Attributes</h2>
+
+<ul>
+<li>
+    <b>format</b> - The format string.
+</li>
+<li>
+    <b>output</b> - The resulting formatted string.
+</li>
+<li>
+    <b>inputFloatEntries</b>, <b>inputStringEntries</b>, <b>inputIntEntries</b> -
+    Arrays of entries for substitution.
+</li>
+</ul>
+
