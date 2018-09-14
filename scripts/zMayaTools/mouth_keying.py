@@ -9,8 +9,7 @@ from maya.app.general import mayaMixin
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from zMayaTools import maya_helpers, maya_logging, Qt, qt_helpers
 reload(qt_helpers)
-
-import maya.OpenMayaUI as omui
+from zMayaTools.menus import Menu
 from maya.OpenMaya import MGlobal
 
 log = maya_logging.get_log()
@@ -569,4 +568,30 @@ class KeyingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         attr = self.weight_node.attr('mainWeight')
         controlling_attr = self.find_controlling_attribute(attr)
         set_keyframe_with_time_editor(controlling_attr)
+
+class PluginMenu(Menu):
+    def __init__(self):
+        super(PluginMenu, self).__init__()
+        self.window = maya_helpers.RestorableWindow(KeyingWindow, plugins='zMouthController.py',
+            uiScript='import zMayaTools.mouth_keying; zMayaTools.mouth_keying.menu.restore()')
+
+    def restore(self):
+        self.window.restore()
+
+    def add_menu_items(self):
+        menu = 'MayaWindow|mainRigSkeletonsMenu'
+
+        # Make sure the menu is built.
+        pm.mel.eval('ChaSkeletonsMenu "%s";' % menu)
+
+        self.add_menu_item('zMayaTools_MouthController', label='Mouth Controller', parent=menu, insertAfter='hikWindowItem',
+                command=lambda unused: self.window.show())
+
+    def remove_menu_items(self):
+        super(PluginMenu, self).remove_menu_items()
+        
+        # If the window is open when the module is unloaded, close it.
+        self.window.close()
+
+menu = PluginMenu()
 

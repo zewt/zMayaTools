@@ -3,6 +3,7 @@ from collections import namedtuple
 from pymel import core as pm
 from maya import OpenMaya as om
 from zMayaTools import util
+import maya.OpenMayaUI as omui
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
@@ -344,6 +345,73 @@ class TimeChangeListener(object):
 
         # Make sure we refresh to show the state when playback stopped.
         self.callback()
+
+class RestorableWindow(object):
+    """
+    This is a helper for creating a QT window that can be saved to the panel layout and restored when
+    Maya loads.
+    """
+    def __init__(self, window_class, plugins=None, uiScript=None):
+        self.ui = None
+	self.window_class = window_class
+        self.plugins = plugins
+        self.uiScript = uiScript
+
+    def _open_ui(self, restore):
+        if restore:
+            # We're being reopened, and a layout has already been created.
+            restored_control = omui.MQtUtil.getCurrentParent()
+
+        if self.ui is None:
+            self.ui = self.window_class()
+            def closed():
+                self.ui = None
+            self.ui.destroyed.connect(closed)
+
+        if restore:
+            # We're restoring into an existing layout.  Just add the control that was created
+            # for us, and show() will be called automatically.
+            ptr = omui.MQtUtil.findControl(self.ui.objectName())
+            omui.MQtUtil.addWidgetToMayaLayout(long(ptr), long(restored_control))
+            return
+
+        # Disable retain, or we won't be able to create the window again after reloading the script
+        # with an "Object's name 'DialogWorkspaceControl' is not unique" error.
+        #
+        # Watch out: this function has *args and *kwargs which should be there, which causes it to
+        # silently eat unknown parameters instead of throwing an error.
+        self.ui.setDockableParameters(dockable=True, retain=False,
+                plugins=self.plugins, uiScript=self.uiScript )
+
+        # If we just set plugins (which is really workspaceControl -requiredPlugin), the control
+        # will be closed on launch.  We need to enable checksPlugins too to work around this.
+        control_name = self.ui.objectName() + 'WorkspaceControl'
+        pm.workspaceControl(control_name, e=True, checksPlugins=True)
+
+        self.ui.show()
+
+    def show(self):
+        self._open_ui(restore=False)
+
+    def hide(self):
+        """
+        Hide the UI.
+        """
+        if self.ui is not None:
+            self.ui.hide()
+
+    def close(self):
+        if self.ui is None:
+            return
+
+        self.ui.close()
+        self.ui = None
+
+    def restore(self):
+        """
+        This is called by Maya via uiScript when a layout is restored.
+        """
+        self._open_ui(True)
 
 @contextlib.contextmanager
 def undo(name='undo_on_exception'):

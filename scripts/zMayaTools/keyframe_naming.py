@@ -1,7 +1,6 @@
 from pymel import core as pm
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
-import maya.OpenMayaUI as omui
 from maya.app.general import mayaMixin
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from zMayaTools import qt_helpers, maya_logging, maya_helpers, Qt
@@ -803,60 +802,11 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
 class PluginMenu(Menu):
     def __init__(self):
         super(PluginMenu, self).__init__()
-        self._ui = None
+        self.window = maya_helpers.RestorableWindow(KeyframeNamingWindow, plugins='zKeyframeNaming.py',
+                uiScript='import zMayaTools.keyframe_naming; zMayaTools.keyframe_naming.menu.restore()')
 
-    def _open_ui(self, restore):
-        if restore:
-            # We're being reopened, and a layout has already been created.
-            restored_control = omui.MQtUtil.getCurrentParent()
-
-        if self._ui is None:
-            self._ui = KeyframeNamingWindow()
-            def closed():
-                self._ui = None
-            self._ui.destroyed.connect(closed)
-
-        if restore:
-            # We're restoring into an existing layout.  Just add the control that was created
-            # for us, and show() will be called automatically.
-            ptr = omui.MQtUtil.findControl(self._ui.objectName())
-            omui.MQtUtil.addWidgetToMayaLayout(long(ptr), long(restored_control))
-        else:
-            # Disable retain, or we won't be able to create the window again after reloading the script
-            # with an "Object's name 'DialogWorkspaceControl' is not unique" error.
-            #
-            # Watch out: this function has *args and *kwargs which should be there, which causes it to
-            # silently eat unknown parameters instead of throwing an error.
-            self._ui.setDockableParameters(dockable=True, retain=False,
-                plugins='zKeyframeNaming.py',
-                uiScript='import zMayaTools.keyframe_naming; zMayaTools.keyframe_naming.menu.restore()'
-            )
-
-            # If we just set plugins (which is really workspaceControl -requiredPlugin), the control
-            # will be closed on launch.  We need to enable checksPlugins too to work around this.
-            control_name = self._ui.objectName() + 'WorkspaceControl'
-            pm.workspaceControl(control_name, e=True, checksPlugins=True)
-
-            self._ui.show()
-
-    def show(self):
-        """
-        Show the UI.
-        """
-        self._open_ui(restore=False)
-        
-    def hide(self):
-        """
-        Hide the UI.
-        """
-        if self._ui is not None:
-            self._ui.hide()
-        
     def restore(self):
-        """
-        This is called by Maya via uiScript when a layout is restored.
-        """
-        self._open_ui(True)
+        self.window.restore()
 
     def add_menu_items(self):
         menu = 'MayaWindow|mainKeysMenu'
@@ -864,23 +814,16 @@ class PluginMenu(Menu):
         # Make sure the menu is built.
         pm.mel.eval('AniKeyMenu "%s";' % menu)
 
-        def show_window(unused):
-            self.show()
-
         menu_items = pm.menu(menu, q=True, ia=True)
         section = self.find_menu_section_by_name(menu_items, 'Edit')
         self.add_menu_item('zMayaTools_zKeyframeNaming', label='Keyframe Bookmarks', parent=menu, insertAfter=section[-1],
-                command=lambda unused: self.show())
+                command=lambda unused: self.window.show())
 
     def remove_menu_items(self):
         super(PluginMenu, self).remove_menu_items()
 
-        if self._ui is None:
-            return
-
         # If the keying window is open when the module is unloaded, close it.
-        self._ui.close()
-        self._ui = None
+        self.window.close()
 
 menu = PluginMenu()
 
