@@ -585,7 +585,8 @@ class PluginMenu(Menu):
         pm.mel.eval('ChaSkeletonsMenu "%s";' % menu)
 
         self.add_menu_item('zMayaTools_MouthController', label='Mouth Controller', parent=menu, insertAfter='hikWindowItem',
-                command=lambda unused: self.window.show())
+                command=lambda unused: self.window.show(),
+                standalone_path='Rigging|Mouth_Controller')
 
     def remove_menu_items(self):
         super(PluginMenu, self).remove_menu_items()

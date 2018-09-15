@@ -1,6 +1,7 @@
 import os
 from pymel import core as pm
 from maya import OpenMaya as om
+import zMayaTools.menus
 from zMayaTools.menus import Menu
 from zMayaTools import controller_editor, maya_helpers, shelf_menus
 reload(controller_editor)
@@ -24,20 +25,21 @@ class PluginMenu(Menu):
         self.controller_ui = None
 
     def add_menu_items(self):
-        menu = 'MayaWindow|mainRigSkeletonsMenu'
+        super(PluginMenu, self).add_menu_items()
 
+        menu = 'MayaWindow|mainRigSkeletonsMenu'
 
         # Make sure the menu is built.
         pm.mel.eval('ChaSkeletonsMenu "%s";' % menu)
-
 
         def validate_character(unused):
             from zMayaTools import validate_character
             reload(validate_character)
             validate_character.UI().run()
 
-        validate = self.add_menu_item('zMayaTools_ValidateCharacter', label='Validate Character', parent=menu, insertAfter='hikWindowItem',
-                command=validate_character)
+        self.add_menu_item('zMayaTools_ValidateCharacter', label='Validate Character', parent=menu, insertAfter='hikWindowItem',
+                command=validate_character,
+                standalone_path='Rigging|ValidateCharacter')
 
         for menu in ['mainDeformMenu', 'mainRigDeformationsMenu']:
             # Make sure the menu is built.
@@ -56,7 +58,8 @@ class PluginMenu(Menu):
             self.add_menu_item('zMayaTools_CopyWeights_%s' % menu, label='Copy Deformer Weights', parent=menu,
                     annotation='Copy painted weights from one mesh to another',
                     insertAfter=menu_items[mirror_weights],
-                    command=run_copy_painted_weights)
+                    command=run_copy_painted_weights,
+                    standalone_path='Rigging|CopyWeights')
             
             # Find the "Edit" section in the Deform menu, then find the "Blend Shape" submenu inside
             # that section.
@@ -70,7 +73,8 @@ class PluginMenu(Menu):
                 blend_shape_retargetting.UI().run()
 
             self.add_menu_item('zBlendShapeRetargetting_%s' % menu, label='Retarget Blend Shapes', parent=submenu,
-                    command=run_blend_shape_retargetting)
+                    command=run_blend_shape_retargetting,
+                    standalone_path='Blend Shapes|RetargetBlendShapes')
 
             def run_split_blend_shapes(unused):
                 from zMayaTools import split_blend_shapes
@@ -78,7 +82,8 @@ class PluginMenu(Menu):
 
             self.add_menu_item('zSplitBlendShape_%s' % menu, label='Split Blend Shape', parent=submenu,
                     annotation='Split a blend shape across a plane',
-                    command=run_split_blend_shapes)
+                    command=run_split_blend_shapes,
+                    standalone_path='Blend Shapes|SplitBlendShapes')
 
         self.add_rigging_tools()
         self.add_hide_output_window()
@@ -100,8 +105,9 @@ class PluginMenu(Menu):
             from zMayaTools.rigging import eye_rig
             eye_rig.create_eye_rig()
             
-        eye_rig = self.add_menu_item('zMayaTools_EyeRig', label='Eye Rig', parent=menu, insertAfter=divider,
-                command=run_eye_rig)
+        self.add_menu_item('zMayaTools_EyeRig', label='Eye Rig', parent=menu, insertAfter=divider,
+                command=run_eye_rig,
+                standalone_path='Rigging|EyeRig')
 
     def add_hide_output_window(self):
         # Add "Show Output Window" at the end of the Windows menu.
@@ -113,14 +119,18 @@ class PluginMenu(Menu):
 
         def refresh_menu_item():
             label = 'Show Output Window' if hide_output_window.is_hidden() else 'Hide Output Window'
-            pm.menuItem(self.output_window_menu_item, e=True, label=label)
+            for menu_item in self.output_window_menu_items:
+                pm.menuItem(menu_item, e=True, label=label)
 
         def toggle_output_window(unused):
             hide_output_window.toggle()
             refresh_menu_item()
 
         pm.mel.eval('buildDeferredMenus')
-        self.output_window_menu_item = self.add_menu_item('zHideOutputWindow', parent='mainWindowMenu', command=toggle_output_window)
+        menu_item = self.add_menu_item('zHideOutputWindow', parent='mainWindowMenu', command=toggle_output_window,
+                label='Hide output window', # placeholder
+                standalone_path='Misc|ToggleOutputWindow')
+        self.output_window_menu_items = self.get_related_menu_items(menu_item)
         refresh_menu_item()
 
     def add_show_shelf_menus(self):
@@ -128,23 +138,27 @@ class PluginMenu(Menu):
         self.shelf_menu = None
 
         def refresh():
-            # Update the menu item.
-            label = 'Hide Shelf Menus' if self.optvars['zShowShelfMenus'] else 'Show Shelf Menus'
-            pm.menuItem(self.shelf_menus_menu_item, e=True, label=label)
+            # Update the menu items.
+            for menu_item in self.shelf_menus_menu_items:
+                label = 'Hide Shelf Menus' if self.optvars['zShowShelfMenus'] else 'Show Shelf Menus'
+                pm.menuItem(menu_item, e=True, label=label)
 
-            # Show or hide the menu items.
-            if self.optvars['zShowShelfMenus'] and self.shelf_menu is None:
-                self.shelf_menu = shelf_menus.ShelfMenu()
-            elif not self.optvars['zShowShelfMenus'] and self.shelf_menu is not None:
-                self.shelf_menu.remove()
-                self.shelf_menu = None
+                # Show or hide the menu items.
+                if self.optvars['zShowShelfMenus'] and self.shelf_menu is None:
+                    self.shelf_menu = shelf_menus.ShelfMenu()
+                elif not self.optvars['zShowShelfMenus'] and self.shelf_menu is not None:
+                    self.shelf_menu.remove()
+                    self.shelf_menu = None
 
         def toggle_shelf_menus(unused):
             self.optvars['zShowShelfMenus'] = not self.optvars['zShowShelfMenus']
             refresh()
 
         pm.mel.eval('buildDeferredMenus')
-        self.shelf_menus_menu_item = self.add_menu_item('zShowShelfMenus', parent='mainWindowMenu', command=toggle_shelf_menus)
+        menu_item = self.add_menu_item('zShowShelfMenus', parent='mainWindowMenu', command=toggle_shelf_menus,
+                label='Show Shelf Menus', # placeholder
+                standalone_path='Misc|ShowShelfMenus')
+        self.shelf_menus_menu_items = self.get_related_menu_items(menu_item)
         refresh()
 
     def add_controller_editor_menu_item(self):
@@ -171,7 +185,8 @@ class PluginMenu(Menu):
 
         self.add_menu_item('zMayaTools_ControllerEditor', label='Edit Controllers', parent=menu,
                 insertAfter=controller_section[-1],
-                command=open_controller_editor)
+                command=open_controller_editor,
+                standalone_path='Rigging|EditControllers')
 
     def add_channel_box_editing(self):
         def move_attr_up(unused):
@@ -187,13 +202,20 @@ class PluginMenu(Menu):
         # Add "Move Attributes Up" and "Move Attributes Down" to the bottom of Edit.
         # Put this in a submenu, so the menu can be torn off while making a bunch of
         # attribute edits.
+        #
+        # The standalone_paths are set to make "Move Up" come before "Move Down" in the
+        # standalone menu.
         menu = 'MayaWindow|mainEditMenu'
         move_attribute_menu = self.add_menu_item('zMayaTools_MoveAttributes', label='Reorder Attributes', parent=menu,
                 subMenu=True, tearOff=True)
         self.add_menu_item('zMayaTools_MoveAttributeUp', label='Move Attributes Up', parent=move_attribute_menu,
-                command=move_attr_up)
+                command=move_attr_up,
+                annotation='Move a channel box attribute higher in the list',
+                standalone_path='Reorder Attributes|Move1')
         self.add_menu_item('zMayaTools_MoveAttributeDown', label='Move Attributes Down', parent=move_attribute_menu,
-                command=move_attr_down)
+                command=move_attr_down,
+                annotation='Move a channel box attribute lower in the list',
+                standalone_path='Reorder Attributes|Move2')
 
     def remove_menu_items(self):
         super(PluginMenu, self).remove_menu_items()

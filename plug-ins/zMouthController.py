@@ -3,7 +3,6 @@ from pymel import core as pm
 import maya.OpenMayaMPx as OpenMayaMPx
 import maya.OpenMaya as om
 import math, traceback, time
-from zMayaTools.menus import Menu
 from zMayaTools import mouth_keying
 
 class zMouthController(OpenMayaMPx.MPxNode):
@@ -121,52 +120,15 @@ class zMouthController(OpenMayaMPx.MPxNode):
     def creator(cls):
         return OpenMayaMPx.asMPxPtr(zMouthController())
 
-class PluginMenu(Menu):
-    def __init__(self):
-        super(PluginMenu, self).__init__()
-        self.ui = None
-
-    def add_menu_items(self):
-        menu = 'MayaWindow|mainRigSkeletonsMenu'
-
-        # Make sure the menu is built.
-        pm.mel.eval('ChaSkeletonsMenu "%s";' % menu)
-
-        def mouth_controller(unused):
-            reload(mouth_keying)
-            if self.ui is None:
-                self.ui = mouth_keying.KeyingWindow()
-                def closed():
-                    self.ui = None
-                self.ui.destroyed.connect(closed)
-
-            # Disable retain, or we won't be able to create the window again after reloading the script
-            # with an "Object's name 'DialogWorkspaceControl' is not unique" error.
-            self.ui.show(dockable=True, retain=False)
-
-        self.add_menu_item('zMayaTools_MouthController', label='Mouth Controller', parent=menu, insertAfter='hikWindowItem',
-                command=mouth_controller)
-
-    def remove_menu_items(self):
-        super(PluginMenu, self).remove_menu_items()
-
-        if self.ui is None:
-            return
-
-        # If the keying window is open when the module is unloaded, close it.
-        self.ui.close()
-        self.ui = None
-
-menu = PluginMenu()
 def initializePlugin(mobject):
     plugin = OpenMayaMPx.MFnPlugin(mobject)
     plugin.registerNode('zMouthController', mouth_keying.plugin_node_id, zMouthController.creator, zMouthController.initialize, OpenMayaMPx.MPxNode.kDependNode)
 
-    menu.add_menu_items()
+    mouth_keying.menu.add_menu_items()
 
 def uninitializePlugin(mobject):
     plugin = OpenMayaMPx.MFnPlugin(mobject)
     plugin.deregisterNode(mouth_keying.plugin_node_id)
 
-    menu.remove_menu_items()
+    mouth_keying.menu.remove_menu_items()
 
