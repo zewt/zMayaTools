@@ -9,29 +9,81 @@ from zMayaTools import maya_logging
 log = maya_logging.get_log()
 
 var_type = namedtuple('var_type', ('expected_type','maya_type'))
-class OptionVars(object):
+class OptionVar(object):
     """
-    A helper to simplify accessing Maya optionvars.
+    A helper for accessing a single optionvar.
 
-    This supports ints, floats and strings (arrays aren't supported).
+    test = maya_helpers.OptionVar('test', 'bool', True)    
+    print test.value
+    test.value = False
+    print test.value
     """
+
     _types = {
         'int': var_type(expected_type=int, maya_type='intValue'),
         'float': var_type(expected_type=(float, int), maya_type='floatValue'),
         'string': var_type(expected_type=basestring, maya_type='stringValue'),
         'bool': var_type(expected_type=(bool, int), maya_type='intValue'),
     }
+    
+    def __init__(self, name, var_type, default):
+        assert var_type in self._types
+        self.name = name
+        self.var_type = var_type
+        self.default = default
+
+    def __str__(self):
+        return 'OptionVar(%s=%s)' % (self.name, self.value)
+
+    def reset(self):
+        """
+        Reset the optvar to its default value.
+
+        This just removes the var, so value will return the default.
+        """
+        pm.optionVar(remove=self.name)
+
+    @property
+    def value(self):
+        if not pm.optionVar(exists=self.name):
+            return self.default
+
+        value = pm.optionVar(q=self.name)
+
+        # Make sure the value is of the type we expect.  If it's not, return the default instead.
+        item_type = self._types[self.var_type]
+        expected_class = item_type.expected_type
+        if not isinstance(value, expected_class):
+            return self.default
+
+        # For bool, cast to bool.
+        if self.var_type == 'bool':
+            value = bool(value)
+
+        return value
+
+    @value.setter
+    def value(self, value):
+        item_type = self._types[self.var_type]
+        expected_class = item_type.expected_type
+        assert isinstance(value, expected_class), 'Option %s has type %s and can\'t be set to "%s"' % (self.name, self.var_type, value)
+
+        kwargs = {}
+        arg = item_type.maya_type
+        kwargs[arg] = (self.name, value)
+        pm.optionVar(**kwargs)
+
+class OptionVars(object):
+    """
+    A helper to simplify accessing Maya optionvars.
+
+    This supports ints, floats and strings (arrays aren't supported).
+    """
     def __init__(self):
         self.keys = {}
-        pass
 
     def add(self, name, var_type, default):
-        assert var_type in self._types
-        self.keys[name] = {
-            'name': name,
-            'type': var_type,
-            'default': default,
-        }
+        self.keys[name] = OptionVar(name, var_type, default)
 
     def add_from(self, optvars):
         """
@@ -39,43 +91,26 @@ class OptionVars(object):
         """
         self.keys.update(optvars.keys)
 
+    def get(self, name):
+        """
+        Return the OptionVar for the given key.
+        """
+        return self.keys[name]
+
     def reset(self):
-        for key, data in self.keys.items():
-            pm.optionVar(remove=key)
+        for option in self.keys.values():
+            option.reset()
 
     def __setitem__(self, name, value):
-        data = self.keys.get(name)
-        assert data is not None, 'Unknown option var name %s' % name
-
-        item_type = self._types[data['type']]
-        expected_class = item_type.expected_type
-        assert isinstance(value, expected_class), 'Option %s has type %s and can\'t be set to "%s"' % (name, data['type'], value)
-
-        kwargs = {}
-        arg = item_type.maya_type
-        kwargs[arg] = (name, value)
-        pm.optionVar(**kwargs)
+        option = self.keys.get(name)
+        assert option is not None, 'Unknown option var name %s' % name
+        option.value = value
 
     def __getitem__(self, name):
-        data = self.keys.get(name)
-        assert data is not None, 'Unknown option var name %s' % name
+        option = self.keys.get(name)
+        assert option is not None, 'Unknown option var name %s' % name
 
-        if not pm.optionVar(exists=name):
-            return data['default']
-
-        value = pm.optionVar(q=name)
-
-        # Make sure the value is of the type we expect.  If it's not, return the default instead.
-        item_type = self._types[data['type']]
-        expected_class = item_type.expected_type
-        if not isinstance(value, expected_class):
-            return data['default']
-
-        # For bool, cast to bool.
-        if data['type'] == 'bool':
-            value = bool(value)
-
-        return value
+        return option.value
 
 class OptionsBox(object):
     def __init__(self):
