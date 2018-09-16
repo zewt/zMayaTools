@@ -1,13 +1,90 @@
 import bisect
 import pymel.core as pm
+from zMayaTools import maya_helpers, preferences
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
 
-# XXX: still need to add standalone_paths to other menus, and reorganize
+class _MenuRegistration(object):
+    def __init__(self):
+        # Menus which currently have their items added:
+        self.registered_menus = set()
 
-# Menus which currently have their items added:
-_registered_menus = set()
+        self.optvars = maya_helpers.OptionVars()
+        self.optvars.add('zMayaToolsShowTopLevelMenu', 'bool', True)
+
+        # When the zMayaToolsShowTopLevelMenu option changes in the preferences window, recreate
+        # menus.
+        def top_level_option_changed(optvar):
+            self.recreate_all_menus()
+
+        self.optvars.get('zMayaToolsShowTopLevelMenu').add_on_change_listener(top_level_option_changed)
+
+        # Create our preferences window block.
+        def create_prefs_widget():
+            pm.checkBoxGrp('zmt_ShowMenu',
+                numberOfCheckBoxes=1,
+                label='',
+                cw2=(140, 300),
+                label1='Show top-level zMayaTools menu',
+                cc1=self.preference_handler.get_change_callback('zMayaToolsShowTopLevelMenu'))
+            
+        self.preference_handler = preferences.PreferenceHandler('1_menus', create_prefs_widget)
+        self.preference_handler.add_option(self.optvars.get('zMayaToolsShowTopLevelMenu'), 'zmt_ShowMenu')
+
+    def _update_preference_registration(self):
+        """
+        Register our preference window if we have any menus, otherwise unregister it.
+
+        If we have no menus (because no plugins are loaded that add any), it doesn't make
+        sense to show the menu preferences, since they won't do anything.
+        """
+        if self.registered_menus:
+            self.preference_handler.register()
+        else:
+            self.preference_handler.unregister()
+
+    def register_menu(self, menu):
+        self.registered_menus.add(menu)
+        self._update_preference_registration()
+
+    def unregister_menu(self, menu):
+        try:
+            self.registered_menus.remove(menu)
+        except KeyError:
+            pass
+
+        self._update_preference_registration()
+
+    def recreate_all_menus(self):
+        """
+        Remove and readd all menus.
+
+        This is used to update menus when menu preferences are changed.
+        """
+        menus = set(self.registered_menus)
+        for menu in menus:
+            menu.remove_menu_items()
+
+        # Make sure the top-level zMayaTools menu was removed.  It should always be
+        # cleaned up as a side-effect of removing all menu items, but if it wasn't
+        # then it won't be recreated if the top-level pref has changed.
+        try:
+            pm.deleteUI('zMayaTools_Menu')
+            log.warning('zMayaTools_Menu should have been cleaned up')
+        except RuntimeError:
+            pass
+            
+        for menu in menus:
+            menu.add_menu_items()
+
+    @property
+    def show_top_level_menu(self):
+        """
+        """
+        return self.optvars['zMayaToolsShowTopLevelMenu']
+
+_menu_registration = _MenuRegistration()
 
 def _delete_menu_item(name):
     """
@@ -57,67 +134,33 @@ class Menu(object):
         else:
             return submenu_items[insertion_point-1]
 
-    def _add_standalone_menu_item(self, name, standalone_path, *args, **kwargs):
-        if not self.include_standalone_menu():
-            return
-        assert 'standalone_path' not in kwargs
-
-        # Make sure the edit menu is built so we can add to it.  Maya defers this
-        # for "heap memory reasons", but that was in 2009 and it doesn't really
-        # make sense anymore.
-        pm.mel.eval('buildDeferredMenus')
-
-        path_parts = standalone_path.split('|')
-        assert len(path_parts) >= 1, standalone_path
-        top_level = self.top_level_standalone_menu()
-
-        # Find or create our menu.
-        parent_submenu = 'zMayaTools_Menu'
-
-        if not pm.menu(parent_submenu, q=True, exists=True):
-            # Create the menu either within the Edit menu, or as a top-level menu.
-            if self.top_level_standalone_menu():
-                item = pm.menu(parent_submenu, label='zMayaTools',
-                        tearOff=True)
-            else:
-                item = pm.menuItem(parent_submenu, label='zMayaTools', parent='MayaWindow|mainEditMenu', subMenu=True,
-                        tearOff=True)
-
-        # All but the final entry in standalone_path is a submenu name.  Create
-        # the submenu tree.
-        path_so_far = []
-        for part in path_parts[:-1]:
-            path_so_far.append(part.replace(' ', '_'))
-
-            submenu_item_name = '_'.join(path_so_far)
-
-            # We can add menu items in any order.  Make the menu ordering consistent: always put
-            # submenus above regular menu items, and sort alphabetically within that.
-            submenu_items = pm.menu(parent_submenu, q=True, ia=True)
-            if submenu_item_name not in submenu_items:
-                parent_submenu = self.add_menu_item(submenu_item_name, label=part, parent=parent_submenu, subMenu=True, tearOff=True, insert_sorted=True)
-            else:
-                parent_submenu = submenu_item_name
-
-        # Remove options that only apply when adding the integrated menu item, since
-        # we're adding the standalone one.
-        kwargs = dict(kwargs)
-        kwargs['parent'] = parent_submenu
-        if 'insertAfter' in kwargs:
-            del kwargs['insertAfter']
-
-        name = '_'.join(path_parts).replace(' ', '_')
-
-        return self.add_menu_item(name, insert_sorted=True, *args, **kwargs)
-
-    def add_menu_item(self, name, standalone_path=None, insert_sorted=False, *args, **kwargs):
+    def add_menu_item(self, name, top_level_path=None, top_level_only=False, insert_sorted=False, *args, **kwargs):
         """
-        If standalone_path isn't None, it's a pipe-separated path indicating where
+        Create a menu item.
+
+        If top_level_only is true, only an entry in the top-level menu will be created.
+        If the top-level menu is disabled, no menu item will be created.
+
+        If top_level_path isn't None, it's a pipe-separated path indicating where
         this should be added to the standalone menu.
 
-        This returns a list of menu items that were added.  If integrated and
-        standalone menus are both enabled, we can create more than one.
+        If insert_sorted is true, the item will be added in sorted order with other
+        entries in the same menu.  This is only used for items in the top level menus.
         """
+        if not top_level_only:
+            item = self._add_menu_item_internal(name, insert_sorted=False, *args, **kwargs)
+            if item is not None:
+                self.related_items.setdefault(name, []).append(item)
+
+        # If we have a standalone path, create the standalone menu entry.
+        if top_level_path is not None:
+            standalone_item = self._add_standalone_menu_item(name, top_level_path=top_level_path, *args, **kwargs)
+            if standalone_item is not None:
+                self.related_items.setdefault(name, []).append(standalone_item)
+
+        return name
+
+    def _add_menu_item_internal(self, name, insert_sorted=False, *args, **kwargs):
         if 'optionBox' in kwargs:
             # Maya creates an option box by adding it as a separate menu item.  We do it
             # by passing optionBox=function when creating the menu item itself, since it
@@ -156,7 +199,6 @@ class Menu(object):
             del kwargs['insertAfter']
 
         item = pm.menuItem(name, *args, **kwargs)
-        self.related_items[item] = [item]
 
         # Add the option box, if any.
         if option_box is not None:
@@ -165,11 +207,6 @@ class Menu(object):
 
             pm.menuItem(option_box_name, optionBox=True, command=option_box)
             self.menu_items.add(option_box_name)
-
-        # If we have a standalone path, create the standalone menu entry.
-        if standalone_path is not None:
-            standalone_item = self._add_standalone_menu_item(name, standalone_path=standalone_path, *args, **kwargs)
-            self.related_items[item].append(standalone_item)
 
         # Don't register submenus in the menu item list.  We don't want to remove them like
         # other menu items: if two plugins 
@@ -181,6 +218,55 @@ class Menu(object):
         if not kwargs.get('subMenu'):
             self.menu_items.add(item)
         return item
+
+    def _add_standalone_menu_item(self, name, top_level_path, *args, **kwargs):
+        if not _menu_registration.show_top_level_menu:
+            return None
+        assert 'top_level_path' not in kwargs
+
+        # Make sure the edit menu is built so we can add to it.  Maya defers this
+        # for "heap memory reasons", but that was in 2009 and it doesn't really
+        # make sense anymore.
+        pm.mel.eval('buildDeferredMenus')
+
+        path_parts = top_level_path.split('|')
+        assert len(path_parts) >= 1, top_level_path
+
+        # Find or create our menu.
+        parent_submenu = 'zMayaTools_Menu'
+
+        pm.setParent('MayaWindow')
+
+        # Create the top-level menu.
+        if not pm.menu(parent_submenu, q=True, exists=True):
+            item = pm.menu(parent_submenu, label='zMayaTools', tearOff=True)
+
+        # All but the final entry in top_level_path is a submenu name.  Create
+        # the submenu tree.
+        path_so_far = []
+        for part in path_parts[:-1]:
+            path_so_far.append(part.replace(' ', '_'))
+
+            submenu_item_name = '_'.join(path_so_far)
+
+            # We can add menu items in any order.  Make the menu ordering consistent: always put
+            # submenus above regular menu items, and sort alphabetically within that.
+            submenu_items = pm.menu(parent_submenu, q=True, ia=True)
+            if submenu_item_name not in submenu_items:
+                parent_submenu = self._add_menu_item_internal(submenu_item_name, label=part, parent=parent_submenu, subMenu=True, tearOff=True, insert_sorted=True)
+            else:
+                parent_submenu = submenu_item_name
+
+        # Remove options that only apply when adding the integrated menu item, since
+        # we're adding the standalone one.
+        kwargs = dict(kwargs)
+        kwargs['parent'] = parent_submenu
+        if 'insertAfter' in kwargs:
+            del kwargs['insertAfter']
+
+        name = '_'.join(path_parts).replace(' ', '_')
+
+        return self._add_menu_item_internal(name, insert_sorted=True, *args, **kwargs)
 
     def get_related_menu_items(self, item):
         """
@@ -198,7 +284,7 @@ class Menu(object):
 
         This should be overridden by the subclass.
         """
-        _registered_menus.add(self)
+        _menu_registration.register_menu(self)
 
     def remove_menu_items(self):
         """
@@ -206,10 +292,7 @@ class Menu(object):
 
         This should be overridden by the subclass.
         """
-        try:
-            _registered_menus.remove(self)
-        except KeyError:
-            pass
+        _menu_registration.unregister_menu(self)
 
         for item in self.menu_items:
             try:
@@ -227,36 +310,7 @@ class Menu(object):
                 if len(pm.menu(parent_menu_path, q=True, itemArray=True)) == 0:
                     pm.deleteUI(parent_menu_path)
         self.menu_items = set()
-
-    @classmethod
-    def include_standalone_menu(cls):
-        return True
-    @classmethod
-    def top_level_standalone_menu(cls):
-        return True
-
-    @classmethod
-    def recreate_all_menus(cls):
-        """
-        Remove and readd all menus.
-
-        This is used to update menus when menu preferences are changed.
-        """
-        menus = set(_registered_menus)
-        for menu in menus:
-            menu.remove_menu_items()
-
-        # Make sure the top-level zMayaTools menu was removed.  It should always be
-        # cleaned up as a side-effect of removing all menu items, but if it wasn't
-        # then it won't be recreated if the top-level pref has changed.
-        try:
-            pm.deleteUI('zMayaTools_Menu', menuItem=True)
-            log.warning('zMayaTools_Menu should have been cleaned up')
-        except RuntimeError:
-            pass
-            
-        for menu in menus:
-            menu.add_menu_items()
+        self.related_items = {}
 
     @classmethod
     def find_menu_section_by_name(cls, menu_items, label):

@@ -270,7 +270,7 @@ class PluginMenu(Menu):
         self.add_menu_item('zFileSwitch_section', divider=True, label='File Switch', parent=menu)
         self.add_menu_item('zFileSwitch', label='Create File Switch', parent=menu,
                 command=add_file_switch_to_selection,
-                standalone_path='Misc|File_Switch',
+                top_level_path='Misc|File_Switch',
                 annotation='Select one or more file nodes to create a high/low resolution texture switch')
 
 menu = PluginMenu()

@@ -27,10 +27,15 @@ class OptionVar(object):
     }
     
     def __init__(self, name, var_type, default):
+        """
+        Note that on_change is only called if the optvar is changed via this object,
+        since Maya has no way to register a callback when an optvar changes.
+        """
         assert var_type in self._types
         self.name = name
         self.var_type = var_type
         self.default = default
+        self.on_change_callbacks = []
 
     def __str__(self):
         return 'OptionVar(%s=%s)' % (self.name, self.value)
@@ -42,6 +47,20 @@ class OptionVar(object):
         This just removes the var, so value will return the default.
         """
         pm.optionVar(remove=self.name)
+        self._call_on_change()
+
+    def _call_on_change(self):
+        for callback in list(self.on_change_callbacks):
+            try:
+                callback(self)
+            except Exception as e:
+                # The callback may have nothing to do with the code changing the value, so
+                # don't propagate the exception upwards.  Just log it.
+                log.exception('on_change raised exception')
+
+    def add_on_change_listener(self, on_change):
+        if on_change is not None:
+            self.on_change_callbacks.append(on_change)
 
     @property
     def value(self):
@@ -64,6 +83,8 @@ class OptionVar(object):
 
     @value.setter
     def value(self, value):
+        old_value = self.value
+
         item_type = self._types[self.var_type]
         expected_class = item_type.expected_type
         assert isinstance(value, expected_class), 'Option %s has type %s and can\'t be set to "%s"' % (self.name, self.var_type, value)
@@ -72,6 +93,9 @@ class OptionVar(object):
         arg = item_type.maya_type
         kwargs[arg] = (self.name, value)
         pm.optionVar(**kwargs)
+
+        if value != old_value:
+            self._call_on_change()
 
 class OptionVars(object):
     """
@@ -82,8 +106,8 @@ class OptionVars(object):
     def __init__(self):
         self.keys = {}
 
-    def add(self, name, var_type, default):
-        self.keys[name] = OptionVar(name, var_type, default)
+    def add(self, name, *args, **kwargs):
+        self.keys[name] = OptionVar(name, *args, **kwargs)
 
     def add_from(self, optvars):
         """

@@ -554,7 +554,7 @@ class PluginMenu(Menu):
         self.add_menu_item('zRigHandle', label="Rig Handle", command=create_zRigHandle,
                 insertAfter=section[idx], parent=menu,
                 annotation='Create a viewport rig handle',
-                standalone_path='Rigging|Rig_Handle')
+                top_level_path='Rigging|Rig_Handle')
 
 menu = PluginMenu()
 def initializePlugin(obj):
