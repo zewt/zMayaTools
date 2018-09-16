@@ -155,22 +155,44 @@ class PreferenceHandler(object):
         self.name = name
         self.options = {}
         self.saved_options = {}
-        self.create_widgets = create_widgets
+        self.create_widgets_callback = create_widgets
+
+    def create_widgets(self):
+        self.create_widgets_callback(self)
 
     def add_option(self, optvar, widget_name):
-        self.options[optvar.name] = _Option(optvar, widget_name)
+        """
+        Register an optionvar with generic handling.
+
+        optvar is an OptionVar, and widget_name is the corresponding UI widget name.
+        The optvar will be synced with its UI based on its type.
+        """
+        self.add_option_handler(optvar.name, OptionHandler_OptionVar(optvar, widget_name))
+
+    def add_option_handler(self, name, handler):
+        """
+        Register an option handler.
+
+        This can be used with subclasses of the Option class for generic options handling.
+        """
+        assert isinstance(handler, OptionHandler), handler
+        self.options[name] = handler
 
     def optvar_to_window(self, name):
-        self.options[name].optvar_to_window()
+        self.options[name].optvar_to_window(self)
 
     def window_to_optvar(self, name):
-        self.options[name].window_to_optvar()
+        self.options[name].window_to_optvar(self)
 
     def all_optvars_to_window(self):
         for option in self.options.values():
-            option.optvar_to_window()
+            option.optvar_to_window(self)
 
     def get_change_callback(self, name):
+        """
+        This is called while creating create_widgets callbacks while the UI
+        is being created.  Return the function to call when the UI value changes.
+        """
         assert name in self.options
         def field_changed(unused=None):
             self.window_to_optvar(name)
@@ -190,18 +212,59 @@ class PreferenceHandler(object):
 
     def backup_options(self):
         for name, option in self.options.items():
-            self.saved_options[name] = option.optvar.value
+            self.saved_options[name] = option.saved_value
 
     def restore_options(self):
         for name, option in self.options.items():
-            option.optvar.value = self.saved_options[name]
+            option.saved_value = self.saved_options[name]
 
-class _Option(object):
+class OptionHandler(object):
+    """
+    A base class to handle moving a setting between its underlying storage
+    (usually an optionvar) and the UI.
+    """
+    def optvar_to_window(self, pref_handler):
+        """
+        Load the window UI with the currently saved preference.
+        """
+        raise NotImplementedError
+
+    def window_to_optvar(self, pref_handler):
+        """
+        Save the preference from the window UI.
+        """
+        raise NotImplementedError
+
+    @property
+    def saved_value(self):
+        """
+        Return the saved value.
+
+        The data type is abstract, and will only be used with the setter.
+        """
+        raise NotImplementedError
+
+    @saved_value.setter
+    def saved_value(self, value):
+        """
+        Set the preference to value.
+        """
+        raise NotImplementedError
+
+class OptionHandler_OptionVar(OptionHandler):
     def __init__(self, optvar, widget_name):
         self.optvar = optvar
         self.widget_name = widget_name
 
-    def optvar_to_window(self):
+    @property
+    def saved_value(self):
+        return self.optvar.value
+
+    @saved_value.setter
+    def saved_value(self, value):
+        self.optvar.value = value
+
+    def optvar_to_window(self, pref_handler):
         with _set_parent_layout():
             if self.optvar.var_type == 'string':
                 pm.textField(self.widget_name, e=True, text=self.optvar.value)
@@ -210,7 +273,7 @@ class _Option(object):
             else:
                 raise Exception('Unknown optvar type %s for %s' % (self.optvar.var_type, self.optvar.name))
 
-    def window_to_optvar(self):
+    def window_to_optvar(self, pref_handler):
         with _set_parent_layout():
             if self.optvar.var_type == 'string':
                 if not pm.textField(self.widget_name, exists=True):

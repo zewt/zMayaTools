@@ -21,13 +21,13 @@ class _MenuRegistration(object):
         self.optvars.get('zMayaToolsShowTopLevelMenu').add_on_change_listener(top_level_option_changed)
 
         # Create our preferences window block.
-        def create_prefs_widget():
+        def create_prefs_widget(pref_handler):
             pm.checkBoxGrp('zmt_ShowMenu',
                 numberOfCheckBoxes=1,
                 label='',
                 cw2=(140, 300),
                 label1='Show top-level zMayaTools menu',
-                cc1=self.preference_handler.get_change_callback('zMayaToolsShowTopLevelMenu'))
+                cc1=pref_handler.get_change_callback('zMayaToolsShowTopLevelMenu'))
             
         self.preference_handler = preferences.PreferenceHandler('1_menus', create_prefs_widget)
         self.preference_handler.add_option(self.optvars.get('zMayaToolsShowTopLevelMenu'), 'zmt_ShowMenu')
@@ -247,7 +247,8 @@ class Menu(object):
         for part in path_parts[:-1]:
             path_so_far.append(part.replace(' ', '_'))
 
-            submenu_item_name = '_'.join(path_so_far)
+            # Prefix the submenu to make sure it's unique.
+            submenu_item_name = 'zMayaTools_Menu_' + '_'.join(path_so_far)
 
             # We can add menu items in any order.  Make the menu ordering consistent: always put
             # submenus above regular menu items, and sort alphabetically within that.

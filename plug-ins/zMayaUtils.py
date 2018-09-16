@@ -36,11 +36,9 @@ class PluginMenu(Menu):
     def __init__(self):
         super(PluginMenu, self).__init__()
 
-        self.optvars = maya_helpers.OptionVars()
-        self.optvars.add('zShowShelfMenus', 'bool', False)
-
         self.shelf_menu = None
         self.controller_ui = None
+        self.shelf_preference_handler = None
 
     def add_menu_items(self):
         super(PluginMenu, self).add_menu_items()
@@ -152,32 +150,9 @@ class PluginMenu(Menu):
         refresh_menu_item()
 
     def add_show_shelf_menus(self):
-        # Add "Show Shelf Menus" at the end of the Windows menu.
-        self.shelf_menu = None
-
-        def refresh():
-            # Update the menu items.
-            for menu_item in self.shelf_menus_menu_items:
-                label = 'Hide Shelf Menus' if self.optvars['zShowShelfMenus'] else 'Show Shelf Menus'
-                pm.menuItem(menu_item, e=True, label=label)
-
-                # Show or hide the menu items.
-                if self.optvars['zShowShelfMenus'] and self.shelf_menu is None:
-                    self.shelf_menu = shelf_menus.ShelfMenu()
-                elif not self.optvars['zShowShelfMenus'] and self.shelf_menu is not None:
-                    self.shelf_menu.remove()
-                    self.shelf_menu = None
-
-        def toggle_shelf_menus(unused):
-            self.optvars['zShowShelfMenus'] = not self.optvars['zShowShelfMenus']
-            refresh()
-
-        pm.mel.eval('buildDeferredMenus')
-        menu_item = self.add_menu_item('zShowShelfMenus', parent='mainWindowMenu', command=toggle_shelf_menus,
-                label='Show Shelf Menus', # placeholder
-                top_level_path='Misc|ShowShelfMenus')
-        self.shelf_menus_menu_items = self.get_related_menu_items(menu_item)
-        refresh()
+        self.shelf_menu = shelf_menus.ShelfMenu()
+        self.shelf_preference_handler = shelf_menus.create_preference_handler()
+        self.shelf_preference_handler.register()
 
     def add_controller_editor_menu_item(self):
         def open_controller_editor(unused):
@@ -242,6 +217,10 @@ class PluginMenu(Menu):
         if self.shelf_menu is not None:
             self.shelf_menu.remove()
             self.shelf_menu = None
+
+        if self.shelf_preference_handler is not None:
+            self.shelf_preference_handler.unregister()
+            self.shelf_preference_handler = None
 
         if self.controller_ui is not None:
             self.controller_ui.close()

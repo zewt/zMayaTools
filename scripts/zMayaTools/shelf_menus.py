@@ -3,11 +3,18 @@ from maya import OpenMaya as om
 import pymel.core as pm
 from pprint import pprint
 from maya.app.general.shelfEditorWindow import shelfEditorWindow
+from zMayaTools import maya_helpers, preferences
 
 gMainWindow = pm.mel.eval("$x = $gMainWindow")
 gShelfTopLevel = pm.mel.eval("$x = $gShelfTopLevel");
 
 separator = object()
+
+# A comma-separated list of shelves to display as menus.
+pinned_shelves = maya_helpers.OptionVar('shelvesPinnedToMenu', 'string', '')
+
+# If true, we'll also show a "Shelves" menu, with all shelves as submenus.
+show_shelf_menu = maya_helpers.OptionVar('zMayaToolsShowMainShelfMenu', 'bool', False)
 
 class Shelf(object):
     """
@@ -144,45 +151,14 @@ class Menu(object):
         else:
             pm.deleteUI(self.menu_item, menuItem=True)
 
-pinned_opt = 'shelvesPinnedToMenu'
-pinned_opt_change_callbacks = []
 def get_pinned_shelves():
-    if not pm.optionVar(exists=pinned_opt):
-        return []
-    value = pm.optionVar(q=pinned_opt)
-    if not isinstance(value, basestring):
+    value = pinned_shelves.value
+    if not value:
         return []
     return value.split(',')
 
 def set_pinned_shelves(shelves):
-    value = ','.join(shelves)
-    pm.optionVar(stringValue=(pinned_opt, value))
-
-    # Surely there's a way to just register a callback on optionVar changes, but I can't
-    # find it.
-    for callback in list(pinned_opt_change_callbacks):
-        callback()
-
-def toggle_pinned_shelf(shelf):
-    """
-    Toggle whether a shelf is in the pinned shelf list.
-    """
-    shelves = get_pinned_shelves()
-    if shelf.path not in shelves:
-        shelves.append(shelf.path)
-    else:
-        shelves.remove(shelf.path)
-    set_pinned_shelves(shelves)
-
-def toggle_pinned_shelf_deferred(shelf):
-    """
-    Run toggle_pinned_shelf on idle.
-
-    Maya will crash if we refresh the menu during a menu command.
-    """
-    def defer():
-        toggle_pinned_shelf(shelf)
-    pm.general.evalDeferred(defer)
+    pinned_shelves.value = ','.join(shelves)
 
 def get_menu_item_params(source, func):
     """
@@ -350,13 +326,6 @@ def create_shelf_button_menu(shelf, parent_menu=None):
             else:
                 add_shelf_item(parent_menu, menu_cmds, shelf_button)
 
-        pm.menuItem(divider=True)
-
-        pinned_shelves = get_pinned_shelves()
-        pm.menuItem('show_as_menu', label='Show on menu', checkBox=shelf.path in pinned_shelves, command=lambda unused: toggle_pinned_shelf_deferred(shelf))
-
-        # create_shelf_tab_menu(parent_menu)
-
     return Menu(shelf.path, shelf.label, update_func=update_shelf_submenu, parent_menu=parent_menu)
 
 def create_shelf_tab_menu(parent_menu=None):
@@ -385,15 +354,15 @@ class ShelfMenu(object):
     """
     def __init__(self):
         self.menus = []
-        pinned_opt_change_callbacks.append(self.refresh)
+        pinned_shelves.add_on_change_listener(self.refresh)
+        show_shelf_menu.add_on_change_listener(self.refresh)
         self.refresh()
 
-    def refresh(self):
+    def refresh(self, unused=None):
         """
         Recreate all shelf menus.
 
-        This is called on startup, and by pinned_opt_change_callbacks when the user toggles
-        a shelf.
+        This is called on startup, and by pinned_shelves when the user toggles a shelf.
         """
         for menu in self.menus:
             menu.remove()
@@ -401,7 +370,8 @@ class ShelfMenu(object):
         self.menus = []
 
         # Create the top-level shelves menu.
-        self.menus.append(create_shelf_tab_menu())
+        if show_shelf_menu.value:
+            self.menus.append(create_shelf_tab_menu())
 
         # Create the individual shelf menus.
         pinned_shelves = set(get_pinned_shelves())
@@ -414,5 +384,75 @@ class ShelfMenu(object):
             menu.remove()
         self.menus = []
 
-        pinned_opt_change_callbacks.remove(self.refresh)
+        pinned_shelves.remove_on_change_listener(self.refresh)
+
+class _OptionHandler_PinnedShelves(preferences.OptionHandler):
+    """
+    An OptionHandler to handle syncing the list of shelf checkboxes with the
+    pinned_shelves preference.
+    """
+    def optvar_to_window(self, pref_handler):
+        # Update the shelf checkboxes with the saved list of pinned shelves.
+        currently_pinned_shelves = set(get_pinned_shelves())
+        for shelf_name, checkbox_name in pref_handler.shelf_items:
+            pm.checkBoxGrp(checkbox_name, e=True, value1=shelf_name in currently_pinned_shelves)
+            
+    def window_to_optvar(self, pref_handler):
+        # Update the list of pinned shelves from the checkbox list.
+        all_shelves = {shelf.label: shelf for shelf in Shelf.get_shelves()}
+        
+        new_pinned_shelves = []
+        for shelf_name, checkbox_name in pref_handler.shelf_items:
+            checked = pm.checkBoxGrp(checkbox_name, q=True, value1=True)
+            if checked:
+                new_pinned_shelves.append(shelf_name)
+        set_pinned_shelves(new_pinned_shelves)
+        
+    @property
+    def saved_value(self):
+        return pinned_shelves.value
+
+    @saved_value.setter
+    def saved_value(self, value):
+        pinned_shelves.value = value
+
+def create_preference_handler():
+    """
+    Create a preferences window block for shelf menus.
+    """
+    def create_shelves_widget(pref_handler):
+        pm.frameLayout(label='Shelf Menus')
+
+        currently_pinned_shelves = set(get_pinned_shelves())
+        all_shelves = Shelf.get_shelves()
+
+        # Create a scroller with checkboxes.
+        #
+        # A textScrollList looks more appropriate, but there seems to be no way to set
+        # a single-click-multiple-select mode for that widget.
+        pm.scrollLayout(h=150, childResizable=False)
+        pm.columnLayout(adj=True)
+
+        pm.checkBoxGrp('zmt_ShowMainShelfMenu',
+            numberOfCheckBoxes=1,
+            label='',
+            label1='Show "Shelves" menu',
+            cc=pref_handler.get_change_callback(show_shelf_menu.name))
+
+        shelf_items = []
+        for idx, shelf in enumerate(all_shelves):
+            name = pm.checkBoxGrp(
+                numberOfCheckBoxes=1,
+                label='',
+                label1=shelf.label,
+                cc=pref_handler.get_change_callback(pinned_shelves.name))
+            shelf_items.append((shelf.label, name))
+
+        # Store the shelf checbkxes on the handler so we can access them in OptionHandler_PinnedShelves.
+        pref_handler.shelf_items = shelf_items
+      
+    pref_handler = preferences.PreferenceHandler('5_shelf_menus', create_shelves_widget)
+    pref_handler.add_option_handler(pinned_shelves.name, _OptionHandler_PinnedShelves())
+    pref_handler.add_option(show_shelf_menu, 'zmt_ShowMainShelfMenu')
+    return pref_handler
 

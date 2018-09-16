@@ -59,8 +59,11 @@ class OptionVar(object):
                 log.exception('on_change raised exception')
 
     def add_on_change_listener(self, on_change):
-        if on_change is not None:
-            self.on_change_callbacks.append(on_change)
+        self.on_change_callbacks.append(on_change)
+
+    def remove_on_change_listener(self, on_change):
+        if on_change in self.on_change_callbacks:
+            self.on_change_callbacks.remove(on_change)
 
     @property
     def value(self):

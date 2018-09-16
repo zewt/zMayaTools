@@ -817,6 +817,7 @@ class PluginMenu(Menu):
         menu_items = pm.menu(menu, q=True, ia=True)
         section = self.find_menu_section_by_name(menu_items, 'Edit')
         self.add_menu_item('zMayaTools_zKeyframeNaming', label='Keyframe Bookmarks', parent=menu, insertAfter=section[-1],
+                top_level_path='Misc|KeyframeNaming',
                 command=lambda unused: self.window.show())
 
     def remove_menu_items(self):
