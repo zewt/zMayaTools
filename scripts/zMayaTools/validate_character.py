@@ -496,13 +496,25 @@ class Validate(object):
         if max_influences == 0:
             return
 
+        unweighted_vertices = set()
         excessively_weighted_vertices = {}
         for vtx, weights in enumerate(skin_cluster.weightList):
             # Use cmds instead of pm here for speed.
-            cnt = len(cmds.getAttr('%s.weights' % weights, mi=True))
+            influences = cmds.getAttr('%s.weights' % weights, mi=True) or []
+            cnt = len(influences)
 #            cnt = len(weights.weights.get(mi=True))
-            if cnt > max_influences:
+            if cnt == 0:
+                unweighted_vertices.add(vtx)
+            elif cnt > max_influences:
                 excessively_weighted_vertices[vtx] = cnt
+
+        if unweighted_vertices:
+            vertices = str(self.node.getShape())
+            verts = ' '.join('%s.vtx[%i]' % (vertices, idx) for idx in unweighted_vertices)
+            self.log('%i %s aren\'t weighted to any influences' % (
+                len(unweighted_vertices),
+                'vertices' if len(unweighted_vertices) != 1 else 'vertex'),
+                nodes=verts)
 
         if excessively_weighted_vertices:
             # Avoid using PyMel's .vtx access here, since it's slow.
