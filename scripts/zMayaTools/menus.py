@@ -205,11 +205,12 @@ class Menu(object):
             option_box_name = name + 'Options'
             _delete_menu_item(option_box_name)
 
-            pm.menuItem(option_box_name, optionBox=True, command=option_box)
-            self.menu_items.add(option_box_name)
+            # Maya option boxes are weird: they're regular menu items, and they appear over the
+            # previous menu item, so we need to add if after the above menu item.
+            item_name = item.split('|')[-1]
+            name = pm.menuItem(optionBox=True, command=option_box, insertAfter=item_name, parent=kwargs['parent'])
+            self.menu_items.add(name)
 
-        # Don't register submenus in the menu item list.  We don't want to remove them like
-        # other menu items: if two plugins 
         # self.menu_items is a list of items that we need to remove.  Don't add submenus
         # to this list.  Rather than deleting them directly when we're unloaded, we leave
         # them alone and use the empty menu cleanup down below to remove them, so if two
