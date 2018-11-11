@@ -3,6 +3,9 @@ import maya.OpenMayaMPx as OpenMayaMPx
 import maya.OpenMaya as om
 import pymel.core as pm
 
+from zMayaTools import maya_logging
+log = maya_logging.get_log()
+
 # This is experimental: a way to generically format string attributes using Python
 # string formatting.
 #
@@ -46,7 +49,12 @@ class zStringFormatter(OpenMayaMPx.MPxNode):
             fmt = dataBlock.inputValue(self.attr_format).asString()
 
             output = dataBlock.outputValue(plug)
-            formatted_value = fmt % attrs
+            try:
+                formatted_value = fmt % attrs
+            except KeyError as e:
+                log.info('%s format uses unspecified key "%s": "%s"', self.name(), e.args[0], fmt)
+                formatted_value = ''
+
             output.setString(formatted_value)
             
             return
