@@ -687,9 +687,23 @@ class SetAndRestoreAttr(SetAndRestore):
             else:
                 connection = None
 
+            # Get the value.
+            value = self.attr.get()
+
+            # Work around weirdness with some string attributes, like defaultRenderGlobals.preRenderMel.
+            # These return None if they've never been set before, and if we set it to something, we
+            # have no way to restore the original value, so restore the empty string instead.
+            if value is None:
+                attr_type = self.attr.get(type=True)
+
+                # I've only seen this with strings.
+                assert attr_type == 'string'
+
+                value = ''
+
             # Include the original connection in the value, if any, so we can restore it later.
             # Wrap this in a small helper class, so we can distinguish it.
-            return self.ConnectionWrapper(connection, pm.getAttr(self.attr))
+            return self.ConnectionWrapper(connection, value)
         except (pm.MayaNodeError, pm.MayaAttributeError):
             if self.optional:
                 return None
