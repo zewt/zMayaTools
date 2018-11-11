@@ -673,6 +673,9 @@ class SetAndRestoreAttr(SetAndRestore):
         self.optional = optional
         super(SetAndRestoreAttr, self).__init__(value)
 
+    def __str__(self):
+        return 'SetAndRestoreAttr(%s)' % self.attr
+
     def get(self):
         try:
             # See if this node is connected and needs to be disconnected to set the value.
@@ -725,6 +728,9 @@ class SetAndRestoreOptionVar(SetAndRestore):
         self.var = var
         super(SetAndRestoreOptionVar, self).__init__(value)
 
+    def __str__(self):
+        return 'SetAndRestoreOptionVar(%s)' % self.var
+
     def get(self):
         if not pm.optionVar(exists=self.var):
             return None
@@ -742,6 +748,9 @@ class SetAndRestoreCmd(SetAndRestore):
         self.key = key
 
         super(SetAndRestoreCmd, self).__init__(value)
+
+    def __str__(self):
+        return 'SetAndRestoreCmd(%s)' % self.cmd
 
     def get(self):
         args = { 'q': True }
