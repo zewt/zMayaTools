@@ -253,7 +253,8 @@ class Validate(object):
             # We can see these if the base mesh has materials attached.
             pm.nodetypes.ShadingEngine,
         ]
-        # Node types that are usualyl bad.
+
+        # Node types that are usually bad.
         known_bad_node_types = [
             # polyModifier includes things like polyTweakUV.  These aren't always unwanted.  For example,
             # polyMoveUV is useful for rigging UVs.  We'll assume these are unwanted if they're after deformers.
@@ -276,6 +277,16 @@ class Validate(object):
             else:
                 # Make a note of nodes we don't handle, so we can add them to the correct list.
                 self.log('Unknown history node: %s (%s)' % (history_node, history_node.type()), nodes=[history_node])
+
+        # Normally, the output mesh is the first shape on the transform, and all other meshes
+        # are intermediate.  Lots of things in Maya depend on this.  For example, polyListComponentConversion
+        # doesn't work and check_topological_symmetry will fail in confusing ways.
+        shapes = self.node.getShapes()
+        if shapes[0].intermediateObject.get():
+            self.log('First shape node shouldn\'t be intermediate', nodes=[shapes[0]])
+        for shape in shapes[1:]:
+            if not shape.intermediateObject.get():
+                self.log('All shape nodes except the first should be intermediate', nodes=[shape])
 
     def check_topological_symmetry(self, shape, vertices):
         # We expect the mesh to be symmetric across the YZ plane.  Find vertices along it.
