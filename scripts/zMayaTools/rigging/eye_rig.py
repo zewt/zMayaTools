@@ -13,7 +13,7 @@ def average_position(*nodes):
     return [x/len(positions), y/len(positions), z/len(positions)];
 
 def create_handle(name):
-    pm.loadPlugin('zRigHandle', quiet=True)
+    maya_helpers.load_plugin('zRigHandle')
     handle = pm.createNode('zRigHandle')
     handle = pm.rename(handle, name + 'Shape')
     parent = pm.listRelatives(handle, p=True, pa=True)
