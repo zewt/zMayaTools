@@ -848,3 +848,10 @@ def create_or_replace_runtime_command(name, *args, **kwargs):
         pm.runTimeCommand(name, e=True, delete=True)
     pm.runTimeCommand(name, *args, **kwargs)
       
+
+def scene_framerate():
+    """
+    Return the scene framerate.
+    """
+    # Why does currentUnit return strings?  Nobody wants to be told "ntsc" when they ask for the framerate.
+    return pm.mel.eval('getCadenceLineWorkingUnitInFPS')
