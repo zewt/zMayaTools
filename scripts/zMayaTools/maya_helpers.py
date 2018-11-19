@@ -788,6 +788,19 @@ class SetAndRestoreCmd(SetAndRestore):
             args.append(value)
         self.cmd(*args, **kwargs)
 
+class SetAndRestorePauseViewport(SetAndRestoreCmd):
+    """
+    Pause and unpause the viewport.
+    """
+    def __init__(self, value=None):
+        super(SetAndRestorePauseViewport, self).__init__(pm.ogs, 'pause', value)
+        
+    def set(self, value):
+        # Work around ogs.pause being inconsistent with other Maya commands: instead of
+        # ogs -pause 1 pausing and -pause 0 unpausing, -pause 1 toggles the current value.
+        if self.get() != value:
+            super(SetAndRestorePauseViewport, self).set(True)
+
 @contextlib.contextmanager
 def restores(name='undo_on_exception'):
     """
