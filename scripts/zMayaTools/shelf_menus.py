@@ -5,6 +5,9 @@ from pprint import pprint
 from maya.app.general.shelfEditorWindow import shelfEditorWindow
 from zMayaTools import maya_helpers, preferences
 
+from zMayaTools import maya_logging
+log = maya_logging.get_log()
+
 gMainWindow = pm.mel.eval("$x = $gMainWindow")
 gShelfTopLevel = pm.mel.eval("$x = $gShelfTopLevel");
 
@@ -20,10 +23,9 @@ class Shelf(object):
     """
     This helps access the contents of a Maya shelf.
     """
-    def __init__(self, path, label, idx):
+    def __init__(self, path, label):
         self.path = path
         self.label = label
-        self.shelf_idx = idx
         self._buttons = None
 
     def __repr__(self):
@@ -65,6 +67,19 @@ class Shelf(object):
                 self.buttons.append(separator)
         return self._buttons
                 
+    @property
+    def shelf_idx(self):
+        """
+        Return the index of this shelf.
+
+        This can change after we're created, eg. if shelves are reordered.
+        """
+        shelves = pm.tabLayout(gShelfTopLevel, q=True, childArray=True)
+        try:
+            return shelves.index(self.path)
+        except IndexError:
+            return -1
+
     @classmethod
     def get_shelves(cls):
         """
@@ -77,15 +92,29 @@ class Shelf(object):
             if pm.objectTypeUI(shelf) != 'shelfLayout':
                 continue
                 
-            results.append(cls(shelf, label, idx))
+            results.append(cls(shelf, label))
         return results
 
+    def select_shelf(self):
+        """
+        Select this shelf in the main shelf.
+
+        Return true on success, false if the shelf no longer exists.
+        """
+        idx = self.shelf_idx
+        if idx == -1:
+            log.warning('Shelf %s no longer exists', self.path)
+            return False
+
+        pm.tabLayout(gShelfTopLevel, edit=True, selectTabIndex=idx+1)
+        return True
     def show_in_shelf_editor(self, button):
         """
         Open the shelf editor, and view the script for the shelf button with the given name.
         """
         # The shelf editor only works on the currently-selected shelf.
-        pm.tabLayout(gShelfTopLevel, edit=True, selectTabIndex=self.shelf_idx+1)
+        if not self.select_shelf:
+            return
 
         wnd = shelfEditorWindow()
         wnd.create(button, 2)
@@ -94,7 +123,9 @@ class Shelf(object):
         """
         Open the shelf editor, and view the script for a popup in a shelf button.
         """
-        pm.tabLayout(gShelfTopLevel, edit=True, selectTabIndex=self.shelf_idx+1)
+        # The shelf being edited needs to be selected in the shelf.
+        if not self.select_shelf:
+            return
 
         wnd = shelfEditorWindow()
         wnd.create(button, 4)
