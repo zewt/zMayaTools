@@ -230,6 +230,7 @@ class ProgressWindowMaya(util.ProgressWindow):
         super(ProgressWindowMaya, self).__init__()
         self.window = None
         self.last_refresh = None
+        self.last_task_refresh = None
         self.main_progress_value = -1
         self.with_titles = with_titles
         self.with_secondary_progress = with_secondary_progress
@@ -254,7 +255,7 @@ class ProgressWindowMaya(util.ProgressWindow):
         pm.refresh()
 
         # Advance from -1 to 0.
-        self.update()
+        self.update(force=True)
 
     def set_total_progress_value(self, total_progress_values):
         pm.progressBar(self.progressControl1, e=True, maxValue=total_progress_values)
@@ -269,11 +270,11 @@ class ProgressWindowMaya(util.ProgressWindow):
         log.debug('Cancel button clicked')
         self.cancel()
 
-    def update(self, advance_by=1, text=''):
+    def update(self, advance_by=1, text='', force=False):
         super(ProgressWindowMaya, self).update(advance_by, text)
         
-        # Reset the sub-task refresh timer when we change the main task.
-        self.last_refresh = None
+        # Reset the task refresh timers when we change the main task.
+        self.last_task_refresh = None
         self.last_task_percent = 0
         
         if text:
@@ -281,6 +282,14 @@ class ProgressWindowMaya(util.ProgressWindow):
 
         if self.window is None:
             return
+
+        # Only refresh if we haven't refreshed in a while.  This is slow enough to cause
+        # performance issues if we're showing fine-grained progress.
+        self.main_progress_value += advance_by
+        if not force and self.last_refresh is not None and time.time() - self.last_refresh < 0.1:
+            return
+
+        self.last_refresh = time.time()
 
         if text:
             if self.with_titles:
@@ -298,8 +307,6 @@ class ProgressWindowMaya(util.ProgressWindow):
         pm.refresh()
         pm.refresh()
 
-        self.main_progress_value += advance_by
-
     def set_task_progress(self, label, percent=None, force=False):
         # Check for cancellation when we update progress.
         self.check_cancellation()
@@ -314,12 +321,12 @@ class ProgressWindowMaya(util.ProgressWindow):
         if self.window is None:
             return
 
-        # Only refresh if we haven't refreshed in a while.  This is slow enough that it
-        # can make the import slower if we're showing fine-grained progress.
-        if not force and self.last_refresh is not None and time() - self.last_refresh < 0.1:
+        # Only refresh if we haven't refreshed in a while.  This is slow enough to cause
+        # performance issues if we're showing fine-grained progress.
+        if not force and self.last_task_refresh is not None and time.time() - self.last_task_refresh < 0.1:
             return
 
-        self.last_refresh = time.time()
+        self.last_task_refresh = time.time()
 
         pm.text('status2', e=True, label=label)
         pm.progressBar(self.progressControl2, edit=True, progress=round(percent * 100))

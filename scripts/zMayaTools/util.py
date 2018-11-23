@@ -28,7 +28,7 @@ class ProgressWindow(object):
         if self._cancel:
             raise CancelledException()
 
-    def update(self, advance_by=1, text=''):
+    def update(self, advance_by=1, text='', force=False):
         """
         Advance the progress bar.
 
@@ -38,6 +38,10 @@ class ProgressWindow(object):
         for idx in xrange(10:
             progress.update()
             work()
+
+        The update may be skipped for performance if updates are happening too quickly.
+        To force an update (eg. to ensure the final 100% update is displayed), set force
+        to true.
         """
         # Check for cancellation when we update progress.
         self.check_cancellation()
