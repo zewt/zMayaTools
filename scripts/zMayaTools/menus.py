@@ -123,16 +123,21 @@ class Menu(object):
                 return 0
 
         submenu_items = pm.menu(parent, q=True, ia=True)
-        sibling_labels = [
-            Item(item,
-                 pm.menuItem(item, q=True, subMenu=True)) for item in submenu_items]
-        item = Item(name, subMenu)
+        sibling_labels = []
+        for item in submenu_items:
+            # Ignore options boxes.
+            if pm.menuItem(item, q=True, optionBox=True):
+                continue
 
+            label = Item(item, pm.menuItem(item, q=True, subMenu=True))
+            sibling_labels.append(label)
+
+        item = Item(name, subMenu)
         insertion_point = bisect.bisect_left(sibling_labels, item)
         if insertion_point == 0:
             return None
         else:
-            return submenu_items[insertion_point-1]
+            return sibling_labels[insertion_point-1].label
 
     def add_menu_item(self, name, top_level_path=None, top_level_only=False, insert_sorted=False, *args, **kwargs):
         """
