@@ -1,9 +1,11 @@
 import contextlib, functools, logging, time
+from contextlib import contextmanager
 from collections import namedtuple
 from pymel import core as pm
 from maya import OpenMaya as om
 from zMayaTools import util
 import maya.OpenMayaUI as omui
+from maya.api.MDGContextGuard import MDGContextGuard
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
@@ -862,3 +864,14 @@ def scene_framerate():
     """
     # Why does currentUnit return strings?  Nobody wants to be told "ntsc" when they ask for the framerate.
     return pm.mel.eval('getCadenceLineWorkingUnitInFPS')
+
+@contextmanager
+def scene_frame(frame):
+    """
+    Temporarily evaluate the scene at the given time.
+    """
+    mtime = om.MTime()
+    mtime.setValue(frame)
+    with MDGContextGuard(om.MDGContext(mtime)) as guard:
+        yield guard
+
