@@ -211,189 +211,189 @@ def _transformShape(shape, transform):
     return result
 
 class zRigHandle(om.MPxSurfaceShape):
-        id = om.MTypeId(0x124743)
-        drawDbClassification = "drawdb/geometry/zRigHandle"
-        drawRegistrantId = "zRigHandlePlugin"
+    id = om.MTypeId(0x124743)
+    drawDbClassification = "drawdb/geometry/zRigHandle"
+    drawRegistrantId = "zRigHandlePlugin"
 
-        def __init__(self):
-                om.MPxSurfaceShape.__init__(self)
+    def __init__(self):
+        om.MPxSurfaceShape.__init__(self)
 
-        @classmethod
-        def creator(cls):
-                return cls()
+    @classmethod
+    def creator(cls):
+        return cls()
 
-        @classmethod
-        def initialize(cls):
-                nAttr = om.MFnNumericAttribute()
-                enumAttr = om.MFnEnumAttribute()
-                matAttr = om.MFnMatrixAttribute()
-                uAttr = om.MFnUnitAttribute()
-                typedAttr = om.MFnTypedAttribute()
+    @classmethod
+    def initialize(cls):
+        nAttr = om.MFnNumericAttribute()
+        enumAttr = om.MFnEnumAttribute()
+        matAttr = om.MFnMatrixAttribute()
+        uAttr = om.MFnUnitAttribute()
+        typedAttr = om.MFnTypedAttribute()
 
-                cls.shapeAttr = enumAttr.create('shape', 'sh', 0)
-                enumAttr.addField('Custom', -1)
-                for idx, shape in enumerate(shapes):
-                    enumAttr.addField(shape['name'], idx)
-                enumAttr.channelBox = True
-                cls.addAttribute(cls.shapeAttr)
+        cls.shapeAttr = enumAttr.create('shape', 'sh', 0)
+        enumAttr.addField('Custom', -1)
+        for idx, shape in enumerate(shapes):
+            enumAttr.addField(shape['name'], idx)
+        enumAttr.channelBox = True
+        cls.addAttribute(cls.shapeAttr)
 
-                cls.customMeshAttr = typedAttr.create("inCustomMesh", "icm", om.MFnMeshData.kMesh)
-                typedAttr.storable = False
-                # The kReset constant is missing from the Python 2.0 API.
-                typedAttr.disconnectBehavior = 1
-                cls.addAttribute(cls.customMeshAttr)
+        cls.customMeshAttr = typedAttr.create("inCustomMesh", "icm", om.MFnMeshData.kMesh)
+        typedAttr.storable = False
+        # The kReset constant is missing from the Python 2.0 API.
+        typedAttr.disconnectBehavior = 1
+        cls.addAttribute(cls.customMeshAttr)
 
-                cls.transformAttr = matAttr.create('transform', 't', om.MFnMatrixAttribute.kFloat)
-                matAttr.keyable = False
-                cls.addAttribute(cls.transformAttr)
+        cls.transformAttr = matAttr.create('transform', 't', om.MFnMatrixAttribute.kFloat)
+        matAttr.keyable = False
+        cls.addAttribute(cls.transformAttr)
 
-                localRotateX = uAttr.create('localRotateX', 'lrx', om.MFnUnitAttribute.kAngle, 0.0)
-                localRotateY = uAttr.create('localRotateY', 'lry', om.MFnUnitAttribute.kAngle, 0.0)
-                localRotateZ = uAttr.create('localRotateZ', 'lrz', om.MFnUnitAttribute.kAngle, 0.0)
-                cls.localRotateAttr = nAttr.create('localRotate', 'lr', localRotateX, localRotateY, localRotateZ)
-                nAttr.channelBox = True
-                nAttr.keyable = False
-                cls.addAttribute(cls.localRotateAttr)
+        localRotateX = uAttr.create('localRotateX', 'lrx', om.MFnUnitAttribute.kAngle, 0.0)
+        localRotateY = uAttr.create('localRotateY', 'lry', om.MFnUnitAttribute.kAngle, 0.0)
+        localRotateZ = uAttr.create('localRotateZ', 'lrz', om.MFnUnitAttribute.kAngle, 0.0)
+        cls.localRotateAttr = nAttr.create('localRotate', 'lr', localRotateX, localRotateY, localRotateZ)
+        nAttr.channelBox = True
+        nAttr.keyable = False
+        cls.addAttribute(cls.localRotateAttr)
 
-                cls.localTranslateAttr = nAttr.createPoint('localPosition', 'lp')
-                nAttr.channelBox = True
-                nAttr.keyable = False
-                cls.addAttribute(cls.localTranslateAttr)
+        cls.localTranslateAttr = nAttr.createPoint('localPosition', 'lp')
+        nAttr.channelBox = True
+        nAttr.keyable = False
+        cls.addAttribute(cls.localTranslateAttr)
 
-                localScaleX = nAttr.create('localScaleX', 'lsx', om.MFnNumericData.kFloat, 1)
-                localScaleY = nAttr.create('localScaleY', 'lsy', om.MFnNumericData.kFloat, 1)
-                localScaleZ = nAttr.create('localScaleZ', 'lsz', om.MFnNumericData.kFloat, 1)
-                cls.localScaleAttr = nAttr.create('localScale', 'ls', localScaleX, localScaleY, localScaleZ)
-                nAttr.channelBox = True
-                nAttr.keyable = False
-                cls.addAttribute(cls.localScaleAttr)
+        localScaleX = nAttr.create('localScaleX', 'lsx', om.MFnNumericData.kFloat, 1)
+        localScaleY = nAttr.create('localScaleY', 'lsy', om.MFnNumericData.kFloat, 1)
+        localScaleZ = nAttr.create('localScaleZ', 'lsz', om.MFnNumericData.kFloat, 1)
+        cls.localScaleAttr = nAttr.create('localScale', 'ls', localScaleX, localScaleY, localScaleZ)
+        nAttr.channelBox = True
+        nAttr.keyable = False
+        cls.addAttribute(cls.localScaleAttr)
 
-                cls.colorAttr = nAttr.createColor('color', 'dc')
-                nAttr.default = (.38,0,0.02)
-                cls.addAttribute(cls.colorAttr)
+        cls.colorAttr = nAttr.createColor('color', 'dc')
+        nAttr.default = (.38,0,0.02)
+        cls.addAttribute(cls.colorAttr)
 
-                cls.alphaAttr = nAttr.create('alpha', 'a', om.MFnNumericData.kFloat, 0.333)
-                nAttr.setSoftMin(0)
-                nAttr.setSoftMax(1)
-                nAttr.keyable = False
-                cls.addAttribute(cls.alphaAttr)
+        cls.alphaAttr = nAttr.create('alpha', 'a', om.MFnNumericData.kFloat, 0.333)
+        nAttr.setSoftMin(0)
+        nAttr.setSoftMax(1)
+        nAttr.keyable = False
+        cls.addAttribute(cls.alphaAttr)
 
-                cls.borderColorAttr = nAttr.createColor('borderColor', 'bc')
-                nAttr.default = (-1,-1,-1)
-                cls.addAttribute(cls.borderColorAttr)
+        cls.borderColorAttr = nAttr.createColor('borderColor', 'bc')
+        nAttr.default = (-1,-1,-1)
+        cls.addAttribute(cls.borderColorAttr)
 
-                cls.borderAlphaAttr = nAttr.create('borderAlpha', 'ba', om.MFnNumericData.kFloat, 1)
-                nAttr.setSoftMin(0)
-                nAttr.setSoftMax(1)
-                nAttr.keyable = False
-                cls.addAttribute(cls.borderAlphaAttr)
+        cls.borderAlphaAttr = nAttr.create('borderAlpha', 'ba', om.MFnNumericData.kFloat, 1)
+        nAttr.setSoftMin(0)
+        nAttr.setSoftMax(1)
+        nAttr.keyable = False
+        cls.addAttribute(cls.borderAlphaAttr)
 
-                cls.xrayAttr = nAttr.create('xray', 'xr', om.MFnNumericData.kBoolean, True)
-                nAttr.keyable = False
-                nAttr.channelBox = True
-                cls.addAttribute(cls.xrayAttr)
+        cls.xrayAttr = nAttr.create('xray', 'xr', om.MFnNumericData.kBoolean, True)
+        nAttr.keyable = False
+        nAttr.channelBox = True
+        cls.addAttribute(cls.xrayAttr)
 
-        def postConstructor(self):
-                self.isRenderable = True
+    def postConstructor(self):
+        self.isRenderable = True
 
-                depNode = om.MFnDependencyNode(self.thisMObject())
-                depNode.setName("rigHandleShape#");
+        depNode = om.MFnDependencyNode(self.thisMObject())
+        depNode.setName("rigHandleShape#");
 
-        def setDependentsDirty(self, plug, affectedPlugs):
-                if plug.isChild:
-                    plug = plug.parent()
+    def setDependentsDirty(self, plug, affectedPlugs):
+        if plug.isChild:
+            plug = plug.parent()
 
-                if plug in (self.transformAttr, self.localTranslateAttr, self.localRotateAttr, self.localScaleAttr):
-                    # Discard our transformed shape.
-                    if hasattr(self, 'transformedShape'): del self.transformedShape
+        if plug in (self.transformAttr, self.localTranslateAttr, self.localRotateAttr, self.localScaleAttr):
+            # Discard our transformed shape.
+            if hasattr(self, 'transformedShape'): del self.transformedShape
 
-                if plug in (self.transformAttr, self.shapeAttr,
-                    self.localTranslateAttr, self.localRotateAttr, self.localScaleAttr,
-                    self.colorAttr, self.alphaAttr, self.borderColorAttr, self.borderAlphaAttr,
-                    self.xrayAttr, self.customMeshAttr):
-                    self.childChanged(self.kBoundingBoxChanged)
-                    omr.MRenderer.setGeometryDrawDirty(self.thisMObject(), True)
+        if plug in (self.transformAttr, self.shapeAttr,
+            self.localTranslateAttr, self.localRotateAttr, self.localScaleAttr,
+            self.colorAttr, self.alphaAttr, self.borderColorAttr, self.borderAlphaAttr,
+            self.xrayAttr, self.customMeshAttr):
+            self.childChanged(self.kBoundingBoxChanged)
+            omr.MRenderer.setGeometryDrawDirty(self.thisMObject(), True)
 
-                if plug in (self.shapeAttr, self.customMeshAttr):
-                    # Discard our shape cache.  We can't set the new one now, since the new
-                    # plug value hasn't actually been set yet, so we'll do it on the next
-                    # render.
-                    if hasattr(self, 'transformedShape'): del self.transformedShape
-                    if hasattr(self, 'shape'): del self.shape
+        if plug in (self.shapeAttr, self.customMeshAttr):
+            # Discard our shape cache.  We can't set the new one now, since the new
+            # plug value hasn't actually been set yet, so we'll do it on the next
+            # render.
+            if hasattr(self, 'transformedShape'): del self.transformedShape
+            if hasattr(self, 'shape'): del self.shape
 
-                    self.childChanged(self.kBoundingBoxChanged)
+            self.childChanged(self.kBoundingBoxChanged)
 
-                return super(zRigHandle, self).setDependentsDirty(plug, affectedPlugs)
+        return super(zRigHandle, self).setDependentsDirty(plug, affectedPlugs)
 
-        def getShapeSelectionMask(self):
-            # Set both kSelectMeshes, so tumble on pivot sees the object, and kSelectJoints, so we're
-            # higher priority for selection than meshes that are in front of us.  Xray alone won't do
-            # this.
-            mask = om.MSelectionMask()
-#            mask.addMask(om.MSelectionMask.kSelectMeshes)
-            mask.addMask(om.MSelectionMask.kSelectJoints)
-            return mask
+    def getShapeSelectionMask(self):
+        # Set both kSelectMeshes, so tumble on pivot sees the object, and kSelectJoints, so we're
+        # higher priority for selection than meshes that are in front of us.  Xray alone won't do
+        # this.
+        mask = om.MSelectionMask()
+#        mask.addMask(om.MSelectionMask.kSelectMeshes)
+        mask.addMask(om.MSelectionMask.kSelectJoints)
+        return mask
 
-        def isBounded(self):
-            return True
+    def isBounded(self):
+        return True
 
-        def getShapeIdx(self):
-            return om.MPlug(self.thisMObject(), self.shapeAttr).asShort()
-            
-	def getShape(self):
-            # If the shape isn't cached, cache it now.
-            if not hasattr(self, 'shape'):
-                self.shape = self._getShapeFromPlug()
+    def getShapeIdx(self):
+        return om.MPlug(self.thisMObject(), self.shapeAttr).asShort()
+        
+    def getShape(self):
+        # If the shape isn't cached, cache it now.
+        if not hasattr(self, 'shape'):
+            self.shape = self._getShapeFromPlug()
 
-            if not hasattr(self, 'transformedShape'):
-                shape = self.shape
+        if not hasattr(self, 'transformedShape'):
+            shape = self.shape
 
-                transform = self._getLocalTransform()
-                self.transformedShape = _transformShape(shape, transform)
+            transform = self._getLocalTransform()
+            self.transformedShape = _transformShape(shape, transform)
 
-            return self.transformedShape
+        return self.transformedShape
 
-	def _getShapeFromPlug(self):
-            idx = self.getShapeIdx()
-            if idx == -1:
-                shape = _getCustomShape(self.thisMObject())
-            else:
-                shape = shapes[idx]['geometry']
+    def _getShapeFromPlug(self):
+        idx = self.getShapeIdx()
+        if idx == -1:
+            shape = _getCustomShape(self.thisMObject())
+        else:
+            shape = shapes[idx]['geometry']
 
-            return shape
+        return shape
 
-        def _getLocalTransform(self):
-            node = self.thisMObject()
+    def _getLocalTransform(self):
+        node = self.thisMObject()
 
-            transformPlug = om.MPlug(node, self.transformAttr)
-            transform = om.MFnMatrixData(transformPlug.asMObject()).matrix()
+        transformPlug = om.MPlug(node, self.transformAttr)
+        transform = om.MFnMatrixData(transformPlug.asMObject()).matrix()
 
-            mat = om.MTransformationMatrix(transform)
+        mat = om.MTransformationMatrix(transform)
 
-            # Apply local translation.
-            localTranslatePlug = om.MPlug(node, self.localTranslateAttr)
-            localTranslation = om.MVector(*[localTranslatePlug.child(idx).asFloat() for idx in range(3)])
-            mat.translateBy(localTranslation, om.MSpace.kObject)
+        # Apply local translation.
+        localTranslatePlug = om.MPlug(node, self.localTranslateAttr)
+        localTranslation = om.MVector(*[localTranslatePlug.child(idx).asFloat() for idx in range(3)])
+        mat.translateBy(localTranslation, om.MSpace.kObject)
 
-            # Apply local rotation.
-            localRotatePlug = om.MPlug(node, self.localRotateAttr)
-            localRotatePlugs = [localRotatePlug.child(idx) for idx in range(3)]
-            localRotate = om.MVector(*[localRotatePlugs[idx].asMAngle().asRadians() for idx in range(3)])
-            mat.rotateBy(om.MEulerRotation(localRotate), om.MSpace.kObject)
+        # Apply local rotation.
+        localRotatePlug = om.MPlug(node, self.localRotateAttr)
+        localRotatePlugs = [localRotatePlug.child(idx) for idx in range(3)]
+        localRotate = om.MVector(*[localRotatePlugs[idx].asMAngle().asRadians() for idx in range(3)])
+        mat.rotateBy(om.MEulerRotation(localRotate), om.MSpace.kObject)
 
-            # Apply local scale.
-            scalePlug = om.MPlug(node, self.localScaleAttr)
-            scale = om.MFnNumericData(scalePlug.asMObject()).getData()
-            mat.scaleBy(scale, om.MSpace.kObject)
+        # Apply local scale.
+        scalePlug = om.MPlug(node, self.localScaleAttr)
+        scale = om.MFnNumericData(scalePlug.asMObject()).getData()
+        mat.scaleBy(scale, om.MSpace.kObject)
 
-            return mat.asMatrix()
+        return mat.asMatrix()
 
-        @property
-        def xray(self):
-            return om.MPlug(self.thisMObject(), self.xrayAttr).asBool()
+    @property
+    def xray(self):
+        return om.MPlug(self.thisMObject(), self.xrayAttr).asBool()
 
-        def boundingBox(self):
-            return getShapeBounds(self.getShape())
+    def boundingBox(self):
+        return getShapeBounds(self.getShape())
 
 def _hitTestShape(view, shape):
     # Hit test shape within view.
@@ -414,129 +414,129 @@ def _hitTestShape(view, shape):
 
 # This object isn't created in 2016.5 VP2.
 class zRigHandleShapeUI(omui.MPxSurfaceShapeUI):
-        def __init__(self):
-                omui.MPxSurfaceShapeUI.__init__(self)
+    def __init__(self):
+        omui.MPxSurfaceShapeUI.__init__(self)
 
-        @staticmethod
-        def creator():
-                return zRigHandleShapeUI()
+    @staticmethod
+    def creator():
+        return zRigHandleShapeUI()
 
-        def select(self, selectInfo, selectionList, worldSpaceSelectPts):
-            shape = self.surfaceShape().getShape()
+    def select(self, selectInfo, selectionList, worldSpaceSelectPts):
+        shape = self.surfaceShape().getShape()
 
-            # Hit test the selection against the shape.
-            if not _hitTestShape(selectInfo.view(), shape):
-                return False
+        # Hit test the selection against the shape.
+        if not _hitTestShape(selectInfo.view(), shape):
+            return False
 
-            item = om.MSelectionList()
-            item.add(selectInfo.selectPath())
+        item = om.MSelectionList()
+        item.add(selectInfo.selectPath())
 
-            # Get the world space position of the node.  We'll set the position of the selection here,
-            # so the camera focuses on it.
-            mat = item.getDagPath(0).inclusiveMatrix()
-            transformation = om.MTransformationMatrix(mat)
-            pos = transformation.translation(om.MSpace.kWorld)
+        # Get the world space position of the node.  We'll set the position of the selection here,
+        # so the camera focuses on it.
+        mat = item.getDagPath(0).inclusiveMatrix()
+        transformation = om.MTransformationMatrix(mat)
+        pos = transformation.translation(om.MSpace.kWorld)
 
-            priorityMask = om.MSelectionMask(om.MSelectionMask.kSelectJoints)
-            selectInfo.addSelection(item, om.MPoint(pos), selectionList, worldSpaceSelectPts, priorityMask, False)
+        priorityMask = om.MSelectionMask(om.MSelectionMask.kSelectJoints)
+        selectInfo.addSelection(item, om.MPoint(pos), selectionList, worldSpaceSelectPts, priorityMask, False)
 
-            return True
+        return True
 
 
 def isPathSelected(objPath):
-        sel = om.MGlobal.getActiveSelectionList()
-        if sel.hasItem(objPath):
-            return True
+    sel = om.MGlobal.getActiveSelectionList()
+    if sel.hasItem(objPath):
+        return True
 
-        objPath = om.MDagPath(objPath)
-        objPath.pop()
-        if sel.hasItem(objPath):
-            return True
-        return False
+    objPath = om.MDagPath(objPath)
+    objPath.pop()
+    if sel.hasItem(objPath):
+        return True
+    return False
 
 class zRigHandleDrawOverride(omr.MPxDrawOverride):
-	@staticmethod
-	def creator(obj):
-		return zRigHandleDrawOverride(obj)
+    @staticmethod
+    def creator(obj):
+        return zRigHandleDrawOverride(obj)
 
-	@staticmethod
-	def draw(context, data):
-		return
+    @staticmethod
+    def draw(context, data):
+        return
 
-	def __init__(self, obj):
-                args = [self, obj, zRigHandleDrawOverride.draw]
-                if MGlobal.apiVersion() >= 201700:
-                    # This argument is only present in 2017, and improves performance substantially.
-                    args.append(False)
-		omr.MPxDrawOverride.__init__(*args)
+    def __init__(self, obj):
+        args = [self, obj, zRigHandleDrawOverride.draw]
+        if MGlobal.apiVersion() >= 201700:
+            # This argument is only present in 2017, and improves performance substantially.
+            args.append(False)
+        omr.MPxDrawOverride.__init__(*args)
 
-	def supportedDrawAPIs(self):
-		return omr.MRenderer.kOpenGL | omr.MRenderer.kDirectX11 | omr.MRenderer.kOpenGLCoreProfile
+    def supportedDrawAPIs(self):
+        return omr.MRenderer.kOpenGL | omr.MRenderer.kDirectX11 | omr.MRenderer.kOpenGLCoreProfile
 
-	def isBounded(self, objPath, cameraPath):
-		return True
+    def isBounded(self, objPath, cameraPath):
+        return True
 
-	def boundingBox(self, objPath, cameraPath):
-                depNode = om.MFnDependencyNode(objPath.node())
-                obj = depNode.userNode()
-                return obj.boundingBox()
+    def boundingBox(self, objPath, cameraPath):
+        depNode = om.MFnDependencyNode(objPath.node())
+        obj = depNode.userNode()
+        return obj.boundingBox()
 
-	def disableInternalBoundingBoxDraw(self):
-		return True
+    def disableInternalBoundingBoxDraw(self):
+        return True
 
-	def prepareForDraw(self, objPath, cameraPath, frameContext, oldData):
-                depNode = om.MFnDependencyNode(objPath.node())
-                obj = depNode.userNode()
+    def prepareForDraw(self, objPath, cameraPath, frameContext, oldData):
+        depNode = om.MFnDependencyNode(objPath.node())
+        obj = depNode.userNode()
+    
+        isSelected = isPathSelected(objPath)
+        self.xray = obj.xray
+
+        plug = om.MPlug(objPath.node(), zRigHandle.colorAttr)
+        self.color = om.MColor(om.MFnNumericData(plug.asMObject()).getData())
+
+        alpha = om.MPlug(objPath.node(), zRigHandle.alphaAttr).asFloat()
+        self.color.a = alpha
+
+        if isSelected:
+            self.borderColor = omr.MGeometryUtilities.wireframeColor(objPath)
+        else:
+            plug = om.MPlug(objPath.node(), zRigHandle.borderColorAttr)
+            self.borderColor = om.MColor(om.MFnNumericData(plug.asMObject()).getData())
+
+            # If no color has been set and we're on the default of (-1,-1,-1), use the main color,
+            # so in the common case where you want to use the same color you don't have to set both.
+            if self.borderColor.r == -1 and self.borderColor.g == -1 and self.borderColor.b == -1:
+                self.borderColor = om.MColor(self.color)
+
+            self.borderColor.a = om.MPlug(objPath.node(), zRigHandle.borderAlphaAttr).asFloat()
+
+        self.shape = obj.getShape()
+
+    def hasUIDrawables(self):
+        return True
+
+    def addUIDrawables(self, objPath, drawManager, frameContext, data):
+        if self.xray:
+            drawManager.beginDrawInXray()
+
+        drawManager.beginDrawable()
+        for itemType, data in self.shape.items():
+            if itemType == omr.MUIDrawManager.kLines:
+                # X-ray only
+                continue
             
-		isSelected = isPathSelected(objPath)
-                self.xray = obj.xray
+            drawManager.setColor(self.color)
+            drawManager.mesh(itemType, data)
 
-                plug = om.MPlug(objPath.node(), zRigHandle.colorAttr)
-                self.color = om.MColor(om.MFnNumericData(plug.asMObject()).getData())
+        lines = self.shape.get(omr.MUIDrawManager.kLines)
+        if lines:
+            drawManager.setColor(self.borderColor)
+            drawManager.mesh(omr.MUIDrawManager.kLines, lines)
 
-                alpha = om.MPlug(objPath.node(), zRigHandle.alphaAttr).asFloat()
-                self.color.a = alpha
+        drawManager.endDrawable()
 
-                if isSelected:
-                    self.borderColor = omr.MGeometryUtilities.wireframeColor(objPath)
-                else:
-                    plug = om.MPlug(objPath.node(), zRigHandle.borderColorAttr)
-                    self.borderColor = om.MColor(om.MFnNumericData(plug.asMObject()).getData())
-
-                    # If no color has been set and we're on the default of (-1,-1,-1), use the main color,
-                    # so in the common case where you want to use the same color you don't have to set both.
-                    if self.borderColor.r == -1 and self.borderColor.g == -1 and self.borderColor.b == -1:
-                        self.borderColor = om.MColor(self.color)
-
-                    self.borderColor.a = om.MPlug(objPath.node(), zRigHandle.borderAlphaAttr).asFloat()
-
-                self.shape = obj.getShape()
-
-	def hasUIDrawables(self):
-		return True
-
-	def addUIDrawables(self, objPath, drawManager, frameContext, data):
-                if self.xray:
-                    drawManager.beginDrawInXray()
-
-                drawManager.beginDrawable()
-		for itemType, data in self.shape.items():
-                    if itemType == omr.MUIDrawManager.kLines:
-                        # X-ray only
-                        continue
-                    
-                    drawManager.setColor(self.color)
-                    drawManager.mesh(itemType, data)
-
-                lines = self.shape.get(omr.MUIDrawManager.kLines)
-                if lines:
-                    drawManager.setColor(self.borderColor)
-                    drawManager.mesh(omr.MUIDrawManager.kLines, lines)
-
-                drawManager.endDrawable()
-
-                if self.xray:
-                    drawManager.endDrawInXray()
+        if self.xray:
+            drawManager.endDrawInXray()
 
 def create_zRigHandle(arg):
     pm.loadPlugin('zRigHandle', quiet=True)
