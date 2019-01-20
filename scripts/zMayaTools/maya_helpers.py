@@ -504,11 +504,12 @@ def without_undo():
     It's useful if a script makes temporary changes or nodes in the scene and cleans
     them up when it's done, to avoid creating pointless undo chunks.
     """
+    undo_state = pm.undoInfo(q=True, state=True)
     pm.undoInfo(stateWithoutFlush=False)
     try:
         yield
     finally:
-        pm.undoInfo(stateWithoutFlush=True)
+        pm.undoInfo(stateWithoutFlush=undo_state)
 
 @contextlib.contextmanager
 def disable_auto_keyframe():
