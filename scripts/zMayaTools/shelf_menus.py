@@ -124,7 +124,7 @@ class Shelf(object):
         Open the shelf editor, and view the script for a popup in a shelf button.
         """
         # The shelf being edited needs to be selected in the shelf.
-        if not self.select_shelf:
+        if not self.select_shelf():
             return
 
         wnd = shelfEditorWindow()
