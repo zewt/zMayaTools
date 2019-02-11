@@ -1,0 +1,42 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>
+    Skeleton &gt; Joint Labelling
+    <br>
+    <span class=header-module>Module: <span class=module>zMayaUtils</span></span>
+</h1>
+
+This allows quickly assigning joint sides, incremental "other" joint
+labels, and a more logical ordering than the "Add Joint Labels" menu
+to make it easier to quickly find each joint.
+
+This is also much faster than labelling with a menu tearoff, since pick
+walking can be used to move from joint to joint (arrow keys with a tearoff
+menu will just navigate the menu).
+
+<p>
+<img src=images/joint-labelling.png style="">
+<p>
+
+<h2>Usage</h2>
+
+Select joints an click to assign joint labels.
+<p>
+To assign other labels, enter a label in the text field and click "Set" (or press
+enter).
+<p>
+Numbered labels can be set by entering a label ending in "#".  For example, select
+your three spine joints, enter "Spine#", and the joints will be labelled Spine1,
+Spine2 and Spine3 in the order they were selected.
+<p>
+Click Side buttons to set the joint side.  Clicking "Guess" will set each joint
+to left, right or center based on its X position.
+<p>
+Tip: Pick walking can be used to quickly move between joints and label them.
+Select both collar joints and click Collar.  Then simply press down to move
+down to the two shoulder joints and click Shoulder.  Repeat for the elbow and
+hand.
+
