@@ -88,10 +88,13 @@ def bake_transform_internal(min_frame, max_frame,
         # Temporarily disconnect any transform connections.  If there are already keyframes
         # connected, calling pm.matchTransform will have no effect.  These connections will
         # be restored when this restores() block exits.
-        for attr in ('t', 'r', 's'):
+        def disconnect_attrs(attr):
             for channel in ('x', 'y', 'z'):
                 restores.append(maya_helpers.SetAndRestoreAttr(dst.attr(attr + channel), 1))
             restores.append(maya_helpers.SetAndRestoreAttr(dst.attr(attr), (1,1,1)))
+        if position: disconnect_attrs('t')
+        if rotation: disconnect_attrs('r')
+        if scale: disconnect_attrs('s')
 
         # Read the position on each frame.  We'll read all values, then write all results at once.
         for frame in frame_range:
