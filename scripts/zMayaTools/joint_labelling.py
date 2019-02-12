@@ -150,7 +150,7 @@ class JointLabellingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
 class PluginMenu(Menu):
     def __init__(self):
         super(PluginMenu, self).__init__()
-        self.window = maya_helpers.RestorableWindow(JointLabellingWindow,
+        self.window = maya_helpers.RestorableWindow(JointLabellingWindow, plugins='zMayaUtils.py',
             uiScript='import zMayaTools.joint_labelling; zMayaTools.joint_labelling.restore()')
 
     def restore(self):
