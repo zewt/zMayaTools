@@ -4,7 +4,7 @@ from maya import OpenMaya as om
 import zMayaTools.menus
 from zMayaTools.menus import Menu
 from zMayaTools import controller_editor, maya_helpers, shelf_menus, joint_labelling
-reload(joint_labelling)
+reload(controller_editor)
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
@@ -37,7 +37,6 @@ class PluginMenu(Menu):
         super(PluginMenu, self).__init__()
 
         self.shelf_menu = None
-        self.controller_ui = None
         self.shelf_preference_handler = None
 
     def add_menu_items(self):
@@ -104,8 +103,8 @@ class PluginMenu(Menu):
         self.add_rigging_tools()
         self.add_hide_output_window()
         self.add_show_shelf_menus()
-        self.add_controller_editor_menu_item()
         self.add_channel_box_editing()
+        controller_editor.menu.add_menu_items()
 
     def add_rigging_tools(self):
         menu = 'MayaWindow|mainRigControlMenu'
@@ -154,33 +153,6 @@ class PluginMenu(Menu):
         self.shelf_preference_handler = shelf_menus.create_preference_handler()
         self.shelf_preference_handler.register()
 
-    def add_controller_editor_menu_item(self):
-        def open_controller_editor(unused):
-            reload(controller_editor)
-            if self.controller_ui is None:
-                self.controller_ui = controller_editor.ControllerEditor()
-                def closed():
-                    self.controller_ui = None
-                self.controller_ui.destroyed.connect(closed)
-
-            # Disable retain, or we won't be able to create the window again after reloading the script
-            # with an "Object's name 'DialogWorkspaceControl' is not unique" error.
-            self.controller_ui.show(dockable=True, retain=False)
-
-        menu = 'MayaWindow|mainRigControlMenu'
-
-        # Make sure the menu is built.
-        pm.mel.eval('ChaControlsMenu "%s";' % menu)
-
-        # Add "Edit Controllers" at the end of the "Controller" section of Control.
-        menu_items = pm.menu(menu, q=True, ia=True)
-        controller_section = self.find_menu_section_by_name(menu_items, 'Controller')
-
-        self.add_menu_item('zMayaTools_ControllerEditor', label='Edit Controllers', parent=menu,
-                insertAfter=controller_section[-1],
-                command=open_controller_editor,
-                top_level_path='Rigging|EditControllers')
-
     def add_channel_box_editing(self):
         def move_attr_up(unused):
             from zMayaTools import attribute_reordering
@@ -222,9 +194,7 @@ class PluginMenu(Menu):
             self.shelf_preference_handler.unregister()
             self.shelf_preference_handler = None
 
-        if self.controller_ui is not None:
-            self.controller_ui.close()
-            self.controller_ui = None
+        controller_editor.menu.remove_menu_items()
 
 menu = PluginMenu()
 def initializePlugin(mobject):

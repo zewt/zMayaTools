@@ -8,6 +8,7 @@ from maya import OpenMaya as om
 from maya.app.general import mayaMixin
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from zMayaTools import maya_helpers, maya_logging, Qt, qt_helpers
+from zMayaTools.menus import Menu
 reload(qt_helpers)
 
 import maya.OpenMayaUI as omui
@@ -609,4 +610,50 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
             finally:
                 self.currently_refreshing = False
             break
+        
+class PluginMenu(Menu):
+    def __init__(self):
+        super(PluginMenu, self).__init__()
+
+        self.window = maya_helpers.RestorableWindow(ControllerEditor, plugins='zMayaUtils.py',
+            uiScript='import zMayaTools.controller_editor; zMayaTools.controller_editor.menu.restore()')
+
+    def restore(self):
+        self.window.restore()
+
+    def add_menu_items(self):
+        menu = 'MayaWindow|mainRigControlMenu'
+
+        # Make sure the menu is built.
+        pm.mel.eval('ChaControlsMenu "%s";' % menu)
+
+        # Add "Edit Controllers" at the end of the "Controller" section of Control.
+        menu_items = pm.menu(menu, q=True, ia=True)
+        controller_section = self.find_menu_section_by_name(menu_items, 'Controller')
+
+        self.add_menu_item('zMayaTools_ControllerEditor', label='Edit Controllers', parent=menu,
+                insertAfter=controller_section[-1],
+                command=lambda unused: self.window.show(),
+                top_level_path='Rigging|EditControllers')
+    
+    def remove_menu_items(self):
+        super(PluginMenu, self).remove_menu_items()
+
+        # If the window is open when the module is unloaded, close it.
+        self.window.close()
+
+    def open_controller_editor(self, unused):
+        if self.controller_ui is None:
+            self.controller_ui = controller_editor.ControllerEditor()
+            def closed():
+                self.controller_ui = None
+            self.controller_ui.destroyed.connect(closed)
+
+        # Disable retain, or we won't be able to create the window again after reloading the script
+        # with an "Object's name 'DialogWorkspaceControl' is not unique" error.
+        self.controller_ui.show(dockable=True, retain=False)
+
+
+menu = PluginMenu()
+
         
