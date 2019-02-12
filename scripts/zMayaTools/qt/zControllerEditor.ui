@@ -17,7 +17,7 @@
    </sizepolicy>
   </property>
   <property name="windowTitle">
-   <string>Edit Controllers</string>
+   <string>Controllers</string>
   </property>
   <layout class="QGridLayout" name="gridLayout">
    <item row="2" column="0">
