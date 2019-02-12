@@ -105,6 +105,7 @@ class PluginMenu(Menu):
         self.add_show_shelf_menus()
         self.add_channel_box_editing()
         controller_editor.menu.add_menu_items()
+        joint_labelling.menu.add_menu_items()
 
     def add_rigging_tools(self):
         menu = 'MayaWindow|mainRigControlMenu'
@@ -195,6 +196,7 @@ class PluginMenu(Menu):
             self.shelf_preference_handler = None
 
         controller_editor.menu.remove_menu_items()
+        joint_labelling.menu.remove_menu_items()
 
 menu = PluginMenu()
 def initializePlugin(mobject):
@@ -202,9 +204,7 @@ def initializePlugin(mobject):
         return
 
     menu.add_menu_items()
-    joint_labelling.menu.add_menu_items()
 
 def uninitializePlugin(mobject):
     menu.remove_menu_items()
-    joint_labelling.menu.remove_menu_items()
 
