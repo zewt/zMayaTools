@@ -108,13 +108,28 @@ def remove_gaps_in_all_controllers():
 
         _remove_gaps_in_child_list(controller)
 
+at_end = object()
 def set_controller_parent(controller, parent, after=None):
     """
     Set controller's parent to parent.
 
+    If after is None, the node becomes the first child.  Otherwise, the node is placed
+    after the given node.  If after is at_end, the node is placed at the end.
+
     controller -p should do this, but the docs don't really describe how it works and
     there doesn't seem to be any way to change the parent of a controller to be a root.
     """
+    if after is at_end:
+        if parent is None:
+            raise Exception('parent must be specified if after is at_end')
+
+        # If there are any children, place controller after the last one.
+        children = get_controller_children(parent)
+        if children:
+            after= children[-1]
+        else:
+            after = None
+
     with maya_helpers.undo():
         old_parent_plug = get_controller_parent(controller, get_plug=True)
         if old_parent_plug is None and parent is None:
@@ -436,7 +451,7 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
             return
 
         if indicator_position == Qt.QAbstractItemView.DropIndicatorPosition.OnItem:
-            set_controller_parent(source, target)
+            set_controller_parent(source, target, after=at_end)
             return
 
         if indicator_position == Qt.QAbstractItemView.DropIndicatorPosition.BelowItem:
