@@ -492,6 +492,7 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
         # Remember the selection and expanded nodes, so we can restore it later if the selected node still exists.
         selected_controllers = [item.controller_node for item in self.ui.controllerTree.selectedItems()]
         old_nodes = {node: item.isExpanded() for node, item in self.controllers_to_items.iteritems()}
+        old_scroll_pos = self.ui.controllerTree.verticalScrollBar().value()
         
         self.ui.controllerTree.clear()
         self.controllers_to_items = {}
@@ -529,7 +530,7 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
             if old_nodes.get(node, True):
                 self.ui.controllerTree.expandItem(item)
  
-             # If this controller was selected, reselect it.
+            # If this controller was selected, reselect it.
             if node in selected_controllers:
                 self.ui.controllerTree.setCurrentItem(item)
 
@@ -540,6 +541,14 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
 
         for root in roots:
             add_controllers_recursively(root, self.ui.controllerTree)
+
+        # We want to restore the scroll position, but the QTreeWidget hasn't refreshed the
+        # scroll bar yet and the scroll bar maximum is 0.  Do a dummy scrollToItem to force
+        # it to update.
+        item = self.ui.controllerTree.topLevelItem(0)
+        if item is not None:
+            self.ui.controllerTree.scrollToItem(item)
+        self.ui.controllerTree.verticalScrollBar().setValue(old_scroll_pos)
 
         self.currently_refreshing = False
 
