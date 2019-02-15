@@ -876,3 +876,32 @@ def scene_frame(frame):
     with MDGContextGuard(om.MDGContext(mtime)) as guard:
         yield guard
 
+def create_file_node():
+    """
+    Create a file node, with a place2dTexture node attached.
+
+    This is similar to importImageFile, but that function spews a lot of junk to
+    the console.
+    """
+    texture = pm.shadingNode('file', asTexture=True, isColorManaged=True, ss=True)
+    place = pm.shadingNode('place2dTexture', asUtility=True, ss=True)
+    place.coverage.connect(texture.coverage)
+    place.translateFrame.connect(texture.translateFrame)
+    place.rotateFrame.connect(texture.rotateFrame)
+    place.mirrorU.connect(texture.mirrorU)
+    place.mirrorV.connect(texture.mirrorV)
+    place.stagger.connect(texture.stagger)
+    place.wrapU.connect(texture.wrapU)
+    place.wrapV.connect(texture.wrapV)
+    place.repeatUV.connect(texture.repeatUV)
+    place.offset.connect(texture.offset)
+    place.rotateUV.connect(texture.rotateUV)
+    place.noiseUV.connect(texture.noiseUV)
+    place.vertexUvOne.connect(texture.vertexUvOne)
+    place.vertexUvTwo.connect(texture.vertexUvTwo)
+    place.vertexUvThree.connect(texture.vertexUvThree)
+    place.vertexCameraOne.connect(texture.vertexCameraOne)
+    place.outUV.connect(texture.uv)
+    place.outUvFilterSize.connect(texture.uvFilterSize)
+    return texture, place
+
