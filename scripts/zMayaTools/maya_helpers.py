@@ -767,9 +767,14 @@ class SetAndRestoreOptionVar(SetAndRestore):
             pm.optionVar(sv=(self.var, value))
 
 class SetAndRestoreCmd(SetAndRestore):
-    def __init__(self, cmd, key, value=None):
+    def __init__(self, cmd, key, value=None, obj=None):
+        """
+        obj specifies an object name, if needed, eg. pm.cmd(obj, e=True, flag=value).
+        If obj is specified, e=True will be added automatically.
+        """
         self.cmd = cmd
         self.key = key
+        self.obj = obj
 
         super(SetAndRestoreCmd, self).__init__(value)
 
@@ -777,10 +782,13 @@ class SetAndRestoreCmd(SetAndRestore):
         return 'SetAndRestoreCmd(%s)' % self.cmd
 
     def get(self):
-        args = { 'q': True }
+        args = []
+        kwargs = { 'q': True }
+        if self.obj is not None:
+            args.append(self.obj)
         if self.key is not None:
-            args[self.key] = True
-        result = self.cmd(**args)
+            kwargs[self.key] = True
+        result = self.cmd(*args, **kwargs)
 
         # Grr.  Why does this return an array?
         if self.cmd is pm.renderSetupLocalOverride:
@@ -790,6 +798,10 @@ class SetAndRestoreCmd(SetAndRestore):
     def set(self, value):
         args = []
         kwargs = {}
+        if self.obj is not None:
+            args.append(self.obj)
+            kwargs['e'] = True
+
         if self.key is not None:
             # eg. pm.ogs(pause=True)
             kwargs[self.key] = value
