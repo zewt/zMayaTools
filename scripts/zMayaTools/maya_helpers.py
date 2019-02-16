@@ -888,7 +888,7 @@ def scene_frame(frame):
     with MDGContextGuard(om.MDGContext(mtime)) as guard:
         yield guard
 
-def create_file_node():
+def create_file_node(name=None):
     """
     Create a file node, with a place2dTexture node attached.
 
@@ -896,6 +896,9 @@ def create_file_node():
     the console.
     """
     texture = pm.shadingNode('file', asTexture=True, isColorManaged=True, ss=True)
+    if name is not None:
+        pm.rename(texture, name)
+
     place = pm.shadingNode('place2dTexture', asUtility=True, ss=True)
     place.coverage.connect(texture.coverage)
     place.translateFrame.connect(texture.translateFrame)
@@ -916,4 +919,22 @@ def create_file_node():
     place.outUV.connect(texture.uv)
     place.outUvFilterSize.connect(texture.uvFilterSize)
     return texture, place
+
+def sync_render_setup_layer():
+    """
+    Sync the current render layer.
+
+    This is the same as pressing the sync buttin in the RS window, and updates any
+    overrides that haven't yet been applied.
+    """
+    # This isn't a documented API.  Import this here, so if this API changes it only
+    # breaks calls to this function and not all of maya_helpers.
+    import maya.app.renderSetup.model.renderSetup as renderSetupModel
+
+    render_setup_model = renderSetupModel.instance()
+    visible_layer = render_setup_model.getVisibleRenderLayer()
+    if visible_layer is None:
+        return
+
+    render_setup_model.switchToLayer(visible_layer)
 
