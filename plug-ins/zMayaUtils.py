@@ -14,24 +14,6 @@ if os.name == 'nt':
     from zMayaTools import hide_output_window
     reload(hide_output_window)
 
-# This defines the menu hierarchy for our consolidated menu.
-#
-# The labels for submenu trees are specified here.  Submenus will only actually be
-# created if a plugin is loaded that registers a menu item inside it.
-#
-# This also defines the order for menus.
-#
-# menu_section: if present, create a section, and sort all entries in that section inside
-# it
-#
-# menu_order: if present, specifies the order relative to other menus specifying menu_order
-# that are in the same submenu and section
-# the default menu_order is -1, breaking ties with the menu item name
-#
-# add_menu_item(menu_section='Coordinate Spaces', menu_order=1
-MenuHierarchy = {
-
-}
 class PluginMenu(Menu):
     def __init__(self):
         super(PluginMenu, self).__init__()
