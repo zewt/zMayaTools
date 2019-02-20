@@ -1,4 +1,4 @@
-import contextlib, functools, logging, time
+import contextlib, functools, logging, os, subprocess, time
 from contextlib import contextmanager
 from collections import namedtuple
 from pymel import core as pm
@@ -6,6 +6,7 @@ from maya import OpenMaya as om
 from zMayaTools import util
 import maya.OpenMayaUI as omui
 from maya.api.MDGContextGuard import MDGContextGuard
+from maya import cmds
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
@@ -937,4 +938,25 @@ def sync_render_setup_layer():
         return
 
     render_setup_model.switchToLayer(visible_layer)
+
+def open_scene_in_explorer():
+    """
+    Show the current scene in a File Explorer window.
+
+    This is only supported on Windows.
+    """
+    if os.name != 'nt':
+        log.error('Not supported on this platform')
+        return
+
+    scene_path = cmds.file(q=True, sceneName=True)
+    if not scene_path:
+        log.info('The scene must be saved first')
+        return
+        
+    # Work around an Explorer bug: unlike everything else in Windows it doesn't understand
+    # normal forward-slash paths.
+    scene_path = scene_path.replace('/', '\\')
+
+    subprocess.Popen('explorer /select,"%s"' % scene_path)
 

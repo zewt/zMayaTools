@@ -24,6 +24,26 @@ class PluginMenu(Menu):
     def add_menu_items(self):
         super(PluginMenu, self).add_menu_items()
 
+        if os.name == 'nt':
+            # This would be more logical to put in the top "Open" block, but we don't put it
+            # there to avoid shifting around the important open/save menu items (shifting those
+            # down would be annoying since you expect them to be a certain distance from the menu).
+            # This is also not an important enough feature to put in such a high-profile place.
+            # Instead, put it down in the "View" section.
+            menu = 'mainFileMenu'
+            def show_scene_in_explorer(unused):
+                maya_helpers.open_scene_in_explorer()
+
+            # It would be useful to grey the menu item out if the scene hasn't been saved, but there's
+            # only a global callback for the menu and not for each menu item, and adding to the menu
+            # callback is brittle.
+            section = self.find_menu_section_containing_item(pm.menu('mainFileMenu', q=True, ia=True), 'viewSequenceItem')
+
+            self.add_menu_item('zMayaTools_ViewSceneInExplorer', label='View Scene In Explorer', parent=menu, insertAfter=section[-1],
+                    annotation='Show the current scene file in Explorer',
+                    command=show_scene_in_explorer,
+                    top_level_path='Misc|ViewSceneInExplorer')
+
         menu = 'MayaWindow|mainRigSkeletonsMenu'
 
         # Make sure the menu is built.
