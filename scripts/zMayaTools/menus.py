@@ -370,6 +370,83 @@ class Menu(object):
             return None
 
     @classmethod
+    def find_menu_section_containing_command(cls, menu_items, command):
+        """
+        Given a list of menu items, find the menu item that runs the given command.
+        Return the subset of the menu for the section containing the command.
+
+        If the label isn't found, return the entire list.
+        """
+        # Find the command.
+        idx = cls.find_item_with_command(menu_items, command, return_last_item_by_default=False)
+        if idx is None:
+            return menu_items
+
+        return cls.find_menu_section_around_index(menu_items, idx)
+
+    @classmethod
+    def find_menu_section_containing_item(cls, menu_items, item):
+        """
+        Given a list of menu items, find the menu item that runs the given menu item.
+        Return the subset of the menu for the section containing the command.
+
+        If the label isn't found, return the entire list.
+        """
+        try:
+            # Find the menu item.
+            idx = menu_items.index(item)
+            return cls.find_menu_section_around_index(menu_items, idx)
+        except ValueError:
+            return menu_items
+
+    @classmethod
+    def find_menu_section_around_index(cls, menu_items, idx):
+        """
+        Find the section containing the menu_items[idx], and return its start and end
+        index.
+        """
+        start_idx = idx
+        # Search upwards for the start of the section.
+        while start_idx > 0:
+            if pm.menuItem(menu_items[start_idx], q=True, divider=True):
+                start_idx += 1
+                break
+
+            start_idx -= 1
+
+        for end_idx in xrange(start_idx+1, len(menu_items)):
+            if not pm.menuItem(menu_items[end_idx], q=True, divider=True):
+                continue
+
+            return menu_items[start_idx:end_idx]
+        else:
+            return menu_items[start_idx:]
+
+    @classmethod
+    def find_item_with_command(cls, menu_items, command, divider=False, return_last_item_by_default=True):
+        """
+        Find an item with the given command, and return its index.
+        
+        If it's not found, return the last element in the menu if return_last_item_by_default
+        is true, otherwise return None.
+
+        This is more reliable than find_item_by_name, since it's not affected by localization.
+        """
+        for idx, item in enumerate(menu_items):
+            if divider and not pm.menuItem(item, q=True, divider=True):
+                continue
+
+            section = pm.menuItem(item, q=True, c=True)
+            if section == command:
+                return idx
+
+        log.warning('Couldn\'t find the menu item with command "%s"' % command)
+        if return_last_item_by_default:
+            return len(menu_items)-1
+        else:
+            return None
+
+    @classmethod
     def find_submenu_by_name(cls, section, label, default):
         """
         Find the submenu with the given label.
