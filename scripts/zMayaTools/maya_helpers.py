@@ -450,7 +450,7 @@ class RestorableWindow(object):
         # Disable retain, or we won't be able to create the window again after reloading the script
         # with an "Object's name 'DialogWorkspaceControl' is not unique" error.
         #
-        # Watch out: this function has *args and *kwargs which should be there, which causes it to
+        # Watch out: this function has *args and *kwargs which shouldn't be there, which causes it to
         # silently eat unknown parameters instead of throwing an error.
         self.ui.setDockableParameters(dockable=True, retain=False,
                 plugins=self.plugins, uiScript=self.uiScript )
