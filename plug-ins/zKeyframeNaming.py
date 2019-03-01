@@ -6,7 +6,6 @@ import math, traceback, time
 from zMayaTools import maya_helpers
 
 from zMayaTools import keyframe_naming
-reload(keyframe_naming)
 
 class zKeyframeNaming(OpenMayaMPx.MPxNode):
     pluginNodeId = keyframe_naming.plugin_node_id
