@@ -945,18 +945,10 @@ def open_scene_in_explorer():
 
     This is only supported on Windows.
     """
-    if os.name != 'nt':
-        log.error('Not supported on this platform')
-        return
-
     scene_path = cmds.file(q=True, sceneName=True)
     if not scene_path:
         log.info('The scene must be saved first')
         return
         
-    # Work around an Explorer bug: unlike everything else in Windows it doesn't understand
-    # normal forward-slash paths.
-    scene_path = scene_path.replace('/', '\\')
-
-    subprocess.Popen('explorer /select,"%s"' % scene_path)
+    util.show_file_in_explorer(scene_path)
 

@@ -1,4 +1,4 @@
-import contextlib, functools, glob, os, traceback, sys
+import contextlib, functools, glob, os, traceback, sys, subprocess
 
 def mkdir_p(path):
     # makedirs is buggy and raises an error if the directory already exists,
@@ -90,6 +90,22 @@ def get_main_window_hwnd():
     main_window = omui.MQtUtil.mainWindow()
     window = wrapInstance(long(main_window), QtWidgets.QMainWindow)
     return int(window.winId())
+
+def show_file_in_explorer(filename):
+    """
+    Show the given file in a File Explorer window.
+
+    This is only supported on Windows.
+    """
+    if os.name != 'nt':
+        log.error('Not supported on this platform')
+        return
+
+    # Work around an Explorer bug: unlike everything else in Windows it doesn't understand
+    # normal forward-slash paths.
+    filename = filename.replace('/', '\\')
+
+    subprocess.Popen('explorer /select,"%s"' % filename)
 
 FLASHW_ALL = 0x00000003
 FLASHW_CAPTION = 0x00000001
