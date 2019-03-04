@@ -239,7 +239,13 @@ class ProgressWindowMaya(util.ProgressWindow):
         self.with_secondary_progress = with_secondary_progress
 
         self.window = pm.window(title=title, minimizeButton=False, maximizeButton=False)
-        pm.columnLayout()
+
+        # This isn't a good API.
+        cols = 1
+        if self.with_titles: cols += 1
+        if self.with_secondary_progress: cols += 1
+        if with_cancel: cols += 1
+        pm.rowLayout(numberOfColumns=cols)
         
         if self.with_titles:
             pm.text('status', w=300, align='left')
