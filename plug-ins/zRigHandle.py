@@ -6,6 +6,7 @@ import maya.api.OpenMayaRender as omr
 from maya.OpenMaya import MGlobal
 import pymel.core as pm
 from zMayaTools.menus import Menu
+from zMayaTools import node_caching
 
 # This is insane.  There are two Python APIs in Maya, and both of them are missing lots of
 # stuff, and you can't mix them except in specific careful ways.
@@ -562,6 +563,7 @@ def initializePlugin(obj):
     omr.MDrawRegistry.registerDrawOverrideCreator(zRigHandle.drawDbClassification, zRigHandle.drawRegistrantId, zRigHandleDrawOverride.creator)
 
     menu.add_menu_items()
+    node_caching.enable_caching_for_node_name('zRigHandle')
 
 def uninitializePlugin(obj):
     plugin = om.MFnPlugin(obj)
@@ -569,4 +571,5 @@ def uninitializePlugin(obj):
     plugin.deregisterNode(zRigHandle.id)
 
     menu.remove_menu_items()
+    node_caching.disable_caching_for_node_name('zRigHandle')
 
