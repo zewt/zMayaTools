@@ -3,7 +3,7 @@ from contextlib import contextmanager
 from collections import namedtuple
 from pymel import core as pm
 from maya import OpenMaya as om
-from zMayaTools import util
+from zMayaTools import util, Qt
 import maya.OpenMayaUI as omui
 from maya.api.MDGContextGuard import MDGContextGuard
 from maya import cmds
@@ -265,6 +265,12 @@ class ProgressWindowMaya(util.ProgressWindow):
 
         # Advance from -1 to 0.
         self.update(force=True)
+
+    def check_cancellation(self):
+        # Process input to allow clicks on the cancel button to be received.
+        Qt.QCoreApplication.processEvents(Qt.QEventLoop.ExcludeSocketNotifiers)
+
+        super(ProgressWindowMaya, self).check_cancellation()
 
     def set_total_progress_value(self, total_progress_values):
         pm.progressBar(self.progressControl1, e=True, maxValue=total_progress_values)
