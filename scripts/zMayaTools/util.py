@@ -137,6 +137,8 @@ def flash_taskbar(hwnd=None, flags=FLASHW_ALL|FLASHW_TIMERNOFG, count=1, timeout
     winfo = FLASHWINFO(ctypes.sizeof(FLASHWINFO), hwnd, flags, count, timeout)
     ctypes.windll.user32.FlashWindowEx(ctypes.byref(winfo))
 
+class CancelledException(Exception): pass
+
 class ProgressWindow(object):
     def __init__(self, total_progress_values=10, title=''):
         self._cancel = False
