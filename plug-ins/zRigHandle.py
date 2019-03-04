@@ -539,19 +539,18 @@ class zRigHandleDrawOverride(omr.MPxDrawOverride):
         if self.xray:
             drawManager.endDrawInXray()
 
-def create_zRigHandle(arg):
-    pm.loadPlugin('zRigHandle', quiet=True)
-    sel = pm.ls(sl=True)
-    return pm.createNode('zRigHandle')
-
 class PluginMenu(Menu):
     def add_menu_items(self):
         # Add "Rig Handle" after "Locator" in Create > Construction Aids.
+        def create(arg):
+            node = pm.createNode('zRigHandle')
+            pm.select(node.getTransform())
+
         pm.mel.eval('ModCreateMenu "mainCreateMenu"')
         menu = 'mainCreateMenu'
         menu_items = pm.menu(menu, q=True, ia=True)
         idx = self.find_item_with_command(menu_items, 'CreateLocator')
-        self.add_menu_item('zRigHandle', label="Rig Handle", command=create_zRigHandle,
+        self.add_menu_item('zRigHandle', label="Rig Handle", command=create,
                 insertAfter=menu_items[idx], parent=menu,
                 annotation='Create a viewport rig handle',
                 top_level_path='Rigging|Rig_Handle')
