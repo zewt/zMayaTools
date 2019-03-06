@@ -240,13 +240,8 @@ class ProgressWindowMaya(util.ProgressWindow):
 
         self.window = pm.window(title=title, minimizeButton=False, maximizeButton=False)
 
-        # This isn't a good API.
-        cols = 1
-        if self.with_titles: cols += 1
-        if self.with_secondary_progress: cols += 1
-        if with_cancel: cols += 1
-        pm.rowLayout(numberOfColumns=cols)
-        
+        pm.columnLayout()
+
         if self.with_titles:
             pm.text('status', w=300, align='left')
 
@@ -259,6 +254,8 @@ class ProgressWindowMaya(util.ProgressWindow):
 
         if with_cancel:
             pm.button(label='Cancel', command=self._cancel_clicked)
+
+        pm.setParent('..')
 
         pm.showWindow(self.window)
         pm.refresh()
