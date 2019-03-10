@@ -51,6 +51,9 @@ class zStringFormatter(OpenMayaMPx.MPxNode):
             output = dataBlock.outputValue(plug)
             try:
                 formatted_value = fmt % attrs
+            except ValueError as e:
+                log.info('Invalid format string for %s: %s', self.name(), str(e))
+                formatted_value = ''
             except KeyError as e:
                 log.info('%s format uses unspecified key "%s": "%s"', self.name(), e.args[0], fmt)
                 formatted_value = ''
