@@ -24,6 +24,9 @@ class PluginMenu(Menu):
     def add_menu_items(self):
         super(PluginMenu, self).add_menu_items()
 
+        # Make sure the file menu and other deferred menus are built.
+        pm.mel.eval('buildDeferredMenus()')
+
         if os.name == 'nt':
             # This would be more logical to put in the top "Open" block, but we don't put it
             # there to avoid shifting around the important open/save menu items (shifting those
