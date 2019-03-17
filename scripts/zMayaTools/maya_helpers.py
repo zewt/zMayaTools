@@ -833,6 +833,26 @@ class SetAndRestorePauseViewport(SetAndRestoreCmd):
         if self.get() != value:
             super(SetAndRestorePauseViewport, self).set(True)
 
+from maya.app.renderSetup.model import renderSetup, renderLayer
+class SetAndRestoreActiveRenderSetup(SetAndRestore):
+    """
+    Temporarily change the active render setup.
+    """
+    def get(self):
+        return renderSetup.instance().getVisibleRenderLayer()
+
+    def set(self, value):
+        # value can be a RenderLayer object, the name of a render layer, or None
+        # to switch to the default layer.
+        rs = renderSetup.instance()    
+        if value is None:
+            value = rs.getDefaultRenderLayer()
+        elif not isinstance(value, renderLayer.RenderLayer):
+            # This throws a generic Exception if 
+            value = rs.getRenderLayer(value)
+
+        rs.switchToLayer(value)
+
 @contextlib.contextmanager
 def restores(name='undo_on_exception'):
     """
