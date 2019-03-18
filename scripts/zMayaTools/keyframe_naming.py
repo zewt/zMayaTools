@@ -488,7 +488,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         """
         Create a key if one doesn't exist already, and begin editing its name.
         """
-        with maya_helpers.undo('Create named keyframe'):
+        with maya_helpers.undo():
             # If we're editing, cancel editing before adding the new frame, or the
             # new frame won't be visible.  This can happen if you select a frame,
             # click Add, then select another frame and click Add without first
@@ -517,7 +517,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             return
 
         self.cancel_rename()
-        with maya_helpers.undo('Delete keyframe bookmark'):
+        with maya_helpers.undo():
             delete_key_at_frame(item.frame)
     
     def rename_selected_frame(self):
@@ -756,7 +756,7 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
             return
         item = items[0]
 
-        with maya_helpers.undo('Rename keyframe bookmark'):
+        with maya_helpers.undo():
             set_name_at_frame(item.frame, item.text())
 
     def name_editor_closed(self, editor, hint):

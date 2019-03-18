@@ -495,11 +495,11 @@ class RestorableWindow(object):
         self._open_ui(True)
 
 @contextlib.contextmanager
-def undo(name='undo_on_exception'):
+def undo():
     """
     Run a block of code in an undo block.
     """
-    pm.undoInfo(openChunk=True, undoName=name)
+    pm.undoInfo(openChunk=True)
     try:
         yield
     finally:
