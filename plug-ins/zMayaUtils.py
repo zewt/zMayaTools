@@ -3,7 +3,7 @@ from pymel import core as pm
 from maya import OpenMaya as om
 import zMayaTools.menus
 from zMayaTools.menus import Menu
-from zMayaTools import controller_editor, maya_helpers, shelf_menus, joint_labelling
+from zMayaTools import controller_editor, maya_helpers, material_assignment_menu, shelf_menus, joint_labelling
 reload(controller_editor)
 
 from zMayaTools import maya_logging
@@ -209,7 +209,9 @@ def initializePlugin(mobject):
         return
 
     menu.add_menu_items()
+    material_assignment_menu.AssignMaterialsContextMenu.register()
 
 def uninitializePlugin(mobject):
     menu.remove_menu_items()
+    material_assignment_menu.AssignMaterialsContextMenu.deregister()
 
