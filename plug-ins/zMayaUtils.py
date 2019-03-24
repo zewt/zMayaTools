@@ -1,9 +1,9 @@
 import os
 from pymel import core as pm
-from maya import OpenMaya as om
+from maya import OpenMaya as om, OpenMayaMPx as ompx
 import zMayaTools.menus
 from zMayaTools.menus import Menu
-from zMayaTools import controller_editor, maya_helpers, material_assignment_menu, shelf_menus, joint_labelling
+from zMayaTools import controller_editor, maya_helpers, material_assignment_menu, shelf_menus, joint_labelling, skin_clusters
 reload(controller_editor)
 
 from zMayaTools import maya_logging
@@ -46,6 +46,13 @@ class PluginMenu(Menu):
                     annotation='Show the current scene file in Explorer',
                     command=show_scene_in_explorer,
                     top_level_path='Misc|ViewSceneInExplorer')
+
+        pm.mel.eval('ChaSkinningMenu("mainRigSkinningMenu")')
+        self.add_menu_item('zMayaTools_ToggleMoveSkinnedJoints', label='Toggle Move Skinned Joints', parent=pm.mel.globals['gRigSkinningMenu'],
+                insertAfter='moveSkinJointsItem',
+                command='zMoveSkinnedJoints -toggle',
+                sourceType='mel',
+                top_level_path='Rigging|ToggleMoveSkinnedJoints')
 
         menu = 'MayaWindow|mainRigSkeletonsMenu'
 
@@ -205,13 +212,17 @@ class PluginMenu(Menu):
 
 menu = PluginMenu()
 def initializePlugin(mobject):
+    plugin = ompx.MFnPlugin(mobject)
     if om.MGlobal.mayaState() != om.MGlobal.kInteractive:
         return
 
     menu.add_menu_items()
     material_assignment_menu.AssignMaterialsContextMenu.register()
+    skin_clusters.MoveSkinnedJoints.register(plugin)
 
 def uninitializePlugin(mobject):
+    plugin = ompx.MFnPlugin(mobject)
     menu.remove_menu_items()
     material_assignment_menu.AssignMaterialsContextMenu.deregister()
+    skin_clusters.MoveSkinnedJoints.deregister(plugin)
 
