@@ -552,6 +552,7 @@ class PluginMenu(Menu):
         idx = self.find_item_with_command(menu_items, 'CreateLocator')
         self.add_menu_item('zRigHandle', label="Rig Handle", command=create,
                 insertAfter=menu_items[idx], parent=menu,
+                image='zRigHandle.png',
                 annotation='Create a viewport rig handle',
                 top_level_path='Rigging|Rig_Handle')
 
