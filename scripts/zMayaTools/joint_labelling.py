@@ -164,6 +164,7 @@ class PluginMenu(Menu):
 
         self.add_menu_item('zMayaTools_JointLabelling', label='Joint Labelling', parent=menu, insertAfter='hikWindowItem',
                 command=lambda unused: self.window.show(),
+                image='smoothSkin.png',
                 top_level_path='Rigging|Joint_Labelling')
 
     def remove_menu_items(self):

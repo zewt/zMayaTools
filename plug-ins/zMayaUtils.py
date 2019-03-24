@@ -52,12 +52,14 @@ class PluginMenu(Menu):
                 insertAfter='moveSkinJointsItem',
                 command='zMoveSkinnedJoints -toggle',
                 sourceType='mel',
+                image='smoothSkin.png',
                 top_level_path='Rigging|ToggleMoveSkinnedJoints')
 
         self.add_menu_item('zMayaTools_CreateEditableJoints', label='Create Editable Joints', parent=pm.mel.globals['gRigSkinningMenu'],
                 insertAfter='zMayaTools_ToggleMoveSkinnedJoints',
                 command='zCreateEditableJoints',
                 sourceType='mel',
+                image='smoothSkin.png',
                 top_level_path='Rigging|CreateEditableJoints')
         
         menu = 'MayaWindow|mainRigSkeletonsMenu'
@@ -107,6 +109,7 @@ class PluginMenu(Menu):
 
             self.add_menu_item('zBlendShapeRetargetting_%s' % menu, label='Retarget Blend Shapes', parent=submenu,
                     command=run_blend_shape_retargetting,
+                    image='blendShape.png',
                     top_level_path='Blend Shapes|RetargetBlendShapes')
 
             def run_split_blend_shapes(unused):
@@ -116,6 +119,7 @@ class PluginMenu(Menu):
             self.add_menu_item('zSplitBlendShape_%s' % menu, label='Split Blend Shape', parent=submenu,
                     annotation='Split a blend shape across a plane',
                     command=run_split_blend_shapes,
+                    image='blendShape.png',
                     top_level_path='Blend Shapes|SplitBlendShapes')
 
         self.add_rigging_tools()
