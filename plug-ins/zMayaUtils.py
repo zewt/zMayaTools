@@ -54,6 +54,12 @@ class PluginMenu(Menu):
                 sourceType='mel',
                 top_level_path='Rigging|ToggleMoveSkinnedJoints')
 
+        self.add_menu_item('zMayaTools_CreateEditableJoints', label='Create Editable Joints', parent=pm.mel.globals['gRigSkinningMenu'],
+                insertAfter='zMayaTools_ToggleMoveSkinnedJoints',
+                command='zCreateEditableJoints',
+                sourceType='mel',
+                top_level_path='Rigging|CreateEditableJoints')
+        
         menu = 'MayaWindow|mainRigSkeletonsMenu'
 
         # Make sure the menu is built.

@@ -1,0 +1,32 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+
+<body>
+<h1>Skin &gt; Create Editable Joints</h1>
+<p>
+Create a helper skeleton that can be used to adjust the position of skinned joints.
+<p>
+
+<h2>Introduction</h2>
+Create Editable Joints creates a proxy skeleton that can be used to edit bound
+joints.
+<p>
+The edit skeleton can be moved and rotated, like editing a skeleton in Move Skinned
+Joints mode.  However, the bind skeleton can be freely posed while doing this, to
+quickly see the results of adjusting joints.
+<p>
+When finished editing, just delete the editable joints.
+
+<h2>Usage</h2>
+Before starting, ensure that all joints have zeroed rotations.  The bind rotations
+should be frozen to joint orient.
+<p>
+Select one or more joints, and <b>Skin &gt; Create Editable Joints</b> from the Rigging menu set.
+
+<h2>Notes</h2>
+If a joint's translation is constrainted, the edit joint's translation will be
+locked.
+<p>
+It's useful to enable Preserve Children on manipulators to move a joint but leave
+its child joints in place.
