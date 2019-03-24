@@ -153,7 +153,15 @@ class Menu(object):
         entries in the same menu.  This is only used for items in the top level menus.
         """
         if not top_level_only:
-            item = self._add_menu_item_internal(name, insert_sorted=False, *args, **kwargs)
+            # Use the general zicon.png icon for integrated menu items to make it easier
+            # to see what we add.  If we have per-item icons, we'll use them in the standalone
+            # menu.
+            standalone_kwargs = dict(kwargs)
+            if 'image' in standalone_kwargs:
+                del standalone_kwargs['image']
+
+            item = self._add_menu_item_internal(name, insert_sorted=False, image='zMayaToolsIcon.png',
+                    *args, **standalone_kwargs)
             if item is not None:
                 self.related_items.setdefault(name, []).append(item)
 
