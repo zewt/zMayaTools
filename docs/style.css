@@ -5,6 +5,17 @@ body {
     margin-left: auto;
     margin-right: auto;
     line-height: 1.5;
+
+    /* Always show the scrollbar, so the page doesn't shift back and forth slightly
+     * when navigating to shorter doc pages. */
+    overflow-y: scroll;
+
+    /* No top margin or padding, so the header sticky doesn't move. */
+    margin-top: 0;
+    padding-top: 0;
+
+    /* Disable Chrome's gross, obnoxious, gimmicky underline styling. */
+    text-decoration-skip-ink: none;    
 }
 
 h1 {
@@ -14,10 +25,35 @@ h1, h2 {
     border-bottom: 1px solid #eeeeee;
     padding-bottom: .3em;
 }
-
+a {
+    text-decoration: none;
+}
+a:hover {
+    text-decoration: underline;
+}
 .header-module {
     font-size: .4em;
     font-weight: normal;
     font-weight: 500;
 }
+
+.header {
+    position: sticky;
+    top: 0;
+    width: 100%;
+    border-bottom: 1px solid #eee;
+    background-color: #fff;
+    display: flex;
+    flex-direction: row;
+    align-items: baseline;
+}
+.header > a:hover { text-decoration: inherit; }
+.header > a:not(:last-child) { margin-right: .5em; }
+.header > a:not(:first-child) {
+    font-weight: 600;
+    margin-left: 5px;
+}
+
+.header a:visited { color: inherit; }
+.header > .main-page-link { font-size: 2em; }
 
