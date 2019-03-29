@@ -108,12 +108,13 @@ class Shelf(object):
 
         pm.tabLayout(gShelfTopLevel, edit=True, selectTabIndex=idx+1)
         return True
+
     def show_in_shelf_editor(self, button):
         """
         Open the shelf editor, and view the script for the shelf button with the given name.
         """
         # The shelf editor only works on the currently-selected shelf.
-        if not self.select_shelf:
+        if not self.select_shelf():
             return
 
         wnd = shelfEditorWindow()
