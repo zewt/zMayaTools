@@ -3,7 +3,7 @@ from pymel import core as pm
 from maya import OpenMaya as om, OpenMayaMPx as ompx
 import zMayaTools.menus
 from zMayaTools.menus import Menu
-from zMayaTools import controller_editor, maya_helpers, material_assignment_menu, shelf_menus, joint_labelling, skin_clusters
+from zMayaTools import controller_editor, maya_helpers, material_assignment_menu, shelf_menus, joint_labelling, skin_clusters, animation_helpers
 reload(controller_editor)
 
 from zMayaTools import maya_logging
@@ -229,10 +229,12 @@ def initializePlugin(mobject):
     menu.add_menu_items()
     material_assignment_menu.AssignMaterialsContextMenu.register()
     skin_clusters.MoveSkinnedJoints.register(plugin)
+    animation_helpers.setup_runtime_commands()
 
 def uninitializePlugin(mobject):
     plugin = ompx.MFnPlugin(mobject)
     menu.remove_menu_items()
     material_assignment_menu.AssignMaterialsContextMenu.deregister()
     skin_clusters.MoveSkinnedJoints.deregister(plugin)
+    animation_helpers.zDeleteUnneededKeys.deregister(plugin)
 
