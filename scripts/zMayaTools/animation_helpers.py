@@ -23,10 +23,10 @@ def next_time_slider_frame(delta):
     pm.currentTime(new_frame)
 
 def setup_runtime_commands():
-    maya_helpers.create_or_replace_runtime_command('NextFrameOnTimeSlider', category='zMayaTools.Animation',
+    maya_helpers.create_or_replace_runtime_command('zNextFrameOnTimeSlider', category='zMayaTools.Animation',
             annotation='zMayaTools: Go to the next frame, staying on the time slider',
             command='from zMayaTools import animation_helpers; animation_helpers.next_time_slider_frame(+1)')
-    maya_helpers.create_or_replace_runtime_command('PreviousFrameOnTimeSlider', category='zMayaTools.Animation',
+    maya_helpers.create_or_replace_runtime_command('zPreviousFrameOnTimeSlider', category='zMayaTools.Animation',
             annotation='zMayaTools: Go to the previous frame, staying on the time slider',
             command='from zMayaTools import animation_helpers; animation_helpers.next_time_slider_frame(-1)')
 
