@@ -236,5 +236,4 @@ def uninitializePlugin(mobject):
     menu.remove_menu_items()
     material_assignment_menu.AssignMaterialsContextMenu.deregister()
     skin_clusters.MoveSkinnedJoints.deregister(plugin)
-    animation_helpers.zDeleteUnneededKeys.deregister(plugin)
 
