@@ -3,10 +3,12 @@ from contextlib import contextmanager
 from collections import namedtuple
 from pymel import core as pm
 from maya import OpenMaya as om
-from zMayaTools import util, Qt
+from zMayaTools import util, Qt, qt_helpers
 from maya import OpenMayaUI as omui
+from maya.app.general import mayaMixin
 from maya.api.MDGContextGuard import MDGContextGuard
 from maya import cmds
+from shiboken2 import wrapInstance
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
@@ -219,6 +221,39 @@ class OptionsBox(object):
         self.optvars.reset()
         self.option_box_load()
 
+class ProgressWindow(Qt.QDialog):
+    def __init__(self):
+        super(ProgressWindow, self).__init__()
+
+        # Make sure our UI has been generated.
+        qt_helpers.compile_all_layouts()
+
+        from zMayaTools.qt_generated import zProgressWindow
+        reload(zProgressWindow)
+
+        self.ui = zProgressWindow.Ui_zProgressWindow()
+        self.ui.setupUi(self)
+        self.ui.mainProgressBar.setMinimum(0)
+        self.ui.mainProgressBar.setMaximum(1000)
+        self.ui.mainProgressBar.setValue(500)
+
+    def done(self, result):
+        self.close()
+        super(ProgressWindow, self).done(result)
+
+    def force_redraw(self):
+        self.repaint()
+        Qt.QCoreApplication.processEvents(Qt.QEventLoop.ExcludeSocketNotifiers | Qt.QEventLoop.ExcludeUserInputEvents)
+
+    def show(self):
+        main_window = wrapInstance(long(omui.MQtUtil.mainWindow()), Qt.QMainWindow)
+        self.setParent(main_window)
+
+        # Disable minimize and maximize.
+        self.setWindowFlags(Qt.Qt.Window|Qt.Qt.CustomizeWindowHint|Qt.Qt.WindowTitleHint|Qt.Qt.WindowSystemMenuHint)
+
+        super(ProgressWindow, self).show()
+
 class ProgressWindowMaya(util.ProgressWindow):
     def __init__(self, total_progress_values, title='Progress...',
             # Show a title above the main progress bar.  (If a secondary progress bar is displayed,
@@ -238,27 +273,28 @@ class ProgressWindowMaya(util.ProgressWindow):
         self.with_titles = with_titles
         self.with_secondary_progress = with_secondary_progress
 
-        self.window = pm.window(title=title, minimizeButton=False, maximizeButton=False)
+        self.window = ProgressWindow()
+        self.window.setWindowTitle(title)
+        self.window.setWindowFlags(Qt.Qt.Widget)
 
-        pm.columnLayout()
-
-        if self.with_titles:
-            pm.text('status', w=300, align='left')
-
-        self.progressControl1 = pm.progressBar(maxValue=total_progress_values, width=300)
+        self.window.ui.mainProgressBar.setMinimum(0)
+        self.window.ui.mainProgressBar.setValue(0)
         self.set_total_progress_value(total_progress_values)
 
-        if self.with_secondary_progress:
-            pm.text('status2', w=300, align='left')
-            self.progressControl2 = pm.progressBar(maxValue=100, width=300, pr=5)
+        # Hide UI elements that we're not using.
+        if not self.with_secondary_progress:
+            self.window.ui.secondaryProgressBar.hide()
+            self.window.ui.secondaryTitle.hide()
+        if not self.with_titles:
+            self.window.ui.mainTitle.hide()
+        if not with_cancel:
+            self.window.ui.cancelButton.hide()
 
-        if with_cancel:
-            pm.button(label='Cancel', command=self._cancel_clicked)
+        self.window.ui.cancelButton.clicked.connect(self._cancel_clicked)
 
-        pm.setParent('..')
-
-        pm.showWindow(self.window)
-        pm.refresh()
+        self.window.setModal(True)
+        self.window.resize(self.window.sizeHint())
+        self.window.show()
 
         # Advance from -1 to 0.
         self.update(force=True)
@@ -270,15 +306,13 @@ class ProgressWindowMaya(util.ProgressWindow):
         super(ProgressWindowMaya, self).check_cancellation()
 
     def set_total_progress_value(self, total_progress_values):
-        pm.progressBar(self.progressControl1, e=True, maxValue=total_progress_values)
+        self.window.ui.mainProgressBar.setMaximum(total_progress_values)
 
     def hide(self):
         super(ProgressWindowMaya, self).hide()
-        
-        pm.deleteUI(self.window)
-        self.window = None
+        self.window.close()
 
-    def _cancel_clicked(self, unused):
+    def _cancel_clicked(self):
         log.debug('Cancel button clicked')
         self.cancel()
 
@@ -305,19 +339,16 @@ class ProgressWindowMaya(util.ProgressWindow):
 
         if text:
             if self.with_titles:
-                pm.text('status', e=True, label=text)
+                self.window.ui.mainTitle.setText(text)
             else:
-                self.window = pm.window(self.window, e=True, title=text)
+                self.window.setWindowTitle(text)
 
-        pm.progressBar(self.progressControl1, edit=True, progress=self.main_progress_value)
+        self.window.ui.mainProgressBar.setValue(self.main_progress_value)
 
         if self.with_secondary_progress:
-            pm.text('status2', e=True, label='')
-            pm.progressBar(self.progressControl2, edit=True, progress=0)
+            self.window.ui.secondaryProgressBar.setValue(0)
 
-        # Hack: The window sometimes doesn't update if we don't call this twice.
-        pm.refresh()
-        pm.refresh()
+        self.window.force_redraw()
 
     def set_task_progress(self, label, percent=None, force=False):
         # Check for cancellation when we update progress.
@@ -340,11 +371,9 @@ class ProgressWindowMaya(util.ProgressWindow):
 
         self.last_task_refresh = time.time()
 
-        pm.text('status2', e=True, label=label)
-        pm.progressBar(self.progressControl2, edit=True, progress=round(percent * 100))
-
-        pm.refresh()
-        pm.refresh()
+        self.window.ui.secondaryTitle.setText(label)
+        self.window.ui.secondaryProgressBar.setValue(round(percent * 100))
+        self.window.force_redraw()
 
 class TimeChangeListener(object):
     """
