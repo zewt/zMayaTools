@@ -104,8 +104,8 @@ def show_file_in_explorer(filename):
     # Work around an Explorer bug: unlike everything else in Windows it doesn't understand
     # normal forward-slash paths.
     filename = filename.replace('/', '\\')
-
-    subprocess.Popen('explorer /select,"%s"' % filename)
+    cmd = u'explorer /select,"%s"' % filename
+    subprocess.Popen(cmd.encode('mbcs'))
 
 FLASHW_ALL = 0x00000003
 FLASHW_CAPTION = 0x00000001
