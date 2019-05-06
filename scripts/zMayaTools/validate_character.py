@@ -567,6 +567,7 @@ class Validate(object):
         # might have the root of a hair skeleton underneath it.
         stub_joints = []
         for influence in influences:
+            # Only look at joints that have a single child.
             children = pm.listRelatives(influence, children=True, type='joint')
             if len(children) != 1:
                 continue
@@ -614,6 +615,15 @@ class Validate(object):
                 len(joints_with_nonzero_rotations), 
                 'joint has' if len(joints_with_nonzero_rotations) == 1 else 'joints have'
                 ), nodes=joints_with_nonzero_rotations)
+
+        # If a joint is a stub joint, its mirrored joint should also be a stub joint.  It's easy to
+        # accidentally leave some of these bounds, which can cause hard to debug "not all influences
+        # could be matched" warnings when mirroring skin weights.
+        for left_joint, right_joint in symmetric_joints.iteritems():
+            if left_joint in stub_joints and right_joint not in stub_joints:
+                self.log('Left joint %s is a stub joint, but right joint %s is bound' % (left_joint.nodeName(), right_joint.nodeName()), nodes=[left_joint, right_joint])
+            if right_joint in stub_joints and left_joint not in stub_joints:
+                self.log('Right joint %s is a stub joint, but left joint %s is bound' % (right_joint.nodeName(), left_joint.nodeName()), nodes=[right_joint, left_joint])
 
         # All center joints should have an X value of 0.
         for joint in joints_center:
