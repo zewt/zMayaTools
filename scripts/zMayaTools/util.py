@@ -103,6 +103,10 @@ def show_file_in_explorer(filename):
 
     # Work around an Explorer bug: unlike everything else in Windows it doesn't understand
     # normal forward-slash paths.
+    #
+    # Note that we can't use os.startfile here.  We could use that to open the directory
+    # containing the scene, but if we give it the filename it'll just load the scene in a
+    # new instance of Maya.
     filename = filename.replace('/', '\\')
     cmd = u'explorer /select,"%s"' % filename
     subprocess.Popen(cmd.encode('mbcs'))
