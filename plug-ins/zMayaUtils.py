@@ -126,6 +126,7 @@ class PluginMenu(Menu):
         self.add_hide_output_window()
         self.add_show_shelf_menus()
         self.add_channel_box_editing()
+        self.add_modify_menu_items()
         controller_editor.menu.add_menu_items()
         joint_labelling.menu.add_menu_items()
 
@@ -205,6 +206,21 @@ class PluginMenu(Menu):
                 annotation='Move a channel box attribute lower in the list',
                 top_level_path='Reorder Attributes|Move2')
 
+    def add_modify_menu_items(self):
+        # Add Match Translation and Rotation to Modify > Match Transformations.
+        # This menu item isn't added to the top-level zMayaTools menu, since it doesn't
+        # really make sense on its own.
+        pm.mel.eval('ModObjectsMenu "mainModifyMenu"')
+        menu = 'mainModifyMenu|matchTransformsItem'
+        menu_items = pm.menu(menu, q=True, ia=True)
+        match_rotation = self.find_item_with_command(menu_items, 'MatchRotation')
+
+        self.add_menu_item('zMayaTools_MatchPosition', label='Match Position',
+                parent=menu,
+                annotation='Match the translation and rotation of selected objects to the last-selected object.',
+                insertAfter=menu_items[match_rotation],
+                command='zMatchPosition', sourceType='mel')
+
     def remove_menu_items(self):
         super(PluginMenu, self).remove_menu_items()
 
@@ -231,6 +247,7 @@ def initializePlugin(mobject):
     skin_clusters.MoveSkinnedJoints.register(plugin)
     animation_helpers.setup_runtime_commands()
     pick_walk.setup_runtime_commands()
+    maya_helpers.setup_runtime_commands()
 
 def uninitializePlugin(mobject):
     plugin = ompx.MFnPlugin(mobject)

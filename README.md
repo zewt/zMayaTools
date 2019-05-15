@@ -8,13 +8,16 @@ zMayaUtils:
 - Split blend shapes into blended halves
 - Eye orientation controller
 - Character validation
+- Better editing of skinned joints
 - Hide the output window
 - Pick walk controller editing
 - Reorder channel box attributes
+- Additive pick walking hotkeys
+- Show Maya shelves as menus
+- Hierarchical RMB material list
 
 Additional nodes:
 
-- zShelfMenu: Show Maya shelves as menus
 - zRigHandle: Clean, easy to select viewport rig handles
 - zMouthController: A controller and UI for simple mouth animation
 - zArnoldMetadata: Dynamic EXR metadata with Arnold

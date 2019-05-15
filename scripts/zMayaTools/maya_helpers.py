@@ -1010,3 +1010,9 @@ def open_scene_in_explorer():
         
     util.show_file_in_explorer(scene_path)
 
+def setup_runtime_commands():
+    create_or_replace_runtime_command('zMatchPosition', category='Menu items.Command.Modify',
+        label='Match Position',
+        annotation='Match the translation and rotation of selected objects to the last-selected object.',
+        command='matchTransform -pos -rot', commandLanguage='mel')
+
