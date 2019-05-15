@@ -4,7 +4,7 @@ from maya import OpenMaya as om, OpenMayaMPx as ompx
 import zMayaTools.menus
 from zMayaTools.menus import Menu
 from zMayaTools import controller_editor, maya_helpers, material_assignment_menu, shelf_menus, joint_labelling, skin_clusters
-from zMayaTools import animation_helpers, pick_walk
+from zMayaTools import animation_helpers, pick_walk, wireframes
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
@@ -248,6 +248,7 @@ def initializePlugin(mobject):
     animation_helpers.setup_runtime_commands()
     pick_walk.setup_runtime_commands()
     maya_helpers.setup_runtime_commands()
+    wireframes.setup_runtime_commands()
 
 def uninitializePlugin(mobject):
     plugin = ompx.MFnPlugin(mobject)
