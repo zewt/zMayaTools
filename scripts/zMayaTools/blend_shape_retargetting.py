@@ -58,7 +58,7 @@ def duplicate_base_mesh(node):
 #    """
 #    Given a shape and a deformer node, attach the deformer to the shape.
 #
-#    Maya does this when yo ucreate a mesh with pm.deformer, but not if 
+#    Maya does this when you create a mesh with pm.deformer, but not if 
 #    Given a transform node with a shape, 
 #    """
 #    group_parts = pm.createNode('groupParts')
