@@ -70,6 +70,12 @@ def get_vertices(mesh):
 #    points = [om.MPoint(x, y, z) for x, y, z, in zip(points[0::3], points[1::3], points[2::3])]
     return points
 
+def get_distance(p1, p2):
+    x = p1[0] - p2[0]
+    y = p1[1] - p2[1]
+    z = p1[2] - p2[2]
+    return math.pow(x*x+y*y+z*z, .5)
+
 def format_pos(pos):
     return '%.4f %.4f %.4f' % (pos[0], pos[1], pos[2])
 
@@ -107,12 +113,6 @@ class Validate(object):
                 (len(base_points), len(output_points)),
                 nodes=[self.node])
             return
-
-        def get_distance(p1, p2):
-            x = p1[0] - p2[0]
-            y = p1[1] - p2[1]
-            z = p1[2] - p2[2]
-            return math.pow(x*x+y*y+z*z, .5)
 
         # Count the number of vertices that are in a different place in the output mesh than the input mesh
         # by different levels of error.
@@ -164,6 +164,57 @@ class Validate(object):
                 verts = ' '.join('%s.vtx[%i]' % (shape_name, idx) for idx in tweaked_vertices)
                 self.log('Mesh has %i %s on its tweak node %s' % (len(tweaked_vertices), 'modification' if len(tweaked_vertices) == 1 else 'modifications',
                     tweak_node.nodeName()), nodes=verts)
+
+    def check_overlapping_vertices(self):
+        """
+        Verify that meshes have no overlapping vertices.
+
+        Note that this will fail if the overlap threshold is so high that all vertices are
+        merged, since polyMergeVert will fail with a "Can't perform polyMergeVert on selection"
+        error.
+        """
+        shape = self.node.getShape()
+
+        # Delete any nodes created while doing this when we're done.
+        with maya_helpers.temporary_namespace():
+            # Create a polyMergeVert to remove overlapping vertices, outputting to a temporary mesh.
+            merge_vert = pm.createNode('polyMergeVert', name='TempMergeVert')
+            merge_vert.inputComponents.set((1, 'vtx[*]'), type='componentList')
+            merge_vert.distance.set(self.config['vertex_overlap_threshold'])
+            temp_mesh = pm.createNode('mesh', name='TempMesh')
+            shape.outMesh.connect(merge_vert.inputPolymesh, force=True)
+
+            # Why does mesh.inMesh print a "Defaulting to MFnDagNode" warning?
+            # merge_vert.attr('output') #.connect(temp_mesh.inMesh)
+            cmds.connectAttr(str(merge_vert.output), '%s.inMesh' % temp_mesh.name())
+
+            # polyMergeVert always removes vertices without reordering them, so we can figure out which
+            # vertices were actually removed by walking through both vertex lists in order.  This won't
+            # tell us which vertex it matched against, but it'll give enough information for us to highlight
+            # the problem.
+            output_vtx_idx = 0
+            missing_vertices = []
+            input_vertices = get_vertices(shape)
+            output_vertices = get_vertices(temp_mesh)
+            for input_vtx_idx, input_vtx in enumerate(input_vertices):
+                # If we've run out of output vertices, all remaining input vertices are missing.
+                if output_vtx_idx >= len(output_vertices):
+                    missing_vertices.append(shape.vtx[input_vtx_idx])
+                    continue
+
+                output_vtx = output_vertices[output_vtx_idx]
+                distance = get_distance(input_vtx, output_vtx)
+                if distance > 0.00001:
+                    # This input vertex is missing.
+                    missing_vertices.append(shape.vtx[input_vtx_idx])
+                    continue
+
+                output_vtx_idx += 1
+
+            if missing_vertices:
+                self.log('Mesh has %i overlapping %s.' %
+                        (len(missing_vertices), 'vertex' if len(missing_vertices) == 1 else 'vertices'),
+                        nodes=missing_vertices)
 
     def check_vertex_tweaks(self, base=True):
         """
@@ -740,6 +791,9 @@ class Validate(object):
         self.check_vertex_tweaks(True)
         self.check_vertex_tweaks(False)
 
+        self.progress.set_task_progress('Checking overlapping vertices', percent=0.15, force=True)
+        self.check_overlapping_vertices()
+
         self.progress.set_task_progress('Checking skeleton', percent=0.2, force=True)
         self.check_skeleton()
 
@@ -782,6 +836,7 @@ class UI(maya_helpers.OptionsBox):
         self.optvars.add('zValidateCharacterMaxInfluences', 'int', 4)
         self.optvars.add('zValidateCharacterErrorThreshold', 'float', 0.001)
         self.optvars.add('zValidateCharacterErrorVertexThreshold', 'float', 0.001)
+        self.optvars.add('zValidateCharacterOverlappingVertexThreshold', 'float', 0.001)
 
         self.option_box = pm.columnLayout(adjustableColumn=1)
         parent = self.option_box
@@ -792,16 +847,19 @@ class UI(maya_helpers.OptionsBox):
         pm.intSliderGrp('valMaxInfluences', label='Max joint influences', field=True, min=0, max=10)
         pm.floatSliderGrp('valJointErrorThreshold', label='Symmetry error threshold (joints)', field=True, fieldMinValue=0.00001, fieldMaxValue=10, min=0, max=0.1)
         pm.floatSliderGrp('valVertexErrorThreshold', label='Symmetry error threshold (vertices)', field=True, fieldMinValue=0.00001, fieldMaxValue=10, min=0, max=0.1)
+        pm.floatSliderGrp('valOverlappingVertexThreshold', label='Overlapping vertex threshold', field=True, fieldMinValue=0.00001, fieldMaxValue=10, min=0, max=0.1)
 
     def option_box_save(self):
         self.optvars['zValidateCharacterMaxInfluences'] = pm.intSliderGrp('valMaxInfluences', q=True, v=True)
         self.optvars['zValidateCharacterErrorThreshold'] = pm.floatSliderGrp('valJointErrorThreshold', q=True, v=True)
         self.optvars['zValidateCharacterErrorVertexThreshold'] = pm.floatSliderGrp('valVertexErrorThreshold', q=True, v=True)
+        self.optvars['zValidateCharacterOverlappingVertexThreshold'] = pm.floatSliderGrp('valOverlappingVertexThreshold', q=True, v=True)
 
     def option_box_load(self):
         pm.intSliderGrp('valMaxInfluences', edit=True, v=self.optvars['zValidateCharacterMaxInfluences'])
         pm.floatSliderGrp('valJointErrorThreshold', edit=True, v=self.optvars['zValidateCharacterErrorThreshold'])
         pm.floatSliderGrp('valVertexErrorThreshold', edit=True, v=self.optvars['zValidateCharacterErrorVertexThreshold'])
+        pm.floatSliderGrp('valOverlappingVertexThreshold', edit=True, v=self.optvars['zValidateCharacterOverlappingVertexThreshold'])
         
     def option_box_apply(self):
         pm.setParent(self.option_box)
@@ -810,6 +868,7 @@ class UI(maya_helpers.OptionsBox):
             'max_influences': pm.intSliderGrp('valMaxInfluences', q=True, v=True),
             'error_threshold': pm.floatSliderGrp('valJointErrorThreshold', q=True, v=True),
             'vertex_error_threshold': pm.floatSliderGrp('valVertexErrorThreshold', q=True, v=True),
+            'vertex_overlap_threshold': pm.floatSliderGrp('valOverlappingVertexThreshold', q=True, v=True),
         }
 
         nodes = pm.ls(sl=True)

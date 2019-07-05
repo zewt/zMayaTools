@@ -76,6 +76,10 @@ Meshes are topologically symmetric around edges on the YZ plane.  This is tested
 by attempting to activate topological symmetry (there's no API exposed for this).
 </li>
 <li>Mesh vertices are symmetric in world space across the YZ plane.</li>
+<li>
+Meshes have no overlapping vertices.  These are usually unintentional, and can
+cause bad deformations, and problems with normals and mesh smoothing.
+</li>
 </ul>
 
 <h2>Skeleton validations</h2>
