@@ -551,6 +551,27 @@ def without_undo():
         pm.undoInfo(stateWithoutFlush=undo_state)
 
 @contextlib.contextmanager
+def temporary_namespace():
+    """
+    Create a temporary namespace, and delete the namespace and all of its contents at the end of
+    the block.
+
+    The allows creating temporary nodes, guaranteeing that they'll be deleted when the block ends.
+    """
+    try:
+        # Create a temporary namespace to work in.  This lets us clean up when we're done by just deleting
+        # the whole namespace.
+        old_namespace = pm.namespaceInfo(currentNamespace=True)
+        temporary_namespace = ':' + pm.namespace(add='temp#')
+        pm.namespace(setNamespace=temporary_namespace)
+
+        yield
+    finally:
+        # Delete the temporary namespace.
+        pm.namespace(setNamespace=old_namespace)
+        pm.namespace(rm=':' + temporary_namespace, deleteNamespaceContent=True)
+
+@contextlib.contextmanager
 def disable_auto_keyframe():
     """
     Disable auto-keyframe within a with block.

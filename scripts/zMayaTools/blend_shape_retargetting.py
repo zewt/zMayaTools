@@ -122,33 +122,25 @@ def redst_blend_shapes(src_node, dst_node, src_blend_shape_node, dst_blend_shape
         # Remember the selection, so we can restore it.
         old_selection = pm.ls(sl=True)
 
-        # Create a temporary namespace to work in.  This lets us clean up when we're done by just deleting
-        # the whole namespace.
-        old_namespace = pm.namespaceInfo(currentNamespace=True)
-        pm.namespace(add='temp')
-        pm.namespace(setNamespace='temp')
+        # Delete any nodes created while doing this when we're done.
+        with maya_helpers.temporary_namespace():
+            with maya_helpers.restores() as restores:
+                prep_for_retargetting(src_blend_shape_node, restores)
+                src_to_dst_weights = redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend_shape_node, blend_shape_indices, use_cvwrap=use_cvwrap)
 
-        with maya_helpers.restores() as restores:
-            prep_for_retargetting(src_blend_shape_node, restores)
-            src_to_dst_weights = redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend_shape_node, blend_shape_indices, use_cvwrap=use_cvwrap)
+            # Copy or connect weights.  Do this after we finish the above, since we need to let maya_helpers.restores()
+            # restore the original weights before we copy them, or they'll all be set to 0.
+            for src_weight, dst_weight in src_to_dst_weights.items():
+                if connect_weights:
+                    # Connect the source blend shape's weight to the target.
+                    src_weight.connect(dst_weight)
+                else:
+                    # Copy the source weight.
+                    dst_weight.set(src_weight.get())
 
-        # Copy or connect weights.  Do this after we finish the above, since we need to let maya_helpers.restores()
-        # restore the original weights before we copy them, or they'll all be set to 0.
-        for src_weight, dst_weight in src_to_dst_weights.items():
-            if connect_weights:
-                # Connect the source blend shape's weight to the target.
-                src_weight.connect(dst_weight)
-            else:
-                # Copy the source weight.
-                dst_weight.set(src_weight.get())
-
-        return src_to_dst_weights
+            return src_to_dst_weights
     finally:
         pm.waitCursor(state=False)
-
-        # Delete the temporary namespace.
-        pm.namespace(setNamespace=old_namespace)
-        pm.namespace(rm=':temp', deleteNamespaceContent=True)
 
         pm.select(old_selection)
 
