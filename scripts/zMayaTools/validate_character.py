@@ -871,7 +871,28 @@ class UI(maya_helpers.OptionsBox):
             'vertex_overlap_threshold': pm.floatSliderGrp('valOverlappingVertexThreshold', q=True, v=True),
         }
 
-        nodes = pm.ls(sl=True)
+        selection = pm.ls(sl=True)
+
+        # Convert the selection to transforms, so we work even if components are selected.
+        nodes = []
+        for obj in selection:
+            if isinstance(obj, pm.general.Component):
+                node = obj.node().getTransform()
+            elif isinstance(obj, pm.nodetypes.Transform):
+                node = obj
+            elif isinstance(obj, pm.nodetypes.Mesh):
+                node = obj.getTransform()
+            else:
+                log.info('Can\'t check %s (not a mesh)', str(obj))
+                continue
+
+            # In case multiple vertices are selected, don't add the same transform more than
+            # once.  We use a simple search for this rather than converting to a set, since
+            # we won't have enough entries in nodes for it to matter, and this preserves the
+            # order of the selection.
+            if node not in nodes:
+                nodes.append(node)
+
         if not nodes:
             log.warning('Select one or more meshes to validate')
             return
