@@ -120,6 +120,8 @@ def set_controller_parent(controller, parent, after=None):
     controller -p should do this, but the docs don't really describe how it works and
     there doesn't seem to be any way to change the parent of a controller to be a root.
     """
+    assert controller != parent
+
     if after is at_end:
         if parent is None:
             raise Exception('parent must be specified if after is at_end')
@@ -287,7 +289,6 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
         self.addAction(redo)
 
         self.shown = False
-        self.callback_ids = om.MCallbackIdArray()
 
         style = r'''
         /* Maya's checkbox style makes the checkbox invisible when it's deselected,
@@ -311,10 +312,8 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
         self.ui.setupUi(self)
 
         self.ui.controllerTree.setSelectionMode(Qt.QAbstractItemView.SingleSelection)
-        self.ui.controllerTree.setDragEnabled(True)
-        self.ui.controllerTree.viewport().setAcceptDrops(True)
         self.ui.controllerTree.setDropIndicatorShown(True)
-        self.ui.controllerTree.setDragDropMode(Qt.QAbstractItemView.InternalMove)
+        self.ui.controllerTree.setDragDropMode(Qt.QAbstractItemView.DragDrop)
         self.ui.controllerTree.setColumnCount(4)
         self.ui.controllerTree.header().setSectionResizeMode(Qt.QHeaderView.ResizeToContents)
 
@@ -442,10 +441,15 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
                 continue
             _remove_gaps_in_child_list(controller)
 
-    def dragged_internally(self, source, target, indicator_position):
+    def dragged_internally(self, target, indicator_position):
+        source = self.ui.controllerTree.currentItem()
         self.dragged_controller(source.controller_node, target.controller_node if target is not None else None, indicator_position)
 
     def dragged_controller(self, source, target, indicator_position):
+        # Stop if the node is already in the right place.
+        if source == target:
+            return
+
         if indicator_position == Qt.QAbstractItemView.DropIndicatorPosition.OnViewport:
             # Dragging an object onto nothing makes it a root.
             set_controller_parent(source, None)
