@@ -353,7 +353,7 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
     def create_controller_for_selected_object(self):
         nodes = pm.ls(sl=True, type='transform')
         if not nodes:
-            pm.info('Select one or more object to create a controller for')
+            pm.info('Select one or more objects to create a controller for')
             return
 
         with maya_helpers.undo():
@@ -594,7 +594,7 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
         super(ControllerEditor, self).close()
 
     def select_selected_controller(self):
-        # If a transforom is selected that has a controller, select the controller
+        # If a transform is selected that has a controller, select the controller
         # in the tree.
         nodes = pm.ls(sl=True, type='transform')
         if not nodes:
