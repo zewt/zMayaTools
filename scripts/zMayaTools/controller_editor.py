@@ -7,7 +7,7 @@ import maya
 from maya import OpenMaya as om
 from maya.app.general import mayaMixin
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-from zMayaTools import maya_helpers, maya_logging, Qt, qt_helpers
+from zMayaTools import maya_helpers, maya_logging, Qt, qt_helpers, maya_callbacks
 from zMayaTools.menus import Menu
 reload(qt_helpers)
 
@@ -169,103 +169,14 @@ def set_controller_parent(controller, parent, after=None):
         # Reconnect the children.
         assign_controller_children(parent, all_children)
 
-class ControllerListener(object):
-    """
-    Listen for changes to controllers, so we can refresh the UI.
-    """
-    def __init__(self):
-        self.callback_ids = om.MCallbackIdArray()
-        self.registered = False
-        self.change_callback = None
-        self.selection_changed_callback = None
-
-    def set_changed_callback(self, callback):
-        """
-        Set the callable to run when controllers change.
-        """
-        self.change_callback = callback
-
-    def set_selection_changed_callback(self, callback):
-        """
-        Set the callable to run when the selection changes.
-        """
-        self.selection_changed_callback = callback
-
-    def __del__(self):
-        self.unregister()
-
-    def register(self):
-        if self.registered:
-            return
-        self.registered = True
-        
-        self.callback_ids.append(om.MEventMessage.addEventCallback('SelectionChanged', self._selection_changed))
-
-        msg = om.MDGMessage()
-        self.callback_ids.append(msg.addNodeAddedCallback(self._node_added, 'controller', None))
-        self.callback_ids.append(msg.addNodeRemovedCallback(self._node_removed, 'controller', None))
-        for node in pm.ls(type='controller'):
-            self.callback_ids.append(om.MNodeMessage.addAttributeChangedCallback(node.__apimobject__(), self._attribute_changed, None))
-
-            # Listen for controller objects being renamed, so we update node names.
-            controller_object = get_controller_object(node)
-            if controller_object is not None:
-                self.callback_ids.append(om.MNodeMessage.addNameChangedCallback(controller_object.__apimobject__(), self._node_renamed))
-
-    def unregister(self):
-        if not self.registered:
-            return
-        self.registered = False
-
-        msg = om.MMessage()
-        msg.removeCallbacks(self.callback_ids)
-        self.callback_ids.clear()
-
-    def _reregister(self):
-        if not self.registered:
-            return
-
-        self.unregister()
-        self.register()
-
-    def _attribute_changed(self, msg, plug, otherPlug, data):
-        if msg & (om.MNodeMessage.kConnectionMade | om.MNodeMessage.kConnectionBroken):
-            qt_helpers.run_async_once(self._run_change_callback)
-
-    def _node_added(self, node, data):
-        qt_helpers.run_async_once(self._reregister)
-        qt_helpers.run_async_once(self._run_change_callback)
-
-    def _node_removed(self, node, data):
-        qt_helpers.run_async_once(self._reregister)
-        qt_helpers.run_async_once(self._run_change_callback)
-
-    def _node_renamed(self, node, old_name, unused):
-        qt_helpers.run_async_once(self._run_change_callback)
-
-    def _run_change_callback(self):
-        if self.change_callback:
-            self.change_callback()
-
-    def _selection_changed(self, unused):
-        qt_helpers.run_async_once(self._run_selection_changed_callback)
-
-    def _run_selection_changed_callback(self):
-        if self.selection_changed_callback:
-            self.selection_changed_callback()
-
 class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
     def done(self, result):
         self.close()
         super(MayaQWidgetDockableMixin, self).done(result)
 
     def _check_listeners(self):
-        if not self.shown:
-            # If we're listening, stop.
-            self.listener.unregister()
-            return
-
-        self.listener.register()
+        self.callbacks.registered = self.shown
+        self.listener.registered = self.shown
 
     def __init__(self):
         super(ControllerEditor, self).__init__()
@@ -273,9 +184,9 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
         self.controllers_to_items = {}
         self.currently_refreshing = False
 
-        self.listener = ControllerListener()
-        self.listener.set_changed_callback(self.populate_tree)
-        self.listener.set_selection_changed_callback(self.select_selected_controller)
+        self.listener = maya_callbacks.NodeChangeListener('controller', self.populate_tree)
+        self.callbacks = maya_callbacks.MayaCallbackList()
+        self.callbacks.add(self.select_selected_controller, lambda func: om.MEventMessage.addEventCallback('SelectionChanged', func))
 
         # How do we make our window handle global hotkeys?
         undo = Qt.QAction('Undo', self)
@@ -567,7 +478,8 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
         self.cleanup()
 
     def cleanup(self):
-        self.listener.unregister()
+        self.callbacks.registered = False
+        self.listener.registered = False
 
     def showEvent(self, event):
         # Why is there no isShown()?

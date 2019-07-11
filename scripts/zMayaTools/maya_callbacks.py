@@ -152,3 +152,81 @@ class MayaCallbackList(object):
         for callback in self.callbacks:
             callback.registered = value
 
+class NodeChangeListener(object):
+    """
+    Listen for changes to nodes, so we can refresh the UI.
+
+    The callback is called when any node of node_type:
+    - is created or deleted
+    - has an attribute connected or disconnected
+    - is renamed
+    
+    In addition, the callback is called when any node with a direct connection to
+    a node of node_type is renamed.
+
+    This is used to refresh UI.
+    """
+    def __init__(self, node_type, callback):
+        self.node_type = node_type
+        self.change_callback = callback
+
+        self.callbacks = MayaCallbackList()
+        self.node_callbacks = MayaCallbackList()
+
+        # Register non-node-specific listeners.
+        msg = om.MDGMessage()
+        self.callbacks.add(self._refresh_nodes_and_run_change_callback, lambda func: msg.addNodeAddedCallback(func, self.node_type, None))
+        self.callbacks.add(self._refresh_nodes_and_run_change_callback, lambda func: msg.addNodeRemovedCallback(func, self.node_type, None))
+
+    def __del__(self):
+        self.registered = False
+
+    def get_related_nodes(self, node):
+        """
+        Return nodes that should also be observed for the given node.
+
+        For example, if blendShape is being monitored, this can return connected blendShape
+        targets, and the changed callback will be called if any of those nodes are renamed.
+        """
+        # By default, all directly connected nodes are related.
+        return list(set(pm.listConnections(node)))
+
+    def _refresh_node_listeners(self):
+        """
+        Create node-specific listeners.
+        """
+        self.node_callbacks.clear()
+
+        msg = om.MDGMessage()
+        for node in pm.ls(type=self.node_type):
+            self.node_callbacks.add_callback(AttributeChangedCallback(
+                self._refresh_nodes_and_run_change_callback,
+                node,
+                mask=om.MNodeMessage.kConnectionMade | om.MNodeMessage.kConnectionBroken))
+
+            self.node_callbacks.add(self._run_change_callback, lambda func: om.MNodeMessage.addNameChangedCallback(node.__apimobject__(), func, None))
+
+            related_nodes = self.get_related_nodes(node)
+            for related_node in related_nodes:
+                self.node_callbacks.add(self._run_change_callback, lambda func: om.MNodeMessage.addNameChangedCallback(related_node.__apimobject__(), func, None))
+
+    @property
+    def registered(self):
+        return self.callbacks.registered
+
+    @registered.setter
+    def registered(self, value):
+        # If we weren't registered, we weren't listening for node changes, so refresh node listeners.
+        if not self.callbacks.registered and value:
+            self._refresh_node_listeners()
+        
+        self.callbacks.registered = self.node_callbacks.registered = value
+
+    def _refresh_nodes_and_run_change_callback(self):
+        self._refresh_node_listeners()
+        self._run_change_callback()
+
+    def _run_change_callback(self):
+        if self.change_callback:
+            self.change_callback()
+
