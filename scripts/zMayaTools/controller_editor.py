@@ -7,9 +7,8 @@ import maya
 from maya import OpenMaya as om
 from maya.app.general import mayaMixin
 from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-from zMayaTools import maya_helpers, maya_logging, Qt, qt_helpers, maya_callbacks
+from zMayaTools import maya_helpers, maya_logging, Qt, qt_helpers, maya_callbacks, dockable_window
 from zMayaTools.menus import Menu
-reload(qt_helpers)
 
 import maya.OpenMayaUI as omui
 from maya.OpenMaya import MGlobal
@@ -169,15 +168,7 @@ def set_controller_parent(controller, parent, after=None):
         # Reconnect the children.
         assign_controller_children(parent, all_children)
 
-class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
-    def done(self, result):
-        self.close()
-        super(MayaQWidgetDockableMixin, self).done(result)
-
-    def _check_listeners(self):
-        self.callbacks.registered = self.shown
-        self.listener.registered = self.shown
-
+class ControllerEditor(dockable_window.DockableWindow):
     def __init__(self):
         super(ControllerEditor, self).__init__()
 
@@ -187,31 +178,6 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
         self.listener = maya_callbacks.NodeChangeListener('controller', self.populate_tree)
         self.callbacks = maya_callbacks.MayaCallbackList()
         self.callbacks.add(self.select_selected_controller, lambda func: om.MEventMessage.addEventCallback('SelectionChanged', func))
-
-        # How do we make our window handle global hotkeys?
-        undo = Qt.QAction('Undo', self)
-        undo.setShortcut(Qt.Qt.CTRL + Qt.Qt.Key_Z)
-        undo.triggered.connect(lambda: pm.undo())
-        self.addAction(undo)
-
-        redo = Qt.QAction('Redo', self)
-        redo.setShortcut(Qt.Qt.CTRL + Qt.Qt.Key_Y)
-        redo.triggered.connect(lambda: pm.redo(redo=True))
-        self.addAction(redo)
-
-        self.shown = False
-
-        style = r'''
-        /* Maya's checkbox style makes the checkbox invisible when it's deselected,
-         * which makes it impossible to tell that there's even a checkbox there to
-         * click.  Adjust the background color to fix this. */
-        QTreeView::indicator:unchecked {
-            background-color: #000;
-        }
-        '''
-        self.setStyleSheet(style)
-
-        qt_helpers.compile_all_layouts()
 
         from zMayaTools.qt_widgets import controller_tree_widget
         reload(controller_tree_widget)
@@ -474,40 +440,11 @@ class ControllerEditor(MayaQWidgetDockableMixin, Qt.QDialog):
         """
         qt_helpers.run_async_once(self.refresh)
 
-    def __del__(self):
-        self.cleanup()
+    def shownChanged(self):
+        super(ControllerEditor, self).shownChanged()
 
-    def cleanup(self):
-        self.callbacks.registered = False
-        self.listener.registered = False
-
-    def showEvent(self, event):
-        # Why is there no isShown()?
-        if self.shown:
-            return
-        self.shown = True
-
-        # Refresh when we're displayed.
-        self._check_listeners()
-
-        super(ControllerEditor, self).showEvent(event)
-
-    def hideEvent(self, event):
-        if not self.shown:
-            return
-        self.shown = False
-
-        self._check_listeners()
-
-        super(ControllerEditor, self).hideEvent(event)
-
-    def dockCloseEventTriggered(self):
-        # Bug workaround: closing the dialog by clicking X doesn't call closeEvent.
-        self.cleanup()
-    
-    def close(self):
-        self.cleanup()
-        super(ControllerEditor, self).close()
+        self.callbacks.registered = self.shown
+        self.listener.registered = self.shown
 
     def select_selected_controller(self):
         # If a transform is selected that has a controller, select the controller
