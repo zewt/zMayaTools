@@ -191,7 +191,6 @@ class ControllerEditor(dockable_window.DockableWindow):
         self.ui.controllerTree.setSelectionMode(Qt.QAbstractItemView.SingleSelection)
         self.ui.controllerTree.setDropIndicatorShown(True)
         self.ui.controllerTree.setDragDropMode(Qt.QAbstractItemView.DragDrop)
-        self.ui.controllerTree.setColumnCount(4)
         self.ui.controllerTree.header().setSectionResizeMode(Qt.QHeaderView.ResizeToContents)
 
         self.ui.controllerTree.dragged_internally.connect(self.dragged_internally)
