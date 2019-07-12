@@ -28,11 +28,16 @@ class DockableWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         redo.triggered.connect(lambda: pm.redo(redo=True))
         self.addAction(redo)
 
+        style = ''
         # Maya's checkbox style makes the checkbox invisible when it's deselected,
         # which makes it impossible to tell that there's even a checkbox there to
         # click.  Adjust the background color to fix this.
-        style = 'QTreeView::indicator:unchecked { background-color: #000; }'
-        self.setStyleSheet(style)
+        style += 'QTreeView::indicator:unchecked { background-color: #000; }'
+
+        # Make tree and list view items slightly larger by default.
+        style += 'QTreeView::item { height: 20px; }'
+        style += 'QListView::item { height: 26px; }'
+        self.setStyleSheet(self.styleSheet() + style)
 
     def __del__(self):
         self.shown = False
