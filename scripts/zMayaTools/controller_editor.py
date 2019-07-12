@@ -407,8 +407,14 @@ class ControllerEditor(dockable_window.DockableWindow):
             else:
                 parent.addChild(item)
 
+            # By default, expand everything except the first level.  This way, top-level
+            # controllers are closed to keep the list small, but you don't have to expand
+            # controllers one by one to find things.  It would be nicer to support shift-clicking
+            # the expansion button like Maya does, but this seems to be a pain with QT.
+            #
             # Expand the node if it's new or if it was expanded previously.
-            if old_nodes.get(node, True):
+            expand_by_default = level != 0
+            if old_nodes.get(node, expand_by_default):
                 self.ui.controllerTree.expandItem(item)
  
             # If this controller was selected, reselect it.
