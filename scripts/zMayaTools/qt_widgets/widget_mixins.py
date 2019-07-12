@@ -109,6 +109,45 @@ class DragFromMayaMixin(object):
 
         super(DragFromMayaMixin, self).dropEvent(event)
 
+    def dragMoveEvent(self, event):
+        # In QT 4, QAbstractItemViewPrivate::position normally gives a margin of 2 pixels
+        # on the top and bottom for AboveItem and BelowItem, which is much too small and makes
+        # dragging painful.  In QT 5 it gives a fraction of the heigh, which is much more usable.
+        # Maya uses QT 5, and its built-in UIs like the shape editor have QT 5's behavior, but
+        # for some reason QTreeView, etc. still have QT 4's behavior.
+        #
+        # Work around this by looking at the event position.  If it's in a position where an
+        # above or below drag should be happening, snap the drag position to the boundary so
+        # it's treated as an above or below drag.
+        pos = event.pos()
+        index = self.indexAt(event.pos())
+        if index.isValid():
+            rect = self.visualRect(index)
+            margin = round(float(rect.height()) / 5.5)
+            margin = min(max(margin, 2), 12)
+            if pos.y() < margin + rect.top() :
+                # Move the drag position to the top of the item, forcing AboveItem.
+                pos.setY(rect.top())
+            elif pos.y() > rect.bottom() - margin:
+                # Move the drag position to the bottom of the item, forcing BelowItem.
+                pos.setY(rect.bottom())
+            elif rect.contains(pos, True):
+                # Move the drag position to the center of the item, forcing OnItem.
+                pos.setY((rect.bottom() + rect.top()) / 2)
+            
+        # Create a new, equivalent QDragMoveEvent with our adjusted position.
+        #
+        # The QT docs say not to construct these.  But, it doesn't offer any alternative,
+        # there's no setPos, and this works fine.
+        event2 = Qt.QDragMoveEvent(
+                pos,
+                event.dropAction(),
+                event.mimeData(),
+                event.mouseButtons(),
+                event.keyboardModifiers(),
+                event.type())
+        super(DragFromMayaMixin, self).dragMoveEvent(event2)
+
     def mouseMoveEvent(self, event):
         # Match Maya's behavior and only drag on MMB-drag, since Qt's LMB-dragging is
         # broken with multiple selection.
