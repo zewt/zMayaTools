@@ -249,7 +249,7 @@ class ControllerEditor(dockable_window.DockableWindow):
                 if not controller:
                     continue
 
-                self.dragged_controller(controller, target.controller_node if target is not None else None, indicator_position)
+                self.dragged_controller(controller, target, indicator_position)
 
     def create_controller_for_objects(self, nodes):
         """
@@ -319,9 +319,20 @@ class ControllerEditor(dockable_window.DockableWindow):
 
     def dragged_internally(self, target, indicator_position):
         source = self.ui.controllerTree.currentItem()
-        self.dragged_controller(source.controller_node, target.controller_node if target is not None else None, indicator_position)
+        self.dragged_controller(source.controller_node, target, indicator_position)
 
     def dragged_controller(self, source, target, indicator_position):
+        # Dragging above an item is the same as dragging below the item above it, or
+        # the viewport if it's at the top.
+        if indicator_position == Qt.QAbstractItemView.DropIndicatorPosition.AboveItem:
+            target = self.ui.controllerTree.itemAbove(target)
+            if target is None:
+                indicator_position = Qt.QAbstractItemView.DropIndicatorPosition.OnViewport
+            else:
+                indicator_position = Qt.QAbstractItemView.DropIndicatorPosition.BelowItem
+        
+        target = target.controller_node if target is not None else None
+        
         # Stop if the node is already in the right place.
         if source == target:
             return
@@ -344,25 +355,7 @@ class ControllerEditor(dockable_window.DockableWindow):
                 set_controller_parent(source, target)
             else:
                 target_parent = get_controller_parent(target)
-                if target_parent is None:
-                    return
-                    
                 set_controller_parent(source, target_parent, after=target)
-
-        if indicator_position == Qt.QAbstractItemView.DropIndicatorPosition.AboveItem:
-            target_parent = get_controller_parent(target)
-            if target_parent is None:
-                return
-                
-            # Move the source to the same parent as the target, placing it before the target.
-            children = get_controller_children(target_parent)
-            target_position = children.index(target)
-            if target_position == 0:
-                # Place it at the beginning.
-                after_node = None
-            else:
-                after_node = children[target_position-1]
-            set_controller_parent(source, target_parent, after=after_node)
 
     def populate_tree(self):
         # Don't update the scene selection to follow the tree selection as we clear and recreate
