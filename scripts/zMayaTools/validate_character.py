@@ -52,6 +52,12 @@ log = maya_logging.get_log()
 # since negative tiles cause ugly tile filenames.
 # XXX: Add a way to silence warnings by adding an attribute to meshes.
 
+# Constants for pm.polySelectConstraint:
+constraint_vertex = 0x0001
+constraint_edge = 0x8000
+constraint_face = 0x0008
+constraint_uv = 0x0010
+
 def get_vertices(mesh):
     # Meshes with no data can either crash during pm.xform or raise an exception.
     try:
@@ -783,6 +789,54 @@ class Validate(object):
             self.log('Mesh has %i lamina %s' %
                 (lamina_face_count, 'faces' if lamina_face_count != 1 else 'face'),
                 nodes=lamina_faces)
+
+        # Degenerate faces
+        min_face_area = 0.0001
+        pm.select(self.node)
+        pm.polySelectConstraint(mode=3, type=constraint_face, geometricarea=True, geometricareabound=(0, min_face_area))
+        degenerate_faces = pm.ls(sl=True)
+        pm.polySelectConstraint(mode=0, type=constraint_face, geometricarea=False)
+        degenerate_face_count = sum(len(vtx) for vtx in degenerate_faces)
+        if degenerate_face_count:
+            self.log('Mesh has %i degenerate %s.' %
+                (degenerate_face_count, 'faces' if degenerate_face_count != 1 else 'face'),
+                nodes=degenerate_faces)
+
+        # Degenerate UV faces.  Degenerate UV edges would be useful too, but there's no selection constraint
+        # for that.
+        min_uv_area = 0.0000001
+        pm.select(self.node)
+        pm.polySelectConstraint(mode=3, type=constraint_uv, texturedarea=True, texturedareabound=(0, min_uv_area))
+        degenerate_uvs = pm.ls(sl=True)
+        pm.polySelectConstraint(mode=0, type=constraint_uv, texturedarea=False)
+        degenerate_uv_count = sum(len(vtx) for vtx in degenerate_uvs)
+        if degenerate_uv_count:
+            self.log('Mesh has %i degenerate %s.' %
+                (degenerate_uv_count, 'UVs' if degenerate_uv_count != 1 else 'UV'),
+                nodes=degenerate_uvs)
+
+        # Degenerate edges
+        min_edge_length = 0.0001
+        pm.select(self.node)
+        pm.polySelectConstraint(mode=3, type=constraint_edge, length=True, lengthbound=(0, min_edge_length))
+        degenerate_edges = pm.ls(sl=True)
+        pm.polySelectConstraint(mode=0, type=constraint_edge, length=False)
+        degenerate_edge_count = sum(len(vtx) for vtx in degenerate_edges)
+        if degenerate_edge_count:
+            self.log('Mesh has %i degenerate %s.' %
+                (degenerate_edge_count, 'edges' if degenerate_edge_count != 1 else 'edge'),
+                nodes=degenerate_edges)
+
+        # Ngons
+        pm.select(self.node)
+        pm.polySelectConstraint(mode=3, type=constraint_face, size=3)
+        ngons = pm.ls(sl=True)
+        pm.polySelectConstraint(mode=0, type=constraint_face, size=3)
+        ngon_count = sum(len(vtx) for vtx in ngons)
+        if ngon_count:
+            self.log('Mesh has %i %s.' %
+                (ngon_count, 'ngons' if ngon_count != 1 else 'ngon'),
+                nodes=ngons)
 
         self.progress.set_task_progress('Checking history', percent=0.1, force=True)
 
