@@ -427,6 +427,11 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         if self._currently_setting_selection:
             return
 
+        # self._ui.frameList.clear during refresh() can trigger this via itemSelectionChanged.
+        # Make sure we don't change the scene time during refresh.
+        if self._currently_refreshing:
+            return
+
         selection = self.get_selected_frame_item()
         if not selection:
             return
