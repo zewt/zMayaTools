@@ -867,6 +867,8 @@ class Validate(object):
     #        output = base
     #        output_points = base_points
 
+        self.check_uv_sets(output)
+
         # Check that the base mesh is symmetric in world space.  Note that this won't work if we give it the
         # base mesh, since polyListComponentConversion doesn't work on intermediate meshes for some reason.
         self.progress.set_task_progress('Checking topological symmetry', percent=0.4, force=True)
@@ -879,6 +881,14 @@ class Validate(object):
             self.log('%s: OK' % self.node.nodeName(), nodes=[self.node])
 
         return self.warnings
+
+    def check_uv_sets(self, shape):
+        # Check for UV sets with no name set.  These are usually caused by buggy Maya modelling
+        # operations.  They don't appear anywhere in the UI, but they trigger "invalid or unused
+        # components" warnings on load that don't tell you what the problem is.
+        for uv_set in shape.uvst:
+            if uv_set.uvSetName.get() is None:
+                self.log('UV set %i has no name' % uv_set.index(), nodes=[shape])
     
 class UI(maya_helpers.OptionsBox):
     title = 'Validate Character'
