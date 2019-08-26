@@ -564,6 +564,7 @@ def initializePlugin(obj):
 
     menu.add_menu_items()
     node_caching.enable_caching_for_node_name('zRigHandle')
+    pm.pluginDisplayFilter('zRigHandle', classification=zRigHandle.drawDbClassification, register=True, label='Rig Handles')
 
 def uninitializePlugin(obj):
     plugin = om.MFnPlugin(obj)
@@ -572,4 +573,5 @@ def uninitializePlugin(obj):
 
     menu.remove_menu_items()
     node_caching.disable_caching_for_node_name('zRigHandle')
+    pm.pluginDisplayFilter('zRigHandle', deregister=True)
 
