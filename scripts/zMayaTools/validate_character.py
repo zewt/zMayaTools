@@ -69,7 +69,7 @@ def get_vertices(mesh):
         return []
 
     # Pymel's getPoints is frighteningly slow, so we use pm.xform instead.
-    points = pm.xform(mesh.vtx, q=True, ws=True, t=True)    
+    points = pm.xform(mesh.vtx, q=True, t=True)    
     points = [(x, y, z) for x, y, z, in zip(points[0::3], points[1::3], points[2::3])]
 
     # This is convenient, but slow.
