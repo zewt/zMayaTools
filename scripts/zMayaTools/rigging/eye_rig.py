@@ -207,7 +207,7 @@ def create_eye_rig():
         # Now, create a helper to figure out the X/Y angle.  We don't need this for the eye
         # control itself, since an orient constraint will do that for us, but this gives us
         # a clean rotation value, which driven keys like eyelid controls can be placed against.
-        attr_name = 'angle_%s' % ['left', 'right'][idx]
+        attr_name = 'angle%s' % ['Left', 'Right'][idx]
         create_vector_attribute(control_mesh, attr_name)
         maya_helpers.lock_attr(control_mesh.attr('%sX' % attr_name), 'unkeyable')
         maya_helpers.lock_attr(control_mesh.attr('%sY' % attr_name), 'unkeyable')
@@ -272,10 +272,10 @@ def create_eye_rig():
 
     # Add an attribute to move the eye locators to the center.  The most useful values of this are
     # 0 and 1, but support moving further and going crosseyed.
-    pm.addAttr(control_node, ln='EyesFocused', at='double', min=-5, max=5, dv=0)
-    control_node.attr('EyesFocused').set(e=True, keyable=True)
-    control_node.attr('EyesFocused').connect(locator_distance_range.attr('valueX'))
-    control_node.attr('EyesFocused').connect(locator_distance_range.attr('valueY'))
+    pm.addAttr(control_node, ln='eyesFocused', at='double', min=-5, max=5, dv=0)
+    control_node.attr('eyesFocused').set(e=True, keyable=True)
+    control_node.attr('eyesFocused').connect(locator_distance_range.attr('valueX'))
+    control_node.attr('eyesFocused').connect(locator_distance_range.attr('valueY'))
 
     # Move the control mesh to the top of the container.
     pm.reorder(control_mesh, front=True)
