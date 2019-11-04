@@ -95,12 +95,68 @@ def _make_ball():
         omr.MUIDrawManager.kTriangles: tris,
     }
 
+# A slightly larger shape that can sit around the others.  This is useful for things like
+# pivots.
+def _make_orbit():
+    def make_box(x, y, z):
+        s = 1/6.0
+        box = [
+            (-s, -s, +s), # top
+            (+s, -s, +s),
+            (+s, -s, -s),
+            (-s, -s, -s),
+
+            (-s, +s, +s), # bottom
+            (+s, +s, +s),
+            (+s, +s, -s),
+            (-s, +s, -s),
+
+            (-s, -s, +s), # left
+            (-s, +s, +s),
+            (-s, +s, -s),
+            (-s, -s, -s),
+
+            (+s, -s, +s), # right
+            (+s, +s, +s),
+            (+s, +s, -s),
+            (+s, -s, -s),
+
+            (-s, +s, +s), # front
+            (+s, +s, +s),
+            (+s, -s, +s),
+            (-s, -s, +s),
+
+            (-s, +s, -s), # back
+            (+s, +s, -s),
+            (+s, -s, -s),
+            (-s, -s, -s),
+        ]
+
+        result = []
+        for vx, vy, vz in box:
+            result.append((vx + x, vy + y, vz + z))
+        return result
+
+    boxes = []
+    boxes.extend(make_box(-1, 0, 0))
+    boxes.extend(make_box(+1, 0, 0))
+    boxes.extend(make_box( 0, 0,+1))
+    boxes.extend(make_box( 0, 0,-1))
+
+    return {
+        'quads': boxes
+    }
+
+
 shapes = [{
     'name': 'Ball',
     'geometry': _make_ball(),
 }, {
     'name': 'Pyramid',
     'geometry': _make_pyramid(),
+}, {
+    'name': 'Pivot',
+    'geometry': _make_orbit(),
 }]
 
 def _convert_shape(shape):
