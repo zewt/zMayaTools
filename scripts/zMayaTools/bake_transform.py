@@ -14,7 +14,7 @@ import math, time
 import pymel.core as pm
 from maya import OpenMaya as om
 from maya import OpenMayaAnim as oma
-from zMayaTools import maya_helpers
+from zMayaTools import maya_helpers, util
 
 # This isn't in the v1 API, but mixing it seems safe.
 from maya.api.MDGContextGuard import MDGContextGuard    
@@ -23,32 +23,27 @@ from zMayaTools import maya_logging
 log = maya_logging.get_log()
 
 def bake_transform(*args, **kwargs):
-    with maya_helpers.restores() as restores:
-        # Temporarily pause the viewport.
-        #
-        # This is only needed because the progress window needs to force a refresh, and refreshing
-        # makes this 4x slower if viewports are enabled.
-        restores.append(maya_helpers.SetAndRestorePauseViewport(True))
-
-        min_frame = int(pm.playbackOptions(q=True, min=True))
-        max_frame = int(pm.playbackOptions(q=True, max=True))
-
-        # This should be cancellable, but for some reason the cancel button callback
-        # never gets called.
-        with maya_helpers.ProgressWindowMaya(1, title='Baking keyframes',
-                with_secondary_progress=False, with_cancel=False) as progress:
-            return bake_transform_internal(min_frame, max_frame, progress=progress,
-                    *args, **kwargs)
-
-def bake_transform_internal(min_frame, max_frame,
-        position=True, rotation=True, scale=False, progress=None):
     nodes = pm.ls(sl=True, type='transform')
     if len(nodes) != 2:
         log.info('Select a source and a destination transform')
         return
-    src = nodes[0]
-    dst = nodes[1]
 
+    with maya_helpers.restores() as restores:
+        min_frame = int(pm.playbackOptions(q=True, min=True))
+        max_frame = int(pm.playbackOptions(q=True, max=True))
+
+        src, dst = nodes
+
+        with maya_helpers.ProgressWindowMaya(1, title='Baking keyframes to %s' % dst.nodeName(),
+                with_secondary_progress=False, with_cancel=True) as progress:
+            try:
+                bake_transform_internal(src, dst, min_frame, max_frame, progress=progress,
+                        *args, **kwargs)
+            except util.CancelledException:
+                log.info('Bake cancelled')
+
+def bake_transform_internal(src, dst, min_frame, max_frame,
+        position=True, rotation=True, scale=False, progress=None):
     # Updating the progress window every frame is too slow, so we only update it
     # every 10 frames.
     update_progress_every = 10
