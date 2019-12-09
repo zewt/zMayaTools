@@ -602,6 +602,29 @@ def load_plugin(plugin_name, required=True):
         return False
     return True
 
+def call_on_plugin_unload(plugin_name, func):
+    """
+    Call func the next time the given plugin is unloaded.
+    """
+    # If the plugin isn't loaded, do nothing.
+    if not pm.pluginInfo(plugin_name, q=True, loaded=True):
+        log.warn('Plugin %s wasn\'t loaded', plugin_name)
+        return False
+    
+    def plugin_unloaded(s, unused):
+        plugin, plugin_path = s
+        if plugin != plugin_name:
+            return
+
+        # Unregister the callback.
+        msg = om.MMessage()
+        msg.removeCallback(callback_id)
+        
+        func()
+
+    callback_id = om.MSceneMessage.addStringArrayCallback(om.MSceneMessage.kAfterPluginUnload, plugin_unloaded)
+    return True
+
 def copy_weights_to_skincluster(src_attr, skin_cluster, shape):
     src_indices = src_attr.getArrayIndices()
     if not src_indices:
