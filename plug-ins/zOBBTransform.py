@@ -184,7 +184,7 @@ class zOBBTransform(OpenMayaMPx.MPxNode):
             dataBlock.inputValue(self.updateCurrentAttr)
 
             # Read the rotation mode and scale weight inputs.
-            rotation_mode_idx = dataBlock.inputValue(zOBBTransform.rotationModeAttr).asInt()
+            rotation_mode_idx = dataBlock.inputValue(zOBBTransform.rotationModeAttr).asShort()
             rotation_mode = _rotation_modes[rotation_mode_idx]
 
             scale_weights = []
