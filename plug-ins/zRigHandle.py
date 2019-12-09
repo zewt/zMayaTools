@@ -6,7 +6,7 @@ import maya.api.OpenMayaRender as omr
 from maya.OpenMaya import MGlobal
 import pymel.core as pm
 from zMayaTools.menus import Menu
-from zMayaTools import node_caching
+from zMayaTools import maya_helpers, node_caching
 
 # This is insane.  There are two Python APIs in Maya, and both of them are missing lots of
 # stuff, and you can't mix them except in specific careful ways.
@@ -227,7 +227,7 @@ def _getCustomShape(node):
 
     tris = []
     lines = []
-    while not it.isDone():
+    for face in maya_helpers.iterate_mesh(it):
         face = it.getPoints(om.MSpace.kObject)
 
         # The data from the iterator doesn't stay valid, so make a copy of the point.
@@ -244,8 +244,6 @@ def _getCustomShape(node):
             # triangulate with MFnMesh.polyTriangulate, but I'm not sure it's worth
             # the bother.
             pass
-
-        it.next(1)
 
     return {
         omr.MUIDrawManager.kTriangles: tris,

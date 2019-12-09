@@ -2,6 +2,7 @@ import contextlib, functools, logging, os, subprocess, time
 from contextlib import contextmanager
 from collections import namedtuple
 from pymel import core as pm
+from pymel import versions
 from maya import OpenMaya as om
 from zMayaTools import util, Qt, qt_helpers
 from maya import OpenMayaUI as omui
@@ -962,6 +963,20 @@ def quiet_pymel_warnings(func):
         finally:
             pymel_logger.removeFilter(temp_filter)
     return wrapper
+
+def iterate_mesh(iterator):
+    """
+    Iterate over an MItMeshPolygon.
+    """
+    while not iterator.isDone():
+        yield iterator
+
+        # Work around Maya 2020 removing the iterator.next() parameter.  Why didn't they
+        # just make this an optional parameter instead of making everyone do this?
+        if versions.current() >= 20200000:
+            iterator.next()
+        else:
+            iterator.next(1)
 
 def create_or_replace_runtime_command(name, *args, **kwargs):
     """
