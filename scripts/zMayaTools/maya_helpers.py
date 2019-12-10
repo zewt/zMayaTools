@@ -596,7 +596,7 @@ def load_plugin(plugin_name, required=True):
         except RuntimeError as e:
             pass
 
-    if not pm.pluginInfo(plugin_name, q=True, registered=True):
+    if not pm.pluginInfo(plugin_name, q=True, loaded=True):
         if required:
             raise RuntimeError('Plugin "%s" isn\'t available.' % plugin_name)
         return False
