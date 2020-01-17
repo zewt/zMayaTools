@@ -19,12 +19,12 @@ class DockableWindow(MayaQWidgetDockableMixin, Qt.QDialog):
 
         # How do we make our window handle global hotkeys?
         undo = Qt.QAction('Undo', self)
-        undo.setShortcut(Qt.Qt.CTRL + Qt.Qt.Key_Z)
+        undo.setShortcut(Qt.QKeySequence(Qt.Qt.CTRL + Qt.Qt.Key_Z))
         undo.triggered.connect(lambda: pm.undo())
         self.addAction(undo)
 
         redo = Qt.QAction('Redo', self)
-        redo.setShortcut(Qt.Qt.CTRL + Qt.Qt.Key_Y)
+        redo.setShortcut(Qt.QKeySequence(Qt.Qt.CTRL + Qt.Qt.Key_Y))
         redo.triggered.connect(lambda: pm.redo(redo=True))
         self.addAction(redo)
 
