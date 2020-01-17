@@ -228,7 +228,7 @@ class ControllerEditor(dockable_window.DockableWindow):
     def create_controller_for_selected_object(self):
         nodes = pm.ls(sl=True, type='transform')
         if not nodes:
-            pm.info('Select one or more objects to create a controller for')
+            log.info('Select one or more objects to create a controller for')
             return
 
         with maya_helpers.undo():
