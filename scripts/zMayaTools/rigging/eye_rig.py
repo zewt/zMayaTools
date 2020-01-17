@@ -33,10 +33,6 @@ def sanity_check_eyes(joints):
         log.warning('Warning: the selected objects aren\'t parallel on the X axis.')
     return True
 		
-def set_notes(node, note):
-    pm.addAttr(node, sn='nts', ln='notes', dt='string')
-    node.attr('notes').set(note, type='string')
-	
 def create_new_node(nodeType, nodeName=None, parent=None, nonkeyable=True):
     node = pm.createNode(nodeType)
 
@@ -93,7 +89,6 @@ def create_eye_rig():
             node2 = node2[0]
 
     joint_parent = find_shared_ancestor(joints[0], joints[1])
-#    joint_parent = pm.listRelatives(joints[0], p=True, pa=True)[0]
     if not joint_parent:
         log.error('The selected eye joints don\'t have a shared ancestor.')
         return
@@ -103,17 +98,16 @@ def create_eye_rig():
     left_pos = pm.xform(joints[0], q=True, ws=True, t=True)[0]
     right_pos = pm.xform(joints[1], q=True, ws=True, t=True)[0]
     distance = abs(left_pos - right_pos)
-    defaultDistance = distance * 3
+    defaultDistance = distance * 2
     
-    # Create the group that will hold the control.  This node sets the origin
-    # for the control, and follows the parents of the eye joints (typically the
-    # head joint).  We'll put as many nodes in this as possible, to encapsulate
-    # what we're creating.
+    # Create the group that will hold the control.  This node sets the origin for the control,
+    # and follows the parents of the eye joints (typically the head joint).  This is positioned
+    # at the head, but we set its world space rotation to identity, so the rig is always oriented
+    # the same way and not in the head's local orientation.
     container_node = create_new_node('transform', nodeName='EyeRig')
-    pm.xform(container_node, ws=True, t=average_position(joints[0], joints[1]))
-    pm.xform(container_node, ws=True, r=True, t=(0,0,defaultDistance))
-    pm.parentConstraint(joint_parent, container_node, mo=True)
-    pm.scaleConstraint(joint_parent, container_node, mo=True)
+    joint_parent.worldMatrix[0].connect(container_node.offsetParentMatrix)
+    pm.xform(container_node, ws=True, ro=(0,0,0))
+    container_node.inheritsTransform.set(False)
             
     # Create a null centered between the eyes.  This is what the control will aim at.
     center_node = create_new_node('transform', nodeName='Eye_Center', parent=container_node)
@@ -121,16 +115,30 @@ def create_eye_rig():
 
     # Create the handle.
     control_mesh = create_handle('Eyes')
-    control_mesh = pm.parent(pm.listRelatives(control_mesh, p=True, pa=True), container_node)[0]
-    pm.xform(control_mesh, os=True, t=(0,0,0))
-    control_mesh.attr('shape').set(1)
-    control_mesh.attr('localRotateX').set(90)
-    control_mesh.attr('localScale').set((2, 2, 2))
-    control_mesh.attr('v').set(keyable=False, channelBox=True)
+    control_mesh = pm.parent(pm.listRelatives(control_mesh, p=True, pa=True), container_node, r=True)[0]
+    control_mesh.shape.set(1)
+    control_mesh.localRotateX.set(90)
+    control_mesh.localScale.set((2, 2, 2))
+    control_mesh.visibility.set(keyable=False, channelBox=True)
 
-    # Set the rotation order to ZXY.  The Z rotation has no effect on the output, since we only
-    # connect to X and Y, so this keeps things transforming correctly.
-    control_mesh.attr('rotateOrder').set(2)
+    # Center the handle between the eyes, then move it forward.
+    pm.xform(control_mesh, ws=True, t=average_position(joints[0], joints[1]))
+    pm.xform(control_mesh, ws=True, r=True, t=(0,0,defaultDistance))
+
+    # Put the base transform in offsetParentMatrix, so the control's TRS is zero.
+    control_mesh.offsetParentMatrix.set(control_mesh.matrix.get())
+    control_mesh.t.set((0,0,0))
+
+    # Combine the control transform's offsetParentMatrix and matrix.  This is the actual position
+    # of the control within the coordinate space of the rig.
+    control_transform = pm.createNode('multMatrix', n='EyeRig_ControlTransform')
+    control_mesh.matrix.connect(control_transform.matrixIn[0])
+    control_mesh.offsetParentMatrix.connect(control_transform.matrixIn[1])
+    control_mesh_matrix = control_transform.matrixSum
+
+    # Set the rotation order to ZXY.  We're only rotating on X and Y, so putting Z first
+    # means we can ignore it without affecting the result.
+    control_mesh.rotateOrder.set(2)
 
     # If we weren't given a node to put controls on, put them on the control shape.
     if control_node is None:
@@ -139,143 +147,78 @@ def create_eye_rig():
     # Scaling the control won't work as expected, so lock it.  Note that we don't
     # lock rz here, since that confuses the rotation manipulator.
     for lock in 'sx', 'sy', 'sz':
-        control_mesh.attr(lock).set(lock=True, keyable=False, cb=False)
+        maya_helpers.lock_scale(control_mesh, lock='hide')
 
-    # Create a null inside the handle, and aim constrain it towards the eyes.
-    # Create a transform.  Point constrain it to the handle, and aim constrain
-    # it to the eyes.  The handle will add the rotation of this transform, so
-    # the handle points towards the eyes as it's moved around.
-    handle_aim_node = create_new_node('transform', nodeName='EyeRig_HandleAim', parent=container_node)
-    pm.pointConstraint(control_mesh, handle_aim_node, mo=False)
-    pm.aimConstraint(center_node, handle_aim_node, mo=True)
-    set_notes(handle_aim_node, 'This node is aim constrained towards the eyes, and the main control receives this node\'s rotation, so it visually points at the eyes without affecting its rotation.')
-    
-    # Set the transform of the handle to the rotation of the EyeHandleAim transform, so it's
-    # added to the visible rotation of the handle.  We could just connect the rotation to the
-    # localRotation of the handle, but we're using that to orient the handle correctly.
-    comp_node = create_new_node('composeMatrix', nodeName='EyeRig_CompMatrix1')
-    handle_aim_node.attr('rotate').connect(comp_node.attr('inputRotate'))
-    comp_node.attr('outputMatrix').connect(control_mesh.attr('transform'))
+    # Create a matrix that aims the translation control towards the center of the eyes.
+    # This gives us the rotation caused by translating the control.
+    aim_matrix = pm.createNode('aimMatrix', n='EyeRig_HandleAim')
+    aim_matrix.primaryInputAxis.set((0,0,-1))
+    control_mesh_matrix.connect(aim_matrix.inputMatrix)
+    center_node.matrix.connect(aim_matrix.primaryTargetMatrix)
 
-    # Create a group to hold the eye locators.  This is point constrained to the control.
-    eye_locator_group = create_new_node('transform', nodeName='EyeTargets', parent=container_node)
-    pm.xform(eye_locator_group, ws=True, t=pm.xform(control_mesh, q=True, ws=True, t=True))
-    eye_locator_group.attr('visibility').set(0)
-    pm.pointConstraint(control_mesh, eye_locator_group, mo=True)
+    # The aimMatrix includes the translation, which is a bit weird.  It's an aim matrix, why
+    # would you want it to include translation?  Use pickMatrix to grab just rotation.
+    pick_rotation = pm.createNode('pickMatrix', n='EyeRig_PickAimRotation')
+    pick_rotation.useTranslate.set(False)
+    pick_rotation.useScale.set(False)
+    pick_rotation.useShear.set(False)
+    aim_matrix.outputMatrix.connect(pick_rotation.inputMatrix)
 
-    # Create locators for the eye targets.  This is what the eyes actually aim towards (via
-    # the orient locators).
-    eye_locators = []
-    for idx, node in enumerate(joints):
-        eye_locator = create_new_node('locator', nodeName=['EyeLeft', 'EyeRight'][idx], parent=eye_locator_group)
-        pm.xform(eye_locator, ws=True, t=pm.xform(node, q=True, ws=True, t=True))
-        pm.xform(eye_locator, ws=True, r=True, t=(0,0,defaultDistance))
-        eye_locators.append(eye_locator)
+    translation_rotation_matrix = pick_rotation.outputMatrix
 
-    # Create nulls which will sit on top of the joints.  This is what we'll actually aim,
-    # so we can attach any rigging we want to them, and the eye joints only need a simple
-    # orient constraint to these.
-    orient_locators = []
-    for idx, node in enumerate(joints):
-        shortName = node.split('|')[-1]
-        orient_node = create_new_node('transform', nodeName='%s_Orient' % shortName, parent=container_node)
-        pm.xform(orient_node, ws=True, t=pm.xform(node, q=True, ws=True, t=True))
+    # Rotate the handle with the aim matrix, so it points towards the eyes when it's translated around.
+    # This is purely cosmetic.
+    translation_rotation_matrix.connect(control_mesh.transform)
 
-        # Create an up vector for the aim constraint.
-        up_node = create_new_node('transform', nodeName='%s_Up' % shortName, parent=container_node)
-        pm.xform(up_node, ws=True, t=pm.xform(node, q=True, ws=True, t=True))
-        pm.xform(up_node, ws=True, t=(0,1,0), r=True)
-    
-        # Note that we don't need maintain offset here, only on the final orient constraint.
-        # This way, the orient of these is always 0, making it easier to adjust.
-        pm.aimConstraint(eye_locators[idx], orient_node, mo=True, worldUpType='object', worldUpObject=up_node)
-
-        # Create a transform inside the orient node.  This rotates along with the control.
-        # By making this a child of the top-level orient transform, the aim and the rotation
-        # will combine additively.  This is the node we actually orient contrain the eye
-        # joints to.
-        orient_inner_node = create_new_node('transform', nodeName='%s_OrientInner' % shortName, parent=orient_node)
-
-        # We're going to connect RX and RY to control_mesh, so give this node the same
-        # rotation order as control_mesh.
-        orient_inner_node.attr('rotateOrder').set(2)
-        orient_locators.append(orient_inner_node)
-
-        control_mesh.attr('rotateX').connect(orient_inner_node.attr('rotateX'))
-        control_mesh.attr('rotateY').connect(orient_inner_node.attr('rotateY'))
-
-        # Now, create a helper to figure out the X/Y angle.  We don't need this for the eye
-        # control itself, since an orient constraint will do that for us, but this gives us
-        # a clean rotation value, which driven keys like eyelid controls can be placed against.
-        attr_name = 'angle%s' % ['Left', 'Right'][idx]
-        create_vector_attribute(control_mesh, attr_name)
-        maya_helpers.lock_attr(control_mesh.attr('%sX' % attr_name), 'unkeyable')
-        maya_helpers.lock_attr(control_mesh.attr('%sY' % attr_name), 'unkeyable')
-        maya_helpers.lock_attr(control_mesh.attr('%sZ' % attr_name), 'lock')
-
-        origin_node = create_new_node('locator', nodeName='%s_Origin' % shortName, parent=container_node)
-        pm.xform(origin_node, ws=True, t=pm.xform(node, q=True, ws=True, t=True))
-
-        # When forwards_node points in this direction, the angle is zero.
-        initial_vector_node = create_new_node('locator', nodeName='%s_InitialVector' % shortName, parent=origin_node)
-        pm.xform(initial_vector_node, t=(0,0,10), os=True)
-        initial_vector_node.attr('visibility').set(False)
-
-        forwards_node = create_new_node('locator', nodeName='%s_Forwards' % shortName, parent=orient_inner_node)
-        pm.xform(forwards_node, t=(0,0,10), os=True)
-        forwards_node.attr('visibility').set(False)
-
-        initial_vector_origin = pm.createNode('multMatrix', n='%s_InitialVectorOrigin' % shortName)
-        initial_vector_node.worldMatrix[0].connect(initial_vector_origin.matrixIn[0])
-        origin_node.worldInverseMatrix[0].connect(initial_vector_origin.matrixIn[1])
-
-        forwards_origin = pm.createNode('multMatrix', n='%s_ForwardsOrigin' % shortName)
-        forwards_node.worldMatrix[0].connect(forwards_origin.matrixIn[0])
-        origin_node.worldInverseMatrix[0].connect(forwards_origin.matrixIn[1])
-
-        initial_decompose = pm.createNode('decomposeMatrix', n='%s_InitialDecompose' % shortName)
-        initial_vector_origin.matrixSum.connect(initial_decompose.inputMatrix)
-
-        forwards_decompose = pm.createNode('decomposeMatrix', n='%s_ForwardsDecompose' % shortName)
-        forwards_origin.matrixSum.connect(forwards_decompose.inputMatrix)
-
-        angle_node = pm.createNode('angleBetween', n='%s_Angle' % shortName)
-        initial_decompose.outputTranslate.connect(angle_node.vector1)
-        forwards_decompose.outputTranslate.connect(angle_node.vector2)
-
-        angle_node.euler.connect(control_mesh.attr(attr_name))
-        
-    # Constrain the eye joints to the orient transform.
-    for idx, node in enumerate(joints):
-        pm.orientConstraint(orient_locators[idx], joints[idx], mo=True)
-    
-    # Create a setRange node.  This will translate from the eye locator X position (distance from
-    # the center to the locator) to a 0..1 range that can be used as a control.
-    #
-    # setRange nodes actually clamp to their min and max, rather than just adjusting the range.
-    # We don't really want that, since it can be useful to set the distance to a slightly negative
-    # number to move the eyes apart a bit.  Work around this: instead of scaling 0..1 to eyeLocatorXPos..0,
-    # scale from -1..1 to eyeLocatorXPos*2..0.  This gives a wider range, if wanted.
-    # In:  -5 -4 -3 -2 -1  0  1  2  3  4  5
-    # Out:  6  5  4  3  2  1  0 -1 -2 -3 -4
+    # Create a setRange node to scale the eyesFocused value to an angle.
     locator_distance_range = create_new_node('setRange', nodeName='EyeRig_SetRangeEyeDistance')
-    eye_locator1_x = pm.xform(eye_locators[0], q=True, t=True, os=True)[0]
-    eye_locator2_x = pm.xform(eye_locators[1], q=True, t=True, os=True)[0]
-    locator_distance_range.attr('oldMin').set((-5, -5, 0))
-    locator_distance_range.attr('oldMax').set((5, 5, 0))
-    locator_distance_range.attr('min').set((eye_locator1_x*6, eye_locator2_x*6, 0))
-    locator_distance_range.attr('max').set((eye_locator1_x*-4, eye_locator2_x*-4, 0))
+    locator_distance_range.oldMin.set((-5, -5, 0))
+    locator_distance_range.oldMax.set((5, 5, 0))
+    locator_distance_range.min.set((30, -30, 0))
+    locator_distance_range.max.set((-30, 30, 0))
 
-    # The output of the setRange controls the distance of the eye locator from the main center control.
-    locator_distance_range.attr('outValueX').connect(eye_locators[0].attr('translateX'))
-    locator_distance_range.attr('outValueY').connect(eye_locators[1].attr('translateX'))
-
-    # Add an attribute to move the eye locators to the center.  The most useful values of this are
-    # 0 and 1, but support moving further and going crosseyed.
+    # Add an attribute to move the eyes inwards and outwards.
     pm.addAttr(control_node, ln='eyesFocused', at='double', min=-5, max=5, dv=0)
-    control_node.attr('eyesFocused').set(e=True, keyable=True)
-    control_node.attr('eyesFocused').connect(locator_distance_range.attr('valueX'))
-    control_node.attr('eyesFocused').connect(locator_distance_range.attr('valueY'))
+    control_node.eyesFocused.set(e=True, keyable=True)
+    control_node.eyesFocused.connect(locator_distance_range.valueX)
+    control_node.eyesFocused.connect(locator_distance_range.valueY)
+
+    for idx, node in enumerate(joints):
+        shortName = node.nodeName(stripNamespace=True)
+
+        # Extract the rotation part of the eye transform.  We could use .rotate, but we'd need to compose it
+        # to a matrix anyway, so this is faster and doesn't care about rotation order.
+        pick_rotation = pm.createNode('pickMatrix', n='PickTransformRotation_%s' % shortName)
+        pick_rotation.useTranslate.set(False)
+        pick_rotation.useScale.set(False)
+        pick_rotation.useShear.set(False)
+        control_mesh_matrix.connect(pick_rotation.inputMatrix)
+
+        # Compose the eyesFocused value, which also contributes to the rotation.
+        eyes_focused_compose = pm.createNode('composeMatrix', n='EyeRig_ComposeFocusedMatrix_%s' % shortName)
+        focused_angle = [locator_distance_range.outValueX, locator_distance_range.outValueY][idx]
+        focused_angle.connect(eyes_focused_compose.inputRotateY)
+
+        # Finally, combine the three parts of the rotation.
+        combine_rotations = pm.createNode('multMatrix', n='EyeRig_CombineRotations_%s' % shortName)
+        pick_rotation.outputMatrix.connect(combine_rotations.matrixIn[0])
+        translation_rotation_matrix.connect(combine_rotations.matrixIn[1])
+        eyes_focused_compose.outputMatrix.connect(combine_rotations.matrixIn[2])
+
+        # Decompose the result back to euler rotations and connect it to the angle attribute.
+        # We're only rotating on X and Y, and putting Z first so it doesn't affect the others.
+        # Only connect X and Y so any rotations on Z are discarded.
+        decompose_rotation = pm.createNode('decomposeMatrix', n='EyeRig_DecomposeFinalRotations_%s' % shortName)
+        decompose_rotation.inputRotateOrder.set(2) # zxy
+        combine_rotations.matrixSum.connect(decompose_rotation.inputMatrix)
+
+        # Create a node that will receive the final rotation, and constrain the joint to it.
+        output_node = create_new_node('transform', nodeName='%s_Output' % shortName, parent=container_node)
+        pm.xform(output_node, ws=True, t=pm.xform(node, q=True, ws=True, t=True))
+        decompose_rotation.outputRotateX.connect(output_node.rotateX)
+        decompose_rotation.outputRotateY.connect(output_node.rotateY)
+        output_node.rotateOrder.set(2)
+        pm.orientConstraint(output_node, joints[idx], mo=True)
 
     # Move the control mesh to the top of the container.
     pm.reorder(control_mesh, front=True)
