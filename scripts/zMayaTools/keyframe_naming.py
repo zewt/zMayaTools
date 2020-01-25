@@ -26,6 +26,13 @@ def get_singleton(create=True):
     Return the singleton node.  If create is true, create it if it doesn't exist,
     otherwise return None.
     """
+    # If the plugin isn't loaded, then the node doesn't exist.  If we're not creating it,
+    # don't load it.
+    if not create and not pm.pluginInfo('zKeyframeNaming', q=True, loaded=True):
+        return None
+    
+    maya_helpers.load_plugin('zKeyframeNaming')
+
     nodes = pm.ls(':zKeyframeNaming', type='zKeyframeNaming')
     if not nodes:
         if not create:
