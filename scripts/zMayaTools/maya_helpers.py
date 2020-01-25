@@ -735,6 +735,23 @@ def add_attr(nodes, name, *args, **kwargs):
 
     return attr
 
+def get_selected_cb_attributes():
+    """
+    Return a list of attributes selected in the channel box.
+    """
+    attrs = pm.mel.eval('selectedChannelBoxPlugs')
+    result = []
+    for node in attrs:
+        # If multiple nodes are selected and attributes are selected in the CB which exist
+        # on only some of the nodes, they'll still be returned by selectedChannelBoxPlugs.
+        # Ignore these.
+        try:
+            result.append(pm.PyNode(node))
+        except pm.MayaAttributeError:
+            continue
+
+    return result
+
 from pymel.tools.py2mel import py2melProc as origPy2melProc
 def py2melProc(returnType='', procName=None, argTypes=None):
     """

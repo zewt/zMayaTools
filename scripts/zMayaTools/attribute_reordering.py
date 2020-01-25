@@ -40,7 +40,7 @@ def move_selected_attr(down):
     """
     Move all selected attributes in the channel box down (or up if down is false).
     """
-    attrs = [pm.PyNode(n) for n in pm.mel.eval('selectedChannelBoxPlugs')]
+    attrs = maya_helpers.get_selected_cb_attributes()
     if not attrs:
         log.info('Select one or more attributes in the channel box')
         return
