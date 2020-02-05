@@ -5,9 +5,7 @@ from pprint import pprint, pformat
 import pymel.core as pm
 import maya
 from maya import OpenMaya as om
-from maya.app.general import mayaMixin
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-from zMayaTools import maya_helpers, maya_logging, Qt, qt_helpers
+from zMayaTools import maya_helpers, maya_logging, dockable_window, Qt, qt_helpers
 reload(qt_helpers)
 from zMayaTools.menus import Menu
 from maya.OpenMaya import MGlobal
@@ -72,24 +70,9 @@ def set_keyframe_with_time_editor(attr, inTangentType=None, outTangentType=None)
             kwargs['outTangentType'] = outTangentType
         pm.setKeyframe(attr, **kwargs)
 
-class KeyingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
-    def done(self, result):
-        self.close()
-        super(MayaQWidgetDockableMixin, self).done(result)
-
+class KeyingWindow(dockable_window.DockableWindow):
     def __init__(self):
         super(KeyingWindow, self).__init__()
-
-        # How do we make our window handle global hotkeys?
-        undo = Qt.QAction('Undo', self)
-        undo.setShortcut(Qt.Qt.CTRL + Qt.Qt.Key_Z)
-        undo.triggered.connect(lambda: pm.undo())
-        self.addAction(undo)
-
-        redo = Qt.QAction('Redo', self)
-        redo.setShortcut(Qt.Qt.CTRL + Qt.Qt.Key_Y)
-        redo.triggered.connect(lambda: pm.redo(redo=True))
-        self.addAction(redo)
 
         self.weight_node = None
         self.shown = False
@@ -97,20 +80,7 @@ class KeyingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
 
         self._currently_refreshing = False
 
-        style = r'''
-        /* Maya's checkbox style makes the checkbox invisible when it's deselected,
-         * which makes it impossible to tell that there's even a checkbox there to
-         * click.  Adjust the background color to fix this. */
-        QTreeView::indicator:unchecked {
-            background-color: #000;
-        }
-        '''
-        self.setStyleSheet(style)
-
         self.time_change_listener = maya_helpers.TimeChangeListener(self._time_changed, pause_during_playback=False)
-
-        # Make sure zMouthController has been generated.
-        qt_helpers.compile_all_layouts()
 
         from zMayaTools.qt_widgets import draggable_progress_bar
         reload(draggable_progress_bar)
@@ -442,44 +412,19 @@ class KeyingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
                 return idx
         return -1
 
-
-    def __del__(self):
-        self.cleanup()
-
-    def cleanup(self):
-        self._unregister_listeners()
-
-    def showEvent(self, event):
-        # Why is there no isShown()?
+    def shownChanged(self):
         if self.shown:
-            return
-        self.shown = True
+            # Refresh the node list first, to make sure self.weight_node is valid.
+            self.refresh_weight_node_list()
 
-        # Refresh the node list first, to make sure self.weight_node is valid.
-        self.refresh_weight_node_list()
+            self._register_listeners()
 
-        self._register_listeners()
+            # Refresh when we're displayed.
+            self._async_refresh()
+        else:
+            self._unregister_listeners()
 
-        # Refresh when we're displayed.
-        self._async_refresh()
-
-        super(KeyingWindow, self).showEvent(event)
-
-    def hideEvent(self, event):
-        if not self.shown:
-            return
-        self.shown = False
-
-        self._unregister_listeners()
-        super(KeyingWindow, self).hideEvent(event)
-
-    def dockCloseEventTriggered(self):
-        # Bug workaround: closing the dialog by clicking X doesn't call closeEvent.
-        self.cleanup()
-    
-    def close(self):
-        self.cleanup()
-        super(KeyingWindow, self).close()
+        super(KeyingWindow, self).shownChanged()
 
     def shape1Changed(self):
         # Ignore changes made by refreshes.
