@@ -5,8 +5,6 @@ from pprint import pprint, pformat
 import pymel.core as pm
 import maya
 from maya import OpenMaya as om
-from maya.app.general import mayaMixin
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
 from zMayaTools import maya_helpers, maya_logging, Qt, qt_helpers, maya_callbacks, dockable_window
 from zMayaTools.menus import Menu
 
