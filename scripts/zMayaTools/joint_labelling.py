@@ -9,9 +9,8 @@
 import os, sys
 import pymel.core as pm
 import maya
-from maya.app.general import mayaMixin
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-from zMayaTools import maya_helpers, maya_logging, Qt, qt_helpers
+from zMayaTools import maya_helpers, maya_logging, dockable_window, Qt, qt_helpers
+from zMayaTools.dockable_window import DockableWindow
 from zMayaTools.menus import Menu
 
 log = maya_logging.get_log()
@@ -58,16 +57,9 @@ joint_label_name_to_idx = {
     "Other": 18,
 }
 
-class JointLabellingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
-    def done(self, result):
-        self.close()
-        super(MayaQWidgetDockableMixin, self).done(result)
-
+class JointLabellingWindow(dockable_window.DockableWindow):
     def __init__(self):
         super(JointLabellingWindow, self).__init__()
-
-        # Make sure our UI has been generated.
-        qt_helpers.compile_all_layouts()
 
         from zMayaTools.qt_generated import zJointLabelling
         reload(zJointLabelling)
@@ -97,20 +89,6 @@ class JointLabellingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         self.ui.rightSide.clicked.connect(lambda: self.clicked_joint_side(2))
         self.ui.noSide.clicked.connect(lambda: self.clicked_joint_side(3))
         self.ui.guessSide.clicked.connect(self.clicked_guess_joint_side)
-
-    def __del__(self):
-        self.cleanup()
-
-    def cleanup(self):
-        pass
-
-    def dockCloseEventTriggered(self):
-        # Bug workaround: closing the dialog by clicking X doesn't call closeEvent.
-        self.cleanup()
-    
-    def close(self):
-        self.cleanup()
-        super(JointLabellingWindow, self).close()
 
     def clicked_other_text_set(self):
         label = self.ui.otherTextEntry.text()
