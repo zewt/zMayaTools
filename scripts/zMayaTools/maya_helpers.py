@@ -738,7 +738,7 @@ def add_attr(nodes, name, *args, **kwargs):
 from pymel.tools.py2mel import py2melProc as origPy2melProc
 def py2melProc(returnType='', procName=None, argTypes=None):
     """
-    A wrapper t make pymel's py2melProc work properly as a decorator.
+    A wrapper to make pymel's py2melProc work properly as a decorator.
     
     Note that py2melProc is only partially implemented and can only be used for very
     simple cases.
