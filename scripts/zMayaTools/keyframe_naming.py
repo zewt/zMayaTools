@@ -1,9 +1,7 @@
 from pymel import core as pm
 import maya.OpenMaya as om
 import maya.OpenMayaAnim as oma
-from maya.app.general import mayaMixin
-from maya.app.general.mayaMixin import MayaQWidgetDockableMixin
-from zMayaTools import qt_helpers, maya_logging, maya_helpers, Qt
+from zMayaTools import qt_helpers, maya_logging, maya_helpers, dockable_window, Qt
 from zMayaTools.menus import Menu
 import bisect, os, sys, time
 from collections import defaultdict
@@ -309,22 +307,10 @@ def select_naming_node():
     node = get_singleton(create=True)
     pm.select(node)
 
-class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
+class KeyframeNamingWindow(dockable_window.DockableWindow):
     def __init__(self):
         super(KeyframeNamingWindow, self).__init__()
 
-        # How do we make our window handle global hotkeys?
-#        undo = Qt.QAction('Undo', self)
-#        undo.setShortcut(Qt.Qt.CTRL + Qt.Qt.Key_Z)
-#        undo.triggered.connect(lambda: pm.undo())
-#        self.addAction(undo)
-
-#        redo = Qt.QAction('Redo', self)
-#        redo.setShortcut(Qt.Qt.CTRL + Qt.Qt.Key_Y)
-#        redo.triggered.connect(lambda: pm.redo(redo=True))
-#        self.addAction(redo)
-
-        self.shown = False
         self.callback_ids = om.MCallbackIdArray()
         self._reregister_callback_queued = False
 
@@ -335,9 +321,6 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         self._listening_to_anim_curve = None
 
         self.time_change_listener = maya_helpers.TimeChangeListener(self._time_changed)
-
-        # Make sure zKeyframeNaming has been generated.
-        qt_helpers.compile_all_layouts()
 
         from qt_generated import keyframe_naming
         reload(keyframe_naming)
@@ -400,13 +383,6 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
                     self.rename_selected_frame()
 
         return super(KeyframeNamingWindow, self).eventFilter(object, event)
-
-    def done(self, result):
-        """
-        This is called when the window is closed.
-        """
-        self.close()
-        super(MayaQWidgetDockableMixin, self).done(result)
 
     def get_selected_frame_item(self):
         """
@@ -769,40 +745,14 @@ class KeyframeNamingWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         # after editing finishes.
         self.refresh()
 
-    def __del__(self):
-        self.cleanup()
-
     def cleanup(self):
         self._unregister_listeners()
 
-    def showEvent(self, event):
-        # Why is there no isShown()?
-        if self.shown:
-            return
-        self.shown = True
-
-        # Refresh when we're displayed.
+    def shownChanged(self):
+        # Refresh when we're displayed or hidden.
         self._async_check_listeners()
 
-        super(KeyframeNamingWindow, self).showEvent(event)
-
-    def hideEvent(self, event):
-        if not self.shown:
-            return
-        self.shown = False
-
-        # Refresh when we're hidden.
-        self._async_check_listeners()
-
-        super(KeyframeNamingWindow, self).hideEvent(event)
-
-    def dockCloseEventTriggered(self):
-        # Bug workaround: closing the dialog by clicking X doesn't call closeEvent.
-        self.cleanup()
-    
-    def close(self):
-        self.cleanup()
-        super(KeyframeNamingWindow, self).close()
+        super(KeyframeNamingWindow, self).shownChanged()
 
 class PluginMenu(Menu):
     def __init__(self):
