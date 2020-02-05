@@ -43,6 +43,13 @@ class DockableWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         self.shown = False
         self.shownChanged()
 
+    def eventFilter(self, object, event):
+        # Don't close dockable windows when escape is pressed.
+        if object is self and event.type() == Qt.QEvent.KeyPress and event.key() == Qt.Qt.Key_Escape:
+            return True
+
+        return super(DockableWindow, self).eventFilter(object, event)
+
     def close(self):
         self.shown = False
         self.shownChanged()
