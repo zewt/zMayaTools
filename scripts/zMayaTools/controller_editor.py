@@ -143,7 +143,8 @@ def set_controller_parent(controller, parent, after=None):
 
         if old_parent_plug is not None:
             # Unparent the controller from its old parent.
-            old_parent_plug.node().prepopulate.disconnect(controller.prepopulate)
+            if old_parent_plug.node().prepopulate.isConnectedTo(controller.prepopulate):
+                old_parent_plug.node().prepopulate.disconnect(controller.prepopulate)
 
             # We need to reconnect all children and not just disconnect the child, since the
             # child list needs to remain contiguous.
