@@ -62,6 +62,9 @@ class _MenuRegistration(object):
 
         This is used to update menus when menu preferences are changed.
         """
+        if pm.about(batch=True):
+            return
+
         menus = set(self.registered_menus)
         for menu in menus:
             menu.remove_menu_items()
@@ -304,6 +307,17 @@ class Menu(object):
     def add_menu_items(self):
         """
         Add this menu's menu items.
+        """
+        # Don't try to register menus when in batch mode.  Maya should just ignore it, but
+        # for some reason it prints errors.
+        if pm.about(batch=True):
+            return
+
+        self._add_menu_items()
+
+    def _add_menu_items(self):
+        """
+        Add this menu's menu items.
 
         This should be overridden by the subclass.
         """
@@ -312,8 +326,17 @@ class Menu(object):
     def remove_menu_items(self):
         """
         Remove this menu's menu items.
+        """
+        if pm.about(batch=True):
+            return
 
-        This should be overridden by the subclass.
+        self._remove_menu_items()
+
+    def _remove_menu_items(self):
+        """
+        Remove this menu's menu items.
+
+        This can be overridden by the subclass if needed.  Menus will be removed automatically.
         """
         _menu_registration.unregister_menu(self)
 

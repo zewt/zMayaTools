@@ -25,8 +25,8 @@ class PluginMenu(Menu):
         self.shelf_menu = None
         self.shelf_preference_handler = None
 
-    def add_menu_items(self):
-        super(PluginMenu, self).add_menu_items()
+    def _add_menu_items(self):
+        super(PluginMenu, self)._add_menu_items()
 
         # Make sure the file menu and other deferred menus are built.
         pm.mel.eval('buildDeferredMenus()')
@@ -225,8 +225,8 @@ class PluginMenu(Menu):
                 insertAfter=menu_items[match_rotation],
                 command='zMatchPosition', sourceType='mel')
 
-    def remove_menu_items(self):
-        super(PluginMenu, self).remove_menu_items()
+    def _remove_menu_items(self):
+        super(PluginMenu, self)._remove_menu_items()
 
         # Remove shelf menus.
         if self.shelf_menu is not None:

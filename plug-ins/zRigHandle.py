@@ -586,7 +586,9 @@ class zRigHandleDrawOverride(omr.MPxDrawOverride):
             drawManager.endDrawInXray()
 
 class PluginMenu(Menu):
-    def add_menu_items(self):
+    def _add_menu_items(self):
+        super(PluginMenu, self)._add_menu_items()
+
         # Add "Rig Handle" after "Locator" in Create > Construction Aids.
         def create(arg):
             node = pm.createNode('zRigHandle')

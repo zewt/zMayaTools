@@ -263,7 +263,9 @@ def add_file_switch_to_selection(unused):
     pm.select(results)
 
 class PluginMenu(Menu):
-    def add_menu_items(self):
+    def _add_menu_items(self):
+        super(PluginMenu, self)._add_menu_items()
+
         # Add "File Switch" inside "Tools" in the Rendering > Texturing menu.
         pm.mel.eval('RenTexturingMenu "mainRenTexturingMenu"')
         menu = 'mainRenTexturingMenu'

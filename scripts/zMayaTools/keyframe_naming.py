@@ -772,7 +772,9 @@ class PluginMenu(Menu):
         self.window = maya_helpers.RestorableWindow(KeyframeNamingWindow, plugins='zKeyframeNaming.py',
             module='zMayaTools.keyframe_naming', obj='menu.window')
 
-    def add_menu_items(self):
+    def _add_menu_items(self):
+        super(PluginMenu, self)._add_menu_items()
+
         menu = 'MayaWindow|mainKeysMenu'
 
         # Make sure the menu is built.
@@ -784,8 +786,8 @@ class PluginMenu(Menu):
                 top_level_path='Misc|KeyframeNaming',
                 command=lambda unused: self.window.show())
 
-    def remove_menu_items(self):
-        super(PluginMenu, self).remove_menu_items()
+    def _remove_menu_items(self):
+        super(PluginMenu, self)._remove_menu_items()
 
         # If the keying window is open when the module is unloaded, close it.
         self.window.close()

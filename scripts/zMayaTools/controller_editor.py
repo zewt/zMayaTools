@@ -559,7 +559,9 @@ class PluginMenu(Menu):
         self.window = maya_helpers.RestorableWindow(ControllerEditor, plugins='zMayaUtils.py',
             module='zMayaTools.controller_editor', obj='menu.window')
 
-    def add_menu_items(self):
+    def _add_menu_items(self):
+        super(PluginMenu, self)._add_menu_items()
+
         menu = 'MayaWindow|mainRigControlMenu'
 
         # Make sure the menu is built.
@@ -574,8 +576,8 @@ class PluginMenu(Menu):
                 command=lambda unused: self.window.show(),
                 top_level_path='Rigging|EditControllers')
     
-    def remove_menu_items(self):
-        super(PluginMenu, self).remove_menu_items()
+    def _remove_menu_items(self):
+        super(PluginMenu, self)._remove_menu_items()
 
         # If the window is open when the module is unloaded, close it.
         self.window.close()
