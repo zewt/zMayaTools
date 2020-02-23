@@ -148,7 +148,7 @@ def create_editable_joints():
             bind_pre_matrix = pm.datatypes.Matrix(skin_cluster.bindPreMatrix[skin_cluster_idx].get())
             world_inverse_matrix = pm.datatypes.Matrix(bind_joint.worldInverseMatrix.get())
             if not bind_pre_matrix.isEquivalent(world_inverse_matrix, tol=0.0001):
-                log.error('Joint %s isn\'t in bind position', bind_joint.nodeName())
+                log.error('Joint %s isn\'t in bind position for %s', bind_joint.nodeName(), skin_cluster_attr.name())
                 any_errors = True
 
     if any_errors:
