@@ -182,8 +182,8 @@ def create_editable_joints():
             # parent, to match the joint's coordinate space.
             assert bind_joint_parent not in bind_joints
             edit_joint_parent = pm.createNode('transform', n='EditJoints_%s' % bind_joint.nodeName(), p=edit_container)
-            _lock_transform(edit_joint_parent)
             pm.xform(edit_joint_parent, ws=True, m=pm.xform(bind_joint_parent, q=True, ws=True, m=True))
+            _lock_transform(edit_joint_parent)
 
         pm.parent(edit_joint, edit_joint_parent, r=True)
 
