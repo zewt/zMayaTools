@@ -591,36 +591,18 @@ class UI(maya_helpers.OptionsBox):
         src_blend_shape_targets = pm.ls(pm.blendShape(src_blend_shape, q=True, g=True))
         dst_blend_shape_targets = pm.ls(pm.blendShape(dst_blend_shape, q=True, g=True))
 
-        # Make sure that both blend shapes have just one target.
-        assert len(src_blend_shape_targets) == 1, 'Blend shape %s must have one target, has %i: %s' % (
-                src_blend_shape.nodeName(),
-                len(src_blend_shape_targets), ', '.join(src_blend_shape_targets))
-        assert len(dst_blend_shape_targets) == 1, 'Blend shape %s must have one target, has %i: %s' % (
-                dst_blend_shape.nodeName(),
-                len(dst_blend_shape_targets), ', '.join(dst_blend_shape_targets))
+        # Retarget the specified meshes.
+        idx = pm.optionMenu(self.src_mesh_option_group, q=True, select=True) - 1
+        src_node = self.src_meshes[idx]
 
-        # Find the transforms for the source and destination node.
-        src_node = src_blend_shape_targets[0].getTransform()
-        dst_node = dst_blend_shape_targets[0].getTransform()
+        idx = pm.optionMenu(self.dst_mesh_option_group, q=True, select=True) - 1
+        dst_node = self.dst_meshes[idx]
 
         # Check the selected nodes.
-        assert isinstance(src_node, pm.nodetypes.Transform), 'The source node %s isn\'t a transform' % src_node.nodeName()
-        assert isinstance(dst_node, pm.nodetypes.Transform), 'The destination node %s isn\'t a transform' % dst_node.nodeName()
-        assert src_node.getShape() is not None, 'The source node %s isn\'t a mesh' % dst_node.nodeName()
-        assert dst_node.getShape() is not None, 'The destination node %s isn\'t a mesh' % dst_node.nodeName()
-
-    #    # Find all blendShapes that are following this one.
-    #    following_blend_shapes = WrappedBlendShapes.find_following_blend_shapes(src_blend_shape)
-    #
-    #    # Find a blend shape node on dst_node that's in following_blend_shapes.  We can either
-    #    # look in the history of the output mesh, or in the future of the base mesh, and both can
-    #    # have wrong matches.
-    #    for node in dst_node.getShapes()[-1].listFuture():
-    #        if node in following_blend_shapes:
-    #            dst_blend_shape = node
-    #            break
-    #    else:
-    #        raise RuntimeError('Couldn\'t find a blend shape node on %s which is following %s' % (dst_node.name(), src_blend_shape.name()))
+        assert src_node is not None, 'The source node %s isn\'t a mesh' % dst_node.nodeName()
+        assert dst_node is not None, 'The destination node %s isn\'t a mesh' % dst_node.nodeName()
+        src_node = src_node.getTransform()
+        dst_node = dst_node.getTransform()
 
         connect_weights = pm.checkBoxGrp('connectWeightsToSource', q=True, value1=False)
         use_cvwrap = pm.checkBoxGrp('useCvWrap', q=True, value1=False)
@@ -632,8 +614,19 @@ class UI(maya_helpers.OptionsBox):
         
         parent = pm.columnLayout(adjustableColumn=True)
 
-        def add_blend_shape_selector(name, label, refresh_on_change):
-            pm.optionMenuGrp(name, label=label)
+        def add_blend_shape_selector(name, label, mesh_label, src):
+            blend_shape_menu = pm.optionMenuGrp(name, label=label)
+
+            # When the source selection is changed, update the source blend shape list.
+            def changed(value):
+                # Only refresh what's needed, so changing one blendShape doesn't reset the mesh selected
+                # for the other.
+                if src:
+                    self.refresh_src_blend_shape_list()
+                    self.refresh_src_mesh_list()
+                else:
+                    self.refresh_dst_mesh_list()
+            pm.optionMenuGrp(blend_shape_menu, edit=True, changeCommand=changed)
 
             # Create a list of blendShapes.
             bnArray = pm.ls(type='blendShape')
@@ -642,25 +635,46 @@ class UI(maya_helpers.OptionsBox):
             if not bnArray:
                 pm.menuItem(label='No Blend Shape Selected')
 
-            # When the source selection is changed, update the source blend shape list.
-            def changed(value):
-                self.refresh_src_blend_shape_list()
-            if refresh_on_change:
-                pm.optionMenuGrp(name, edit=True, changeCommand=changed)
+            mesh_option_group = pm.optionMenuGrp(name + 'Mesh', label=mesh_label)
 
-        add_blend_shape_selector('sourceBlendShapeList', 'Source blendShape', True)
-        add_blend_shape_selector('dstBlendShapeList', 'Target blendShape', False)
+            return mesh_option_group + '|OptionMenu'
+
+        self.src_mesh_option_group = add_blend_shape_selector('sourceBlendShapeList', 'Source blendShape', 'Source mesh', src=True)
+        self.dst_mesh_option_group = add_blend_shape_selector('dstBlendShapeList', 'Target blendShape', 'Target mesh', src=False)
 
         pm.separator()
 
         pm.textScrollList('blendShapeTargetList', numberOfRows=10, allowMultiSelection=True)
-#                        showIndexedItem=4 )
+
         pm.separator()
        
         pm.checkBoxGrp('connectWeightsToSource', numberOfCheckBoxes=1, value1=False, label='Connect weights to source')
         pm.checkBoxGrp('useCvWrap', numberOfCheckBoxes=1, value1=False, label='Use cvwrap instead of wrap')
 
         self.refresh_src_blend_shape_list()
+        self.refresh_src_mesh_list()
+        self.refresh_dst_mesh_list()
+
+    def refresh_mesh_list(self, dropdown, blend_shape):
+        # Show the name of the transform, but remember the original meshes.
+        meshes = pm.ls(pm.blendShape(blend_shape, q=True, g=True))
+
+        for item in pm.optionMenu(dropdown, q=True, itemListLong=True):
+            pm.deleteUI(item)
+        
+        for mesh in meshes:
+            pm.menuItem(label=mesh.getTransform().nodeName(), parent=dropdown)
+        if not meshes:
+            pm.menuItem(label='No Blend Shape Selected')
+        return meshes
+
+    def refresh_src_mesh_list(self):
+        src_blend_shape = self.get_src_blend_shape_name()
+        self.src_meshes = self.refresh_mesh_list(self.src_mesh_option_group, src_blend_shape)
+
+    def refresh_dst_mesh_list(self):
+        dst_blend_shape = self.get_dst_blend_shape_name()
+        self.dst_meshes = self.refresh_mesh_list(self.dst_mesh_option_group, dst_blend_shape)
 
     def refresh_src_blend_shape_list(self):
         pm.textScrollList('blendShapeTargetList', edit=True, removeAll=True)
