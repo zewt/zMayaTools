@@ -572,10 +572,6 @@ class UI(maya_helpers.OptionsBox):
             pm.warning('No target blend shape is selected')
             return
 
-        if src_blend_shape == dst_blend_shape:
-            pm.warning('The source and destination blend shapes are the same')
-            return
-
         # These were selected from the UI, so unless the scene changed while the dialog was
         # open these should always be blendShape nodes.
         assert isinstance(src_blend_shape, pm.nodetypes.BlendShape), 'Node %s isn\'t a blend shape' % src_blend_shape.nodeName()
@@ -597,6 +593,11 @@ class UI(maya_helpers.OptionsBox):
 
         idx = pm.optionMenu(self.dst_mesh_option_group, q=True, select=True) - 1
         dst_node = self.dst_meshes[idx]
+
+        if src_blend_shape == dst_blend_shape and src_node == dst_node:
+            pm.warning('The source and destination blend shapes are the same')
+            return
+
 
         # Check the selected nodes.
         assert src_node is not None, 'The source node %s isn\'t a mesh' % dst_node.nodeName()
