@@ -519,11 +519,7 @@ class zRigHandleDrawOverride(omr.MPxDrawOverride):
         return
 
     def __init__(self, obj):
-        args = [self, obj, zRigHandleDrawOverride.draw]
-        if MGlobal.apiVersion() >= 201700:
-            # This argument is only present in 2017, and improves performance substantially.
-            args.append(False)
-        omr.MPxDrawOverride.__init__(*args)
+        super(zRigHandleDrawOverride, self).__init__(obj, self.draw, False)
 
     def supportedDrawAPIs(self):
         return omr.MRenderer.kOpenGL | omr.MRenderer.kDirectX11 | omr.MRenderer.kOpenGLCoreProfile
