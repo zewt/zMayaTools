@@ -514,12 +514,8 @@ class zRigHandleDrawOverride(omr.MPxDrawOverride):
     def creator(obj):
         return zRigHandleDrawOverride(obj)
 
-    @staticmethod
-    def draw(context, data):
-        return
-
     def __init__(self, obj):
-        super(zRigHandleDrawOverride, self).__init__(obj, self.draw, False)
+        super(zRigHandleDrawOverride, self).__init__(obj, None, False)
 
     def supportedDrawAPIs(self):
         return omr.MRenderer.kOpenGL | omr.MRenderer.kDirectX11 | omr.MRenderer.kOpenGLCoreProfile
