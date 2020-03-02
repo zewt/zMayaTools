@@ -167,10 +167,12 @@ class NodeChangeListener(object):
     This is used to refresh UI.
     """
     def __init__(self, node_type, callback,
+            include_connected=True,
             node_messages=om.MNodeMessage.kConnectionMade | om.MNodeMessage.kConnectionBroken):
         self.node_type = node_type
         self.change_callback = callback
         self.node_messages = node_messages
+        self.include_connected = include_connected
 
         self.callbacks = MayaCallbackList()
         self.node_callbacks = MayaCallbackList()
@@ -190,8 +192,11 @@ class NodeChangeListener(object):
         For example, if blendShape is being monitored, this can return connected blendShape
         targets, and the changed callback will be called if any of those nodes are renamed.
         """
-        # By default, all directly connected nodes are related.
-        return list(set(pm.listConnections(node)))
+        if self.include_connected:
+            # By default, all directly connected nodes are related.
+            return list(set(pm.listConnections(node)))
+        else:
+            return []
 
     def _refresh_node_listeners(self):
         """
