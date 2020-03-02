@@ -166,9 +166,11 @@ class NodeChangeListener(object):
 
     This is used to refresh UI.
     """
-    def __init__(self, node_type, callback):
+    def __init__(self, node_type, callback,
+            node_messages=om.MNodeMessage.kConnectionMade | om.MNodeMessage.kConnectionBroken):
         self.node_type = node_type
         self.change_callback = callback
+        self.node_messages = node_messages
 
         self.callbacks = MayaCallbackList()
         self.node_callbacks = MayaCallbackList()
@@ -205,7 +207,7 @@ class NodeChangeListener(object):
         self.node_callbacks.add_callback(AttributeChangedCallback(
             self._refresh_nodes_and_run_change_callback,
             node,
-            mask=om.MNodeMessage.kConnectionMade | om.MNodeMessage.kConnectionBroken))
+            mask=self.node_messages))
 
         self.node_callbacks.add(self._run_change_callback, lambda func: om.MNodeMessage.addNameChangedCallback(node.__apimobject__(), func, None))
 
