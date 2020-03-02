@@ -199,16 +199,19 @@ class NodeChangeListener(object):
 
         msg = om.MDGMessage()
         for node in pm.ls(type=self.node_type):
-            self.node_callbacks.add_callback(AttributeChangedCallback(
-                self._refresh_nodes_and_run_change_callback,
-                node,
-                mask=om.MNodeMessage.kConnectionMade | om.MNodeMessage.kConnectionBroken))
+            self._add_listeners_for_node(node)
 
-            self.node_callbacks.add(self._run_change_callback, lambda func: om.MNodeMessage.addNameChangedCallback(node.__apimobject__(), func, None))
+    def _add_listeners_for_node(self, node):
+        self.node_callbacks.add_callback(AttributeChangedCallback(
+            self._refresh_nodes_and_run_change_callback,
+            node,
+            mask=om.MNodeMessage.kConnectionMade | om.MNodeMessage.kConnectionBroken))
 
-            related_nodes = self.get_related_nodes(node)
-            for related_node in related_nodes:
-                self.node_callbacks.add(self._run_change_callback, lambda func: om.MNodeMessage.addNameChangedCallback(related_node.__apimobject__(), func, None))
+        self.node_callbacks.add(self._run_change_callback, lambda func: om.MNodeMessage.addNameChangedCallback(node.__apimobject__(), func, None))
+
+        related_nodes = self.get_related_nodes(node)
+        for related_node in related_nodes:
+            self.node_callbacks.add(self._run_change_callback, lambda func: om.MNodeMessage.addNameChangedCallback(related_node.__apimobject__(), func, None))
 
     @property
     def registered(self):
