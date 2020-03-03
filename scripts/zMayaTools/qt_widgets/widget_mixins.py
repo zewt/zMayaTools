@@ -91,19 +91,22 @@ class DragFromMayaMixin(object):
                     self.dragged_from_maya.emit(nodes, target, self.dropIndicatorPosition())
 
             # event.source() crashes if the drag comes from a Maya object, so don't check the other cases.
-        elif event.source() is self:
-            # Always accept drops from ourself (including for move events) to prevent the crazy base class behavior.
+        elif event.source() is not None:
+            # Always accept drops (including for move events) to prevent the crazy base class behavior.
             event.accept()
 
             if event.dropAction() == Qt.Qt.DropAction.CopyAction:
-                selected_indexes = self.selectedIndexes()
                 target = self.itemAt(event.pos())
-                target_index = self.indexAt(event.pos())
 
-                # For QTreeWidget, if any index in the selection is a child of the drop position, so the drop
-                # is invalid.  Note that we still need to accept the event, or the base class will do nasty
-                # things.
-                if not _any_is_descendant(selected_indexes, target_index):
+                # If this is a tree and we're dragging onto ourself, if any index in the selection
+                # is a child of the drop position, the drop is invalid.
+                ignore_event = False
+                if isinstance(self, Qt.QTreeWidget) and event.source() is self:
+                    selected_indexes = self.selectedIndexes()
+                    target_index = self.indexAt(event.pos())
+                    ignore_event = _any_is_descendant(selected_indexes, target_index)
+
+                if not ignore_event:
                     indicator_position = self.dropIndicatorPosition()
                     self.dragged_internally.emit(target, event, self.dropIndicatorPosition())
 
