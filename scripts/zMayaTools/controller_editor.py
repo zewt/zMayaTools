@@ -315,7 +315,7 @@ class ControllerEditor(dockable_window.DockableWindow):
                 continue
             _remove_gaps_in_child_list(controller)
 
-    def dragged_internally(self, target, indicator_position):
+    def dragged_internally(self, target, event, indicator_position):
         source = self.ui.controllerTree.currentItem()
         self.dragged_controller(source.controller_node, target, indicator_position)
 

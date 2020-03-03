@@ -51,7 +51,7 @@ class DragFromMayaMixin(object):
     # QListWidgetItem.
 
     # source, target (or None for DropIndicatorPosition.OnViewport), dropIndicatorPosition
-    dragged_internally = Qt.Signal(Qt.QTreeWidgetItem, Qt.QAbstractItemView.DropIndicatorPosition)
+    dragged_internally = Qt.Signal(Qt.QObject, Qt.QDropEvent, Qt.QAbstractItemView.DropIndicatorPosition)
 
     # nodes, target (or None for DropIndicatorPosition.OnViewport), dropIndicatorPosition
     dragged_from_maya = Qt.Signal(basestring, Qt.QTreeWidgetItem, Qt.QAbstractItemView.DropIndicatorPosition)
@@ -105,7 +105,7 @@ class DragFromMayaMixin(object):
                 # things.
                 if not _any_is_descendant(selected_indexes, target_index):
                     indicator_position = self.dropIndicatorPosition()
-                    self.dragged_internally.emit(target, self.dropIndicatorPosition())
+                    self.dragged_internally.emit(target, event, self.dropIndicatorPosition())
 
         super(DragFromMayaMixin, self).dropEvent(event)
 
