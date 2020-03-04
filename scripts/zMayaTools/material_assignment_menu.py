@@ -55,7 +55,7 @@ class AssignMaterialsContextMenu(object):
             # child namespaces that do, we still need to add them to the list.
             if namespace:
                 namespace_parts = namespace.split(':')
-                for idx in xrange(1, len(namespace_parts)+1):
+                for idx in range(1, len(namespace_parts)+1):
                     child_namespace = ':'.join(namespace_parts[0:idx])
                     parent_namespace = get_parent_namespace(child_namespace)
                     self.namespaces_by_namespace.setdefault(parent_namespace, set()).add(child_namespace)

@@ -2,6 +2,10 @@
 
 import glob, os, sys, time, traceback, threading
 from pprint import pprint, pformat
+try:
+    from importlib import reload
+except ImportError:
+    pass
 import pymel.core as pm
 import maya
 from maya import OpenMaya as om

@@ -33,8 +33,8 @@ class zArnoldMetadata(OpenMayaMPx.MPxNode):
             elif plug == self.attr_output_matrix:
                 value = dataBlock.inputValue(self.attr_matrix).asMatrix()
                 vals = []
-                for x in xrange(4):
-                    for y in xrange(4):
+                for x in range(4):
+                    for y in range(4):
                         vals.append('%f' % value(x,y))
                 value = ' '.join(vals)
                 output.setString("MATRIX %s %s" % (name, value))

@@ -35,7 +35,7 @@ class DeformerShapeList(object):
 
         # Make a list of output shapes for this deformer.
         self.shapes = []
-        for deformed_idx in xrange(node.numOutputConnections()):
+        for deformed_idx in range(node.numOutputConnections()):
             try:
                 output_shape = node.outputShapeAtIndex(deformed_idx)
             except RuntimeError:

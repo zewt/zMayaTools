@@ -12,6 +12,10 @@ import maya
 from zMayaTools import maya_helpers, maya_logging, dockable_window, Qt, qt_helpers
 from zMayaTools.dockable_window import DockableWindow
 from zMayaTools.menus import Menu
+try:
+    from importlib import reload
+except ImportError:
+    pass
 
 log = maya_logging.get_log()
 

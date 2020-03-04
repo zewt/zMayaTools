@@ -1,9 +1,13 @@
-import copy
+import copy, six
 from maya import OpenMaya as om
 import pymel.core as pm
 from pprint import pprint
 from maya.app.general.shelfEditorWindow import shelfEditorWindow
 from zMayaTools import maya_helpers, preferences
+try:
+    from importlib import reload
+except ImportError:
+    pass
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
@@ -245,8 +249,8 @@ def get_shelf_submenus(shelf_button):
     # Ignore popup items that are defaults, eg. "Open" and "Edit" that appear in the
     # shelf context menu.
     def is_default_menu_item(popup):
-        cmd = pm.menuItem(p, q=True, command=True)
-        return isinstance(cmd, basestring) and cmd.startswith('/*dSBRMBMI*/')
+        cmd = pm.menuItem(popup, q=True, command=True)
+        return isinstance(cmd, six.string_types) and cmd.startswith('/*dSBRMBMI*/')
     popup_menu_items = [p for p in  popup_menu_items if not is_default_menu_item(p)]
 
     # popupMenu returns ambiguous paths.  Prefix the path to the popup menu to make

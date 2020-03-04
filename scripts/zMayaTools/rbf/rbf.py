@@ -4,13 +4,13 @@ from pprint import pprint
 
 
 #def cholesky(L):
-#    L = [[0] * len(L) for _ in xrange(len(L))]
+#    L = [[0] * len(L) for _ in range(len(L))]
 # 
-#    for i in xrange(len(L)):
-#        for j in xrange(i+1):
+#    for i in range(len(L)):
+#        for j in range(i+1):
 #            s = 0;
 #
-#            for k in xrange(j):
+#            for k in range(j):
 #                s += L[i][k] * L[j][k]
 #            if i == j:
 #                v = math.sqrt(L[i][i] - s)
@@ -22,10 +22,10 @@ from pprint import pprint
  
  
 #def cholesky(L):
-#    L = [[0.0] * len(L) for _ in xrange(len(L))]
-#    for i in xrange(len(L)):
-#        for j in xrange(i+1):
-#            s = sum(L[i][k] * L[j][k] for k in xrange(j))
+#    L = [[0.0] * len(L) for _ in range(len(L))]
+#    for i in range(len(L)):
+#        for j in range(i+1):
+#            s = sum(L[i][k] * L[j][k] for k in range(j))
 #            L[i][j] = math.sqrt(L[i][i] - s) if (i == j) else \
 #                      (1.0 / L[j][j] * (L[i][j] - s))
 #    return L
@@ -41,9 +41,9 @@ def Cholesky(L, ztol= 1.0e-5):
     L positive definite matrix L.
     """
     # Forward step for symmetric triangular t.
-    t = [[0]*len(L) for _ in xrange(len(L))]
-    for i in xrange(len(L)):
-        s = sum((t[k][i])**2 for k in xrange(i))
+    t = [[0]*len(L) for _ in range(len(L))]
+    for i in range(len(L)):
+        s = sum((t[k][i])**2 for k in range(i))
         d = L[i][i] - s
         if abs(d) < ztol:
             d = 0
@@ -54,7 +54,7 @@ def Cholesky(L, ztol= 1.0e-5):
             raise SolveFailedError('Matrix not positive-definite')
 
         try:
-            for j in xrange(i+1, len(L)):
+            for j in range(i+1, len(L)):
                 S = sum([t[k][i] * t[k][j] for k in range(i)])
                 if abs(S) < ztol:
                     S = 0.0
@@ -80,7 +80,7 @@ def Cholesky(L, ztol= 1.0e-5):
 
 
 def transpose(A):
-    C = [[0]*len(A) for _ in xrange(len(A[0]))]
+    C = [[0]*len(A) for _ in range(len(A[0]))]
 
     for i in range(len(A)):
         for j in range(len(A[i])):
@@ -124,9 +124,7 @@ def solve(A, b):
     """
     Solve Ab=x for b, where A is a matrix and b is a vector.
     """
-    print 'A:'
     print_matrix(A)
-    print 'b', b
     upper = Cholesky(A)
     # print 'upper'
     # print_matrix(upper)
@@ -139,8 +137,8 @@ def solve(A, b):
 def dot(mat, vec):
     result = [0]*len(mat)
     assert len(mat[0]) == len(vec)
-    for values in xrange(len(mat)):
-        for x in xrange(len(mat[values])):
+    for values in range(len(mat)):
+        for x in range(len(mat[values])):
             result[values] += mat[values][x]*vec[x]
             pass
     return result
@@ -149,7 +147,7 @@ def dot(mat, vec):
 def mult(lhs, rhs):
     a = len(lhs)
     b = len(rhs[0])
-    result = [[0]*b for _ in xrange(a)]
+    result = [[0]*b for _ in range(a)]
     for c in range(a):
         for d in range(b):
             s = 0
@@ -162,8 +160,7 @@ def mult(lhs, rhs):
 def print_matrix(m):
     for row in m:
         for col in row:
-            print ('%5.1f' % col),
-        print
+            print('%5.1f' % col)
 
 class rbf(object):
     @staticmethod
@@ -201,11 +198,11 @@ class rbf(object):
             return
 
         X = []
-        for i in xrange(len(points)):
+        for i in range(len(points)):
             item = []
-            for j in xrange(len(points)):
+            for j in range(len(points)):
                 total_squared = 0
-                for channel in xrange(len(points[i])):
+                for channel in range(len(points[i])):
                     delta = points[i][channel] - points[j][channel]
                     total_squared += delta*delta
                 item.append(self.func(total_squared))
@@ -237,9 +234,9 @@ class rbf(object):
             return 0
 
         out = 0
-        for i in xrange(len(self.result)):
+        for i in range(len(self.result)):
             total_squared = 0
-            for channel in xrange(len(self.points[i])):
+            for channel in range(len(self.points[i])):
                 delta = t[channel] - self.points[i][channel]
                 total_squared += delta*delta
 
@@ -257,7 +254,7 @@ def xgo():
     solver = rbf(values, points)
     # print solver.solvable
 
-    print solver.eval((0, 0, 0))
+    print(solver.eval((0, 0, 0)))
 
 if __name__ == "__main__":
     xgo()

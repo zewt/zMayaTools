@@ -1,6 +1,10 @@
 # This implements the keying UI for zMouthController nodes.
 
 import glob, os, sys, time, traceback, threading
+try:
+    from importlib import reload
+except ImportError:
+    pass
 from pprint import pprint, pformat
 import pymel.core as pm
 import maya
@@ -187,7 +191,7 @@ class KeyingWindow(dockable_window.DockableWindow):
         ]
 
         # Sanity limit for circular dependencies.  We're usually only one hop away from the controller.
-        for _ in xrange(10):
+        for _ in range(10):
             inputs = attr.listConnections(s=True, d=False, p=True)
             if not inputs:
                 return attr

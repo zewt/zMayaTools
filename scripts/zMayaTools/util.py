@@ -108,8 +108,11 @@ def show_file_in_explorer(filename):
     # containing the scene, but if we give it the filename it'll just load the scene in a
     # new instance of Maya.
     filename = filename.replace('/', '\\')
+
     cmd = u'explorer /select,"%s"' % filename
-    subprocess.Popen(cmd.encode('mbcs'))
+    if sys.version_info.major < 3:
+        cmd = cmd.encode('mbcs')
+    subprocess.Popen(cmd)
 
 FLASHW_ALL = 0x00000003
 FLASHW_CAPTION = 0x00000001
@@ -174,7 +177,7 @@ class ProgressWindow(object):
         This should be called at the start of a task.  For example,
 
         progress = ProgressWindow(10)
-        for idx in xrange(10:
+        for idx in range(10):
             progress.update()
             work()
 

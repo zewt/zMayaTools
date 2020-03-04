@@ -166,7 +166,7 @@ def _convert_shape(shape):
     # Add edge lines for quads.
     if 'quads' in geometry:
         quads = geometry['quads']
-        for i in xrange(0, len(quads), 4):
+        for i in range(0, len(quads), 4):
             lines.append(quads[i+0])
             lines.append(quads[i+1])
             lines.append(quads[i+1])
@@ -179,7 +179,7 @@ def _convert_shape(shape):
     # Add edge lines for tris.
     if omr.MUIDrawManager.kTriangles in geometry:
         tris = geometry[omr.MUIDrawManager.kTriangles]
-        for i in xrange(0, len(tris), 3):
+        for i in range(0, len(tris), 3):
             lines.append(tris[i+0])
             lines.append(tris[i+1])
             lines.append(tris[i+1])
@@ -192,7 +192,7 @@ def _convert_shape(shape):
         tris = geometry.setdefault(omr.MUIDrawManager.kTriangles, [])
         quads = geometry.pop('quads')
 
-        for i in xrange(0, len(quads), 4):
+        for i in range(0, len(quads), 4):
             tris.append(quads[i+0])
             tris.append(quads[i+1])
             tris.append(quads[i+2])

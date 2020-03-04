@@ -105,7 +105,7 @@ class zOBBTransform(OpenMayaMPx.MPxNode):
         it.allPositions(points, om.MSpace.kWorld)
 
         point_list = []
-        for idx in xrange(points.length()):
+        for idx in range(points.length()):
             point = points[idx]
             point_list.append((point.x, point.y, point.z))
 
@@ -122,7 +122,7 @@ class zOBBTransform(OpenMayaMPx.MPxNode):
         # Make a list of the number of vertices down each positive and negative axis, so we can
         # match up the two meshes.
         mvector_list = []
-        for idx in xrange(points.length()):
+        for idx in range(points.length()):
             point = points[idx]
 
             # Center vertices around their center, so translations don't throw off axis matching.
@@ -253,10 +253,10 @@ class zOBBTransform(OpenMayaMPx.MPxNode):
 
         axes_matched = {}
 
-        for dst_axis in xrange(3):
+        for dst_axis in range(3):
             # Find the source axis with the most matching vertices to this destination axis, and
             # whether the axis is reversed or not.
-            for src_axis in xrange(3):
+            for src_axis in range(3):
                 src_vertices_positive = src_axis_vertices[src_axis][False]
                 dst_vertices_positive = dst_axis_vertices[dst_axis][False]
                 src_vertices_negative = src_axis_vertices[src_axis][True]
@@ -278,7 +278,7 @@ class zOBBTransform(OpenMayaMPx.MPxNode):
         for order in itertools.permutations([0,1,2]):
             # Count the total number of matching vertices in this permutation.
             total_matched = 0
-            for axis in xrange(3):
+            for axis in range(3):
                 src_axis = axis
                 dst_axis = order[axis]
                 total_matched += axes_matched[(src_axis, dst_axis)][0]
@@ -287,7 +287,7 @@ class zOBBTransform(OpenMayaMPx.MPxNode):
                 best_permutation_count = total_matched
                 best_permutation = order
 
-                for axis in xrange(3):
+                for axis in range(3):
                     src_axis = axis
                     dst_axis = order[axis]
                     negative = axes_matched[(src_axis, dst_axis)][1]
@@ -298,7 +298,7 @@ class zOBBTransform(OpenMayaMPx.MPxNode):
         # to flip them).
         reordered_dst_vectors = []
         reordered_dst_extents = [0,0,0]
-        for src_axis in xrange(3):
+        for src_axis in range(3):
             dst_axis, negative = src_to_dst_axes[src_axis]
 
             dst_vector = dst_vectors[dst_axis]
@@ -331,7 +331,7 @@ class zOBBTransform(OpenMayaMPx.MPxNode):
         # we'll average the primary and secondary axes.  For (0,0,0) we won't use the output scale
         # at all and we'll always be 1.
         scale = [0,0,0]
-        for idx in xrange(3):
+        for idx in range(3):
             weight = scale_weights[idx]
             if weight.x == 0 and weight.y == 0 and weight.z == 0:
                 scale[idx] = 1
@@ -339,7 +339,7 @@ class zOBBTransform(OpenMayaMPx.MPxNode):
 
             value = 0
             total_weight = 0
-            for input_idx in xrange(3):
+            for input_idx in range(3):
                 t = weight[input_idx]
                 total_weight += t
                 value += dst_scale[input_idx]*weight[input_idx]

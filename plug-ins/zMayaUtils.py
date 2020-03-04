@@ -5,6 +5,10 @@ import zMayaTools.menus
 from zMayaTools.menus import Menu
 from zMayaTools import controller_editor, maya_helpers, material_assignment_menu, shelf_menus, joint_labelling, skin_clusters
 from zMayaTools import animation_helpers, pick_walk, wireframes
+try:
+    from importlib import reload
+except ImportError:
+    pass
 
 from zMayaTools import maya_logging
 log = maya_logging.get_log()

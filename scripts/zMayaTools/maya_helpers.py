@@ -1,4 +1,4 @@
-import contextlib, functools, logging, os, subprocess, time
+import contextlib, functools, logging, os, six, subprocess, time
 from contextlib import contextmanager
 from collections import namedtuple
 from pymel import core as pm
@@ -28,7 +28,7 @@ class OptionVar(object):
     _types = {
         'int': var_type(expected_type=int, maya_type='intValue'),
         'float': var_type(expected_type=(float, int), maya_type='floatValue'),
-        'string': var_type(expected_type=basestring, maya_type='stringValue'),
+        'string': var_type(expected_type=six.string_types, maya_type='stringValue'),
         'bool': var_type(expected_type=(bool, int), maya_type='intValue'),
     }
     
@@ -464,7 +464,7 @@ class RestorableWindow(object):
     """
     def __init__(self, window_class, plugins=None, uiScript=None):
         self.ui = None
-	self.window_class = window_class
+        self.window_class = window_class
         self.plugins = plugins
         self.uiScript = uiScript
 
@@ -639,7 +639,7 @@ def copy_weights_to_skincluster(src_attr, skin_cluster, shape):
 
     # Initialize all weights to 1, which is the default mask weight for values not
     # in the array.
-    for index in xrange(src_index_count):
+    for index in range(src_index_count):
         weights_array[index] = 1
 
     for index, value in zip(src_indices, src_values):

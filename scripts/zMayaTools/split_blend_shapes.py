@@ -27,7 +27,7 @@ def split_blend_shape(base_mesh, target_mesh, right_side=True, fade_distance=2, 
 
     result_pos = []
     new_target_pos = []
-    for idx in xrange(len(target_pos)):
+    for idx in range(len(target_pos)):
         dist = target_pos[idx][axis]
         dist -= axis_origin
 
@@ -55,7 +55,7 @@ def split_blend_shape(base_mesh, target_mesh, right_side=True, fade_distance=2, 
         p2 = math.pow(a[2]-b[2], 2)
         return math.pow(p0 + p1 + p2, 1)
 
-    for idx in xrange(len(new_target_pos)):
+    for idx in range(len(new_target_pos)):
         old = target_pos[idx]
         new = new_target_pos[idx]
         if distance_squared(old, new) < 0.0001:
@@ -71,7 +71,7 @@ def get_connected_input_geometry(blend_shape):
 	results = []
 	blend_shape_plug = _get_plug_from_node('%s.input' % blend_shape)
 	num_input_elements = blend_shape_plug.evaluateNumElements()
-	for idx in xrange(num_input_elements):
+	for idx in range(num_input_elements):
             input = blend_shape_plug.elementByPhysicalIndex(idx)
             input_geometry_attr = OpenMaya.MFnDependencyNode(input.node()).attribute('inputGeometry')
             input_geometry_plug = input.child(input_geometry_attr)

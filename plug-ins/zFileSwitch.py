@@ -251,7 +251,7 @@ def add_file_switch(node):
 def add_file_switch_to_selection(unused):
     nodes = pm.ls(sl=True, type='file')
     if not nodes:
-        print 'Select one or more file nodes'
+        log.info('Select one or more file nodes')
         return
 
     results = []

@@ -2,6 +2,10 @@ from pymel import core as pm
 from maya import OpenMaya as om
 from maya import cmds
 import os, sys, time
+try:
+    from importlib import reload
+except ImportError:
+    pass
 from zMayaTools import kdtree, maya_helpers, maya_logging
 reload(maya_helpers)
 
@@ -310,7 +314,7 @@ class UI(maya_helpers.OptionsBox):
         return [(input_attr, output_attr)]
 
     def get_selected_surface_association_idx(self):
-        for i in xrange(1,5):
+        for i in range(1,5):
             if pm.radioButtonGrp('mpwSurfaceAssociation%i' % i, q=True, select=True):
                 return i
 

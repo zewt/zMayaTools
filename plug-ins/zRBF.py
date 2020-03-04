@@ -43,7 +43,7 @@ class zRBF(OpenMayaMPx.MPxNode):
             samples = []
             outputs = []
             values = data_block.inputArrayValue(self.attr_value)
-            for idx in xrange(values.elementCount()):
+            for idx in range(values.elementCount()):
                 values.jumpToArrayElement(idx)
                 handle = values.inputValue()
                 value_input = handle.child(zRBF.attr_value_Position)

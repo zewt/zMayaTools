@@ -128,7 +128,7 @@ class Validate(object):
         cnt_0001 = 0
         cnt_001 = 0
         cnt_01 = 0
-        for idx in xrange(len(base_points)):
+        for idx in range(len(base_points)):
             p1 = base_points[idx]
             p2 = output_points[idx]
             distance = get_distance(p1, p2)

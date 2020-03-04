@@ -26,12 +26,13 @@ class zStringFormatter(OpenMayaMPx.MPxNode):
         if plug == self.attr_output:
             attrs = {}
 
-            for type_attr in (self.attr_int_value, self.attr_float_value, self.attr_string_value):
-                entries_attr = self.input_attr_entries[type_attr]
-                name_attr = self.input_attr_names[type_attr]
+            for type_name in 'inputIntEntries', 'inputFloatEntries', 'inputStringEntries':
+                entries_attr = self.input_attr_entries[type_name]
+                type_attr = self.input_attr_values[type_name]
+                name_attr = self.input_attr_names[type_name]
 
                 entries = dataBlock.inputArrayValue(entries_attr)
-                for i in xrange(entries.elementCount()):
+                for i in range(entries.elementCount()):
                     entries.jumpToArrayElement(i)
                     name = entries.inputValue().child(name_attr).asString()
                     value_attr = entries.inputValue().child(type_attr)
@@ -84,8 +85,9 @@ class zStringFormatter(OpenMayaMPx.MPxNode):
 
         # Create input values for each data type.
         cls.input_attr_names = {}
+        cls.input_attr_values = {}
         cls.input_attr_entries = {}
-        def create_list_attr(value_attr, entries_attr, entries_attr_short, name_attr, name_attr_short):
+        def create_list_attr(value_attr, entries_attr_name, entries_attr_short, name_attr, name_attr_short):
             cls.addAttribute(value_attr)
             cls.attributeAffects(value_attr, cls.attr_output)
 
@@ -93,15 +95,16 @@ class zStringFormatter(OpenMayaMPx.MPxNode):
             cls.addAttribute(name_attr)
             cls.attributeAffects(name_attr, cls.attr_output)
 
-            entries_attr = cmpAttr.create(entries_attr, name_attr_short)
+            entries_attr = cmpAttr.create(entries_attr_name, name_attr_short)
             cmpAttr.addChild(name_attr)
             cmpAttr.addChild(value_attr)
             cmpAttr.setArray(True)
             cls.addAttribute(entries_attr)
             cls.attributeAffects(entries_attr, cls.attr_output)
 
-            cls.input_attr_names[value_attr] = name_attr
-            cls.input_attr_entries[value_attr] = entries_attr
+            cls.input_attr_names[entries_attr_name] = name_attr
+            cls.input_attr_values[entries_attr_name] = value_attr
+            cls.input_attr_entries[entries_attr_name] = entries_attr
 
         cls.attr_int_value = nAttr.create('inputIntValue', 'iiv', om.MFnNumericData.kInt, 0)
         nAttr.setKeyable(True)

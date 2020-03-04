@@ -122,6 +122,14 @@ class Menu(object):
                     return cmp(self.label, rhs.label)
                 return 0
 
+            def __lt__(self, rhs):
+                if self.submenu != rhs.submenu:
+                    # self.submenu true comes before self.submenu false.
+                    return (not self.submenu) < (not rhs.submenu)
+                if self.label != rhs.label:
+                    return self.label < rhs.label
+                return 0
+
         submenu_items = pm.menu(parent, q=True, ia=True)
         sibling_labels = []
         for item in submenu_items:
@@ -319,7 +327,7 @@ class Menu(object):
             # up any submenus we created if all plugins with items inside them are unloaded.
             # Don't recurse all the way up to the top MayaWindow.
             parts = item.split('|')
-            for end in xrange(len(parts)-2, 0, -1):
+            for end in range(len(parts)-2, 0, -1):
                 # See if the parent menu has any items left.
                 parent_menu_path = '|'.join(parts[0:end+1])
                 if len(pm.menu(parent_menu_path, q=True, itemArray=True)) == 0:
@@ -344,7 +352,7 @@ class Menu(object):
         start_idx += 1
 
         end_idx = start_idx
-        for idx in xrange(start_idx+1, len(menu_items)):
+        for idx in range(start_idx+1, len(menu_items)):
             menu_item = menu_items[idx]
             section = pm.menuItem(menu_item, q=True, label=True)
             
@@ -422,7 +430,7 @@ class Menu(object):
 
             start_idx -= 1
 
-        for end_idx in xrange(start_idx+1, len(menu_items)):
+        for end_idx in range(start_idx+1, len(menu_items)):
             if not pm.menuItem(menu_items[end_idx], q=True, divider=True):
                 continue
 

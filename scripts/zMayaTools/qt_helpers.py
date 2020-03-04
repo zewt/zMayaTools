@@ -1,8 +1,11 @@
 import fnmatch, os, maya
 from fnmatch import fnmatch
 from zMayaTools import maya_logging, Qt
-from StringIO import StringIO
 import xml.etree.cElementTree as ET
+try:
+    from StringIO import StringIO
+except:
+    from io import StringIO
 
 log = maya_logging.get_log()
 

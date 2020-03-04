@@ -20,14 +20,14 @@ class MayaCallback(object):
     Disable the callback:
     callback.registered = False
     """
-    def __init__(self, callback, registration_func, async=True):
+    def __init__(self, callback, registration_func, asyn=True):
         """
-        If async is true, multiple callbacks will be coalesced and called from the main
+        If asyn is true, multiple callbacks will be coalesced and called from the main
         loop.  Async callbacks don't receive arguments.
         """
         self.callback_id = None
         self.callback = callback
-        self.async = async
+        self.asyn = asyn
         self.registration_func = registration_func
 
     def __del__(self):
@@ -56,7 +56,7 @@ class MayaCallback(object):
         if not self.registered:
             return
 
-        if not self.async:
+        if not self.asyn:
             self.callback(*args, **kwargs)
         else:
             self._queue_callback()
@@ -75,13 +75,13 @@ class AttributeChangedCallback(MayaCallback):
     Run a callback on attribute changed (MNodeMessage.addAttributeChangedCallback).
     mask is an MNodeMessage::AttributeMessage bitmask.
     """
-    def __init__(self, callback, node, mask=0xFFFFFFFF, async=True):
+    def __init__(self, callback, node, mask=0xFFFFFFFF, asyn=True):
         self._user_callback = callback
-        self._user_async = async
+        self._user_async = asyn
         self.mask = mask
         super(AttributeChangedCallback, self).__init__(
                 self._attribute_changed,
-                lambda func: om.MNodeMessage.addAttributeChangedCallback(node.__apimobject__(), func, None), async=False)
+                lambda func: om.MNodeMessage.addAttributeChangedCallback(node.__apimobject__(), func, None), asyn=False)
 
     def _attribute_changed(self, msg, plug, otherPlug, data):
         # If this isn't an attribute change type that we're interested in, ignore it.
@@ -120,13 +120,13 @@ class MayaCallbackList(object):
         self.callbacks.append(maya_callback)
         maya_callback.registered = self.registered
 
-    def add(self, func, registration_func, async=True):
+    def add(self, func, registration_func, asyn=True):
         """
         Add a MayaCallback.
 
         If we're currently registered, the new callback will also be registered.
         """
-        maya_callback = MayaCallback(func, registration_func, async=async)
+        maya_callback = MayaCallback(func, registration_func, asyn=asyn)
         self.add_callback(maya_callback)
         return maya_callback
 

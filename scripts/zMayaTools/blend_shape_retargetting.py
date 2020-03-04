@@ -269,7 +269,7 @@ def redst_blend_shapes_inner(src_node, dst_node, src_blend_shape_node, dst_blend
         if preferred_idx not in index_list:
             return preferred_idx
 
-        for idx in xrange(0, len(index_list)+1):
+        for idx in range(0, len(index_list)+1):
             if idx not in index_list:
                 return idx
         raise RuntimeError('Not reachable')
