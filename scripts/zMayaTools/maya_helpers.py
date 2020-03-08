@@ -473,6 +473,11 @@ class RestorableWindow(object):
             # We're being reopened, and a layout has already been created.
             restored_control = omui.MQtUtil.getCurrentParent()
 
+        # Load any plugins this window needs.  ui.setDockableParameters(plugins) doesn't work,
+        # don't use it.
+        if self.plugins:
+            load_plugin(self.plugins)
+
         if self.ui is None:
             self.ui = self.window_class()
             def closed():
@@ -491,13 +496,7 @@ class RestorableWindow(object):
         #
         # Watch out: this function has *args and *kwargs which shouldn't be there, which causes it to
         # silently eat unknown parameters instead of throwing an error.
-        self.ui.setDockableParameters(dockable=True, retain=False,
-                plugins=self.plugins, uiScript=self.uiScript )
-
-        # If we just set plugins (which is really workspaceControl -requiredPlugin), the control
-        # will be closed on launch.  We need to enable checksPlugins too to work around this.
-        control_name = self.ui.objectName() + 'WorkspaceControl'
-        pm.workspaceControl(control_name, e=True, checksPlugins=True)
+        self.ui.setDockableParameters(dockable=True, retain=False, uiScript=self.uiScript)
 
         self.ui.show()
 
