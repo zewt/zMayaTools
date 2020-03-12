@@ -641,6 +641,11 @@ def call_on_plugin_unload(plugin_name, func):
         return False
     
     def plugin_unloaded(s, unused):
+        # For some reason this is called if you unload a plugin that isn't loaded, and in
+        # that case the array only has one value.  Ignore this.
+        if len(s) < 2:
+            return
+
         plugin, plugin_path = s
         if plugin != plugin_name:
             return
