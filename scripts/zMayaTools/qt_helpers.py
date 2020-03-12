@@ -20,8 +20,13 @@ def compile_all_layouts():
     compile_all_layouts_in_path(path)
 
 def compile_all_layouts_in_path(path):
+    # eg. zMayaTools
+    container = os.path.basename(path)
+
     # Add the resource directory to QT for the zMayaTools prefix.  See fixup_ui_source.
-    Qt.QDir.setSearchPaths('zMayaTools', [path + '/qt_resources'])
+    # Note that this API is extremely broken and will silently discard search keys containing
+    # underscores.
+    Qt.QDir.setSearchPaths(container, [path + '/qt_resources'])
     
     qt_path = path + '/qt/'
     qt_generated_path = path + '/qt_generated/'
@@ -46,12 +51,12 @@ def compile_all_layouts_in_path(path):
         with open(input_file) as input:
             input_xml = input.read()
 
-        input_xml = fixup_ui_source(input_xml)
+        input_xml = fixup_ui_source(path, container, input_xml)
 
         with open(output_file, 'w') as output:
             Qt.pysideuic.compileUi(StringIO(input_xml), output)
 
-def fixup_ui_source(data):
+def fixup_ui_source(path, container, data):
     """
     QT isn't very good, so we need to jump some hoops.
 
@@ -85,7 +90,8 @@ def fixup_ui_source(data):
         root.remove(resource_node[0])
 
     def replace_path(s):
-        return s.replace(':/zMayaTools/', 'zMayaTools:')
+        # :/zMayaTools/icons/key.png -> zMayaTools:/icons/key.png
+        return s.replace(':/' + container + '', container + ':')
 
     def replace_recursively(node):
         # Why are text children of a node stored inside "tail" in a child?  ElementTree
