@@ -172,6 +172,50 @@ def set_controller_parent(controller, parent, after=None):
         # Reconnect the children.
         assign_controller_children(parent, all_children)
 
+def find_stale_controllers():
+    """
+    Stale controller nodes often accumulate in scenes, since they aren't automatically deleted
+    when their transforms are deleted, and they're a pain to clean up.
+    
+    Return all dead controller nodes: nodes which have no transform, and which don't have any
+    children with a transform (not a group).
+    """
+    # Find all root controllers.
+    alive_controllers = set()
+    all_controllers = set(pm.ls(type='controller'))
+    for node in all_controllers:
+        if get_controller_object(node) is None:
+            continue
+            
+        # This controller has children.  Mark all of its parents as not dead.
+        parent = node
+        seen_parents = set()
+        while parent is not None:
+            alive_controllers.add(parent)
+            parent = get_controller_parent(parent)
+
+            # If parent is alreay in alive_controllers, we've already added all of its ancestors, so
+            # we can stop.
+            if parent in alive_controllers:
+                break
+                
+            assert parent not in seen_parents # sanity check in case of cycles
+            seen_parents.add(parent)
+            
+    return list(all_controllers - alive_controllers)
+    
+def delete_stale_controllers():
+    """
+    Delete all stale controllers in the scene.
+    """
+    stale_controllers = find_stale_controllers()
+    if not stale_controllers:
+        log.info('No stale controllers')
+        return
+
+    pm.delete(stale_controllers)
+    log.info('Deleted %i stale %s', len(stale_controllers), 'controller' if len(stale_controllers) == 1 else 'controllers')
+
 class ControllerEditor(dockable_window.DockableWindow):
     def __init__(self):
         super(ControllerEditor, self).__init__()
@@ -206,6 +250,7 @@ class ControllerEditor(dockable_window.DockableWindow):
         self.ui.createControllerButton.clicked.connect(self.create_controller_for_selected_object)
         self.ui.createControllerGroupButton.clicked.connect(self.create_controller_group)
         self.ui.deleteButton.clicked.connect(self.delete_controller)
+        self.ui.deleteStaleControllersButton.clicked.connect(delete_stale_controllers)
 
         self.populate_tree()
 
