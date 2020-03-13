@@ -765,10 +765,7 @@ class PluginMenu(Menu):
     def __init__(self):
         super(PluginMenu, self).__init__()
         self.window = maya_helpers.RestorableWindow(KeyframeNamingWindow, plugins='zKeyframeNaming.py',
-                uiScript='import zMayaTools.keyframe_naming; zMayaTools.keyframe_naming.menu.restore()')
-
-    def restore(self):
-        self.window.restore()
+            module='zMayaTools.keyframe_naming', obj='menu.window')
 
     def add_menu_items(self):
         menu = 'MayaWindow|mainKeysMenu'

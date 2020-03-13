@@ -133,10 +133,7 @@ class PluginMenu(Menu):
     def __init__(self):
         super(PluginMenu, self).__init__()
         self.window = maya_helpers.RestorableWindow(JointLabellingWindow, plugins='zMayaUtils.py',
-            uiScript='import zMayaTools.joint_labelling; zMayaTools.joint_labelling.restore()')
-
-    def restore(self):
-        self.window.restore()
+            module='zMayaTools.joint_labelling', obj='menu.window')
 
     def add_menu_items(self):
         menu = 'MayaWindow|mainRigSkeletonsMenu'

@@ -202,6 +202,12 @@ class Validate(object):
             missing_vertices = []
             input_vertices = get_vertices(shape)
             output_vertices = get_vertices(temp_mesh)
+#            print len(input_vertices), len(output_vertices)
+
+            # this isn't quite right:
+            # when vertices are merged they move to the average position, which means we won't find
+            # a match for either input vertex
+            # this causes us to never sync back up and flag all vertices after that
             for input_vtx_idx, input_vtx in enumerate(input_vertices):
                 # If we've run out of output vertices, all remaining input vertices are missing.
                 if output_vtx_idx >= len(output_vertices):

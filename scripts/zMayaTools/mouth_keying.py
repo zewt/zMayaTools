@@ -522,10 +522,7 @@ class PluginMenu(Menu):
     def __init__(self):
         super(PluginMenu, self).__init__()
         self.window = maya_helpers.RestorableWindow(KeyingWindow, plugins='zMouthController.py',
-            uiScript='import zMayaTools.mouth_keying; zMayaTools.mouth_keying.menu.restore()')
-
-    def restore(self):
-        self.window.restore()
+            module='zMayaTools.mouth_keying', obj='menu.window')
 
     def add_menu_items(self):
         menu = 'MayaWindow|mainRigSkeletonsMenu'

@@ -25,12 +25,14 @@ def get_controller_for_object(node):
         return connections[0]
     return None
 
+#from maya import cmds
 def get_controller_object(controller):
     """
     Get the object associated with a controller, or None if there's no object,
     which is usually a group.
     """
     controller_objects = controller.controllerObject.listConnections(s=True, d=False)
+#    controller_objects = pm.ls(cmds.listConnections(unicode(controller.controllerObject), s=True, d=False))
     return controller_objects[0] if controller_objects else None
 
 def get_controller_parent(controller, get_plug=False):
@@ -478,10 +480,7 @@ class PluginMenu(Menu):
         super(PluginMenu, self).__init__()
 
         self.window = maya_helpers.RestorableWindow(ControllerEditor, plugins='zMayaUtils.py',
-            uiScript='import zMayaTools.controller_editor; zMayaTools.controller_editor.menu.restore()')
-
-    def restore(self):
-        self.window.restore()
+            module='zMayaTools.controller_editor', obj='menu.window')
 
     def add_menu_items(self):
         menu = 'MayaWindow|mainRigControlMenu'

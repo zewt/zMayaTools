@@ -462,33 +462,46 @@ class RestorableWindow(object):
     This is a helper for creating a QT window that can be saved to the panel layout and restored when
     Maya loads.
     """
-    def __init__(self, window_class, plugins=None, uiScript=None):
+    def __init__(self, window_class, plugins=None, module=None, obj=None):
+        """
+        module is the module where this instance lives, and obj is the path to the object
+        in the module.  For example, if this object can be accessed with
+        
+        import module
+        module.obj.window
+
+        then module is "module" and obj is "obj.window".  This is needed to support session
+        restoration.
+        """
         self.ui = None
+
         self.window_class = window_class
+        self.module = module
+        self.obj = obj
+
         self.plugins = plugins
-        self.uiScript = uiScript
 
     def _open_ui(self, restore):
         if restore:
             # We're being reopened, and a layout has already been created.
-            restored_control = omui.MQtUtil.getCurrentParent()
+            parent = omui.MQtUtil.getCurrentParent()
 
         # Load any plugins this window needs.  ui.setDockableParameters(plugins) doesn't work,
         # don't use it.
         if self.plugins:
             load_plugin(self.plugins)
 
-        if self.ui is None:
-            self.ui = self.window_class()
-            def closed():
-                self.ui = None
-            self.ui.destroyed.connect(closed)
+        if self.ui is not None:
+            self.ui.show()
+            return
+
+        self.ui = self.window_class()
 
         if restore:
             # We're restoring into an existing layout.  Just add the control that was created
             # for us, and show() will be called automatically.
             ptr = omui.MQtUtil.findControl(self.ui.objectName())
-            omui.MQtUtil.addWidgetToMayaLayout(long(ptr), long(restored_control))
+            omui.MQtUtil.addWidgetToMayaLayout(long(ptr), long(parent))
             return
 
         # Disable retain, or we won't be able to create the window again after reloading the script
@@ -496,9 +509,19 @@ class RestorableWindow(object):
         #
         # Watch out: this function has *args and *kwargs which shouldn't be there, which causes it to
         # silently eat unknown parameters instead of throwing an error.
-        self.ui.setDockableParameters(dockable=True, retain=False, uiScript=self.uiScript)
+        #
+        # We can't use closeEvent to tell when the window is closing, since that's called too late.
+        ui_script = 'import %s; %s.%s.restore()'% (self.module, self.module, self.obj)
+        close_callback='import %s; %s.%s.closed()'% (self.module, self.module, self.obj)
+        self.ui.setDockableParameters(dockable=True, retain=False, uiScript=ui_script, closeCallback=close_callback)
 
         self.ui.show()
+
+    def closed(self):
+        if self.ui is None:
+            return
+
+        self.ui = None
 
     def show(self):
         self._open_ui(restore=False)
