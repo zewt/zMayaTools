@@ -4,7 +4,7 @@ from maya import OpenMaya as om, OpenMayaMPx as ompx
 import zMayaTools.menus
 from zMayaTools.menus import Menu
 from zMayaTools import controller_editor, maya_helpers, material_assignment_menu, shelf_menus, joint_labelling, skin_clusters
-from zMayaTools import animation_helpers, pick_walk, wireframes
+from zMayaTools import animation_helpers, pick_walk, wireframes, fix_layer_editor_undo
 try:
     from importlib import reload
 except ImportError:
@@ -254,9 +254,13 @@ def initializePlugin(mobject):
     maya_helpers.setup_runtime_commands()
     wireframes.setup_runtime_commands()
 
+    if pm.optionVar(q='zFixLayerEditorUndo'):
+        fix_layer_editor_undo.install()
+
 def uninitializePlugin(mobject):
     plugin = ompx.MFnPlugin(mobject)
     menu.remove_menu_items()
     material_assignment_menu.AssignMaterialsContextMenu.deregister()
     skin_clusters.MoveSkinnedJoints.deregister(plugin)
+    fix_layer_editor_undo.uninstall()
 
