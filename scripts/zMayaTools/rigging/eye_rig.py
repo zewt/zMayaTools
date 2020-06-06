@@ -153,6 +153,12 @@ def create_eye_rig():
     # This gives us the rotation caused by translating the control.
     aim_matrix = pm.createNode('aimMatrix', n='EyeRig_HandleAim')
     aim_matrix.primaryInputAxis.set((0,0,-1))
+
+    # If we leave secondaryInputAxis disabled, the aimMatrix will aim the X and Y axes and pass
+    # through Z (twist).  Align the twist axis to zero it out.
+    aim_matrix.secondaryInputAxis.set((0,1,0))
+    aim_matrix.secondaryTargetVector.set((0,1,0))
+    aim_matrix.secondaryMode.set(2) # align
     control_mesh_matrix.connect(aim_matrix.inputMatrix)
     center_node.matrix.connect(aim_matrix.primaryTargetMatrix)
 
@@ -201,8 +207,8 @@ def create_eye_rig():
 
         # Finally, combine the three parts of the rotation.
         combine_rotations = pm.createNode('multMatrix', n='EyeRig_CombineRotations_%s' % shortName)
-        pick_rotation.outputMatrix.connect(combine_rotations.matrixIn[0])
-        translation_rotation_matrix.connect(combine_rotations.matrixIn[1])
+        translation_rotation_matrix.connect(combine_rotations.matrixIn[0])
+        pick_rotation.outputMatrix.connect(combine_rotations.matrixIn[1])
         eyes_focused_compose.outputMatrix.connect(combine_rotations.matrixIn[2])
 
         # Decompose the result back to euler rotations and connect it to the angle attribute.
