@@ -103,7 +103,6 @@ def prep_for_retargetting(blend_shape, restores):
         restores.append(maya_helpers.SetAndRestoreAttr(directory_entry.directoryWeight, 1))
 
     for target_visibility in blend_shape.targetVisibility:
-        print target_visibility
         restores.append(maya_helpers.SetAndRestoreAttr(target_visibility, 1))
 
     # XXX: untested
