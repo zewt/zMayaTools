@@ -526,10 +526,16 @@ class UI(maya_helpers.OptionsBox):
     title = 'Retarget Blend Shapes'
 
     def get_src_blend_shape_name(self):
-        return pm.optionMenuGrp('sourceBlendShapeList', q=True, v=True)
+        result = pm.optionMenuGrp('sourceBlendShapeList', q=True, v=True)
+        if result == 'No Blend Shapes In Scene':
+            return None
+        return result
     
     def get_dst_blend_shape_name(self):
-        return pm.optionMenuGrp('dstBlendShapeList', q=True, v=True)
+        result = pm.optionMenuGrp('dstBlendShapeList', q=True, v=True)
+        if result == 'No Blend Shapes In Scene':
+            return None
+        return result
 
     def option_box_load(self):
         """
@@ -558,8 +564,12 @@ class UI(maya_helpers.OptionsBox):
 
     def option_box_apply(self):
         # Get the selected blendShapes.
-        src_blend_shape = pm.optionMenuGrp('sourceBlendShapeList', q=True, v=True)
-        dst_blend_shape = pm.optionMenuGrp('dstBlendShapeList', q=True, v=True)
+        src_blend_shape = self.get_src_blend_shape_name()
+        dst_blend_shape = self.get_dst_blend_shape_name()
+        if not src_blend_shape or not dst_blend_shape:
+            log.info('No blend shapes are selected')
+            return
+
         src_blend_shape = pm.ls(src_blend_shape)[0]
         dst_blend_shape = pm.ls(dst_blend_shape)[0]
 
@@ -633,7 +643,7 @@ class UI(maya_helpers.OptionsBox):
             for entry in bnArray:
                 pm.menuItem(label=entry)
             if not bnArray:
-                pm.menuItem(label='No Blend Shape Selected')
+                pm.menuItem(label='No Blend Shapes In Scene')
 
             mesh_option_group = pm.optionMenuGrp(name + 'Mesh', label=mesh_label)
 
@@ -657,7 +667,10 @@ class UI(maya_helpers.OptionsBox):
 
     def refresh_mesh_list(self, dropdown, blend_shape):
         # Show the name of the transform, but remember the original meshes.
-        meshes = pm.ls(pm.blendShape(blend_shape, q=True, g=True))
+        if blend_shape is None:
+            meshes = []
+        else:
+            meshes = pm.ls(pm.blendShape(blend_shape, q=True, g=True))
 
         for item in pm.optionMenu(dropdown, q=True, itemListLong=True):
             pm.deleteUI(item)
@@ -665,7 +678,7 @@ class UI(maya_helpers.OptionsBox):
         for mesh in meshes:
             pm.menuItem(label=mesh.getTransform().nodeName(), parent=dropdown)
         if not meshes:
-            pm.menuItem(label='No Blend Shape Selected')
+            pm.menuItem(label='No Blend Shape Selected', parent=dropdown)
         return meshes
 
     def refresh_src_mesh_list(self):
@@ -681,8 +694,6 @@ class UI(maya_helpers.OptionsBox):
 
         src_blend_shape = self.get_src_blend_shape_name()
         if src_blend_shape is None:
-            return
-        if src_blend_shape == 'No Blend Shape Selected':
             return
 
         # The blend shape array is sparse, so keep a mapping from list indices to blend
