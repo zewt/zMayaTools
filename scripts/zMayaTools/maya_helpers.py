@@ -159,12 +159,13 @@ class OptionsBox(object):
 
         pm.waitCursor(state=1)
 
-        pm.tabLayout(tabsVisible=False, scrollable=True)
-        
-        self.options_box_setup()
-        self.option_box_load()
-
-        pm.waitCursor(state=0)
+        try:
+            pm.tabLayout(tabsVisible=False, scrollable=True)
+            
+            self.options_box_setup()
+            self.option_box_load()
+        finally:
+            pm.waitCursor(state=0)
         
         pm.setUITemplate(popTemplate=True)
 
