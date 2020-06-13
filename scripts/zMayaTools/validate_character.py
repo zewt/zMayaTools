@@ -414,8 +414,8 @@ class Validate(object):
             # since pm.runtime.InvertSelection doesn't work.
             all_indices = set(range(len(vertices)))
             selected_indices = set()
-            for sel in pm.ls(sl=True):
-                selected_indices |= set(sel.indices())
+            for sel in pm.ls(sl=True, flatten=True):
+                selected_indices.add(sel.index())
 
             deselected_indices = all_indices - selected_indices
             if deselected_indices:
@@ -775,22 +775,23 @@ class Validate(object):
         # Check for bad geometry.
         self.progress.set_task_progress('Checking geometry', percent=0, force=True)
 
-        nonmanifold_verts = pm.ls(pm.polyInfo(self.node, nonManifoldVertices=True))
-        nonmanifold_verts_count = sum(len(vtx) for vtx in nonmanifold_verts)
+        nonmanifold_verts = pm.ls(pm.polyInfo(self.node, nonManifoldVertices=True), flatten=True)
+        nonmanifold_verts_count = len(nonmanifold_verts)
         if nonmanifold_verts_count:
             self.log('Mesh has %i nonmanifold %s' %
                 (nonmanifold_verts_count, 'vertices' if nonmanifold_verts_count != 1 else 'vertex'),
                 nodes=nonmanifold_verts)
 
-        nonmanifold_edges = pm.ls(pm.polyInfo(self.node, nonManifoldEdges=True))
-        nonmanifold_edges_count = sum(len(vtx) for vtx in nonmanifold_edges)
+        nonmanifold_edges = pm.ls(pm.polyInfo(self.node, nonManifoldEdges=True), flatten=True)
+        nonmanifold_edges_count = len(nonmanifold_edges)
         if nonmanifold_edges_count:
             self.log('Mesh has %i nonmanifold %s' %
                 (nonmanifold_edges_count, 'edges' if nonmanifold_edges_count != 1 else 'edge'),
                 nodes=nonmanifold_edges)
 
         lamina_faces = pm.ls(pm.polyInfo(self.node, laminaFaces=True))
-        lamina_face_count = sum(len(vtx) for vtx in lamina_faces)
+        lamina_faces = pm.ls(lamina_faces, flatten=True)
+        lamina_face_count = len(lamina_faces)
         if lamina_face_count:
             self.log('Mesh has %i lamina %s' %
                 (lamina_face_count, 'faces' if lamina_face_count != 1 else 'face'),
@@ -802,7 +803,8 @@ class Validate(object):
         pm.polySelectConstraint(mode=3, type=constraint_face, geometricarea=True, geometricareabound=(0, min_face_area))
         degenerate_faces = pm.ls(sl=True)
         pm.polySelectConstraint(mode=0, type=constraint_face, geometricarea=False)
-        degenerate_face_count = sum(len(vtx) for vtx in degenerate_faces)
+        degenerate_faces = pm.ls(degenerate_faces, flatten=True)
+        degenerate_face_count = len(degenerate_faces)
         if degenerate_face_count:
             self.log('Mesh has %i degenerate %s.' %
                 (degenerate_face_count, 'faces' if degenerate_face_count != 1 else 'face'),
@@ -815,7 +817,8 @@ class Validate(object):
         pm.polySelectConstraint(mode=3, type=constraint_uv, texturedarea=True, texturedareabound=(0, min_uv_area))
         degenerate_uvs = pm.ls(sl=True)
         pm.polySelectConstraint(mode=0, type=constraint_uv, texturedarea=False)
-        degenerate_uv_count = sum(len(vtx) for vtx in degenerate_uvs)
+        degenerate_uvs = pm.ls(degenerate_uvs, flatten=True)
+        degenerate_uv_count = len(degenerate_uvs)
         if degenerate_uv_count:
             self.log('Mesh has %i degenerate %s.' %
                 (degenerate_uv_count, 'UVs' if degenerate_uv_count != 1 else 'UV'),
@@ -827,7 +830,8 @@ class Validate(object):
         pm.polySelectConstraint(mode=3, type=constraint_edge, length=True, lengthbound=(0, min_edge_length))
         degenerate_edges = pm.ls(sl=True)
         pm.polySelectConstraint(mode=0, type=constraint_edge, length=False)
-        degenerate_edge_count = sum(len(vtx) for vtx in degenerate_edges)
+        degenerate_edges = pm.ls(degenerate_edges, flatten=True)
+        degenerate_edge_count = len(degenerate_edges)
         if degenerate_edge_count:
             self.log('Mesh has %i degenerate %s.' %
                 (degenerate_edge_count, 'edges' if degenerate_edge_count != 1 else 'edge'),
@@ -838,7 +842,8 @@ class Validate(object):
         pm.polySelectConstraint(mode=3, type=constraint_face, size=3)
         ngons = pm.ls(sl=True)
         pm.polySelectConstraint(mode=0, type=constraint_face, size=3)
-        ngon_count = sum(len(vtx) for vtx in ngons)
+        ngons = pm.ls(ngons, flatten=True)
+        ngon_count = len(ngons)
         if ngon_count:
             self.log('Mesh has %i %s.' %
                 (ngon_count, 'ngons' if ngon_count != 1 else 'ngon'),
