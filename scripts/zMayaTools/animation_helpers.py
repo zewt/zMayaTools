@@ -1,5 +1,8 @@
 import pymel.core as pm
-from zMayaTools import maya_helpers
+from zMayaTools import maya_helpers, preferences
+
+optvars = maya_helpers.OptionVars()
+optvars.add('zMayaToolsFrameStepIncludesNextFrame', 'bool', False)
 
 def next_time_slider_frame(delta):
     """
@@ -8,6 +11,10 @@ def next_time_slider_frame(delta):
     """
     min_frame = pm.playbackOptions(q=True, min=True)
     max_frame = pm.playbackOptions(q=True, max=True)
+
+    if optvars['zMayaToolsFrameStepIncludesNextFrame']:
+        max_frame += 1
+
     current_frame = pm.currentTime(q=True)
     if current_frame < min_frame or current_frame > max_frame:
         if delta < 0:
@@ -22,11 +29,30 @@ def next_time_slider_frame(delta):
 
     pm.currentTime(new_frame)
 
-def setup_runtime_commands():
+_preference_handler = None
+def install():
     maya_helpers.create_or_replace_runtime_command('zNextFrameOnTimeSlider', category='zMayaTools.Animation',
             annotation='zMayaTools: Go to the next frame, staying on the time slider',
             command='from zMayaTools import animation_helpers; animation_helpers.next_time_slider_frame(+1)')
     maya_helpers.create_or_replace_runtime_command('zPreviousFrameOnTimeSlider', category='zMayaTools.Animation',
             annotation='zMayaTools: Go to the previous frame, staying on the time slider',
             command='from zMayaTools import animation_helpers; animation_helpers.next_time_slider_frame(-1)')
+
+    # Create our preferences window block.
+    def create_prefs_widget(pref_handler):
+        pm.checkBoxGrp('zmt_FrameStepIncludesNextFrame',
+            numberOfCheckBoxes=1,
+            label='',
+            cw2=(140, 300),
+            label1='Frame stepping includes the frame after the time slider range',
+            cc1=pref_handler.get_change_callback('zMayaToolsFrameStepIncludesNextFrame'))
+
+    global _preference_handler
+    _preference_handler = preferences.PreferenceHandler('1_menus', create_prefs_widget)
+    _preference_handler.add_option(optvars.get('zMayaToolsFrameStepIncludesNextFrame'), 'zmt_FrameStepIncludesNextFrame')
+    _preference_handler.register()
+
+def uninstall():
+    if _preference_handler is not None:
+        _preference_handler.unregister()
 

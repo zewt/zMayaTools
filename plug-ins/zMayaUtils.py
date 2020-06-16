@@ -249,7 +249,7 @@ def initializePlugin(mobject):
     menu.add_menu_items()
     material_assignment_menu.AssignMaterialsContextMenu.register()
     skin_clusters.MoveSkinnedJoints.register(plugin)
-    animation_helpers.setup_runtime_commands()
+    animation_helpers.install()
     pick_walk.setup_runtime_commands()
     maya_helpers.setup_runtime_commands()
     wireframes.setup_runtime_commands()
@@ -262,5 +262,6 @@ def uninitializePlugin(mobject):
     menu.remove_menu_items()
     material_assignment_menu.AssignMaterialsContextMenu.deregister()
     skin_clusters.MoveSkinnedJoints.deregister(plugin)
+    animation_helpers.uninstall()
     fix_layer_editor_undo.uninstall()
 
