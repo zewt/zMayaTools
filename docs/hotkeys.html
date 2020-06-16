@@ -34,7 +34,20 @@ its name below, such as "zNextFrameOnTimeSlider".
         Unlike the NextFrame and PreviousFrame hotkeys, these commands wrap around the
         edge of the time slider.
         <p>
+        If "Frame stepping includes the frame after the time slider range" preference is enabled,
+        the frame at the end of the time slider range is included.
+        <p>
         <video src=https://s3.amazonaws.com/zmayatools/zNextFrameOnTimeSlider.mp4 controls loop>
+    </li>
+    <li>
+        <b>zGoToMaxFrame</b> <br>
+        <b>zGoToMinFrame</b> <br>
+        <p>
+        Go to the first or last frame on the time slider.
+        <p>
+        zGoToMaxFrame is the same as the builtin GoToMaxFrame hotkey, with added support for
+        "Frame stepping includes the frame after the time slider range".  zGoToMinFrame is also
+        included for convenience.
     </li>
     <li>
         <b>zPickWalkAddUp</b> <br>
