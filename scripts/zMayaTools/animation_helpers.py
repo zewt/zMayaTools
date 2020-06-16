@@ -29,6 +29,28 @@ def next_time_slider_frame(delta):
 
     pm.currentTime(new_frame)
 
+def go_to_first_time_slider_frame():
+    """
+    Go to the first frame on the time slider.
+
+    This is the same as GoToMinFrame.  It's only here so if you're binding zLastFrameOnTimeSlider
+    in the keyframe editor, you don't have to find GoToMinFrame separately.
+    """
+    min_frame = pm.playbackOptions(q=True, min=True)
+    pm.currentTime(min_frame)
+
+def go_to_last_time_slider_frame():
+    """
+    Go to the last frame on the time slider.
+
+    This is the same as GoToMaxFrame, but supports the zMayaToolsFrameStepIncludesNextFrame
+    option.
+    """
+    max_frame = pm.playbackOptions(q=True, max=True)
+    if optvars['zMayaToolsFrameStepIncludesNextFrame']:
+        max_frame += 1
+    pm.currentTime(max_frame)
+
 _preference_handler = None
 def install():
     maya_helpers.create_or_replace_runtime_command('zNextFrameOnTimeSlider', category='zMayaTools.Animation',
@@ -37,6 +59,12 @@ def install():
     maya_helpers.create_or_replace_runtime_command('zPreviousFrameOnTimeSlider', category='zMayaTools.Animation',
             annotation='zMayaTools: Go to the previous frame, staying on the time slider',
             command='from zMayaTools import animation_helpers; animation_helpers.next_time_slider_frame(-1)')
+    maya_helpers.create_or_replace_runtime_command('zGoToMaxFrame', category='zMayaTools.Animation',
+            annotation='zMayaTools: Go to the last frame on the time slider',
+            command='from zMayaTools import animation_helpers; animation_helpers.go_to_last_time_slider_frame()')
+    maya_helpers.create_or_replace_runtime_command('zGoToMinFrame', category='zMayaTools.Animation',
+            annotation='zMayaTools: Go to the first frame on the time slider',
+            command='from zMayaTools import animation_helpers; animation_helpers.go_to_first_time_slider_frame()')
 
     # Create our preferences window block.
     def create_prefs_widget(pref_handler):
