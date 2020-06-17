@@ -274,6 +274,16 @@ class ControllerEditor(dockable_window.DockableWindow):
             return
         pm.select(node, ne=True)
 
+    @property
+    def current_selection(self):
+        """
+        If a controller is selected in the UI, return its node.
+        """
+        items = self.ui.controllerTree.selectedItems()
+        if not items:
+            return None
+        return items[0].controller_node
+
     def create_controller_for_selected_object(self):
         nodes = pm.ls(sl=True, type='transform')
         if not nodes:
@@ -314,6 +324,15 @@ class ControllerEditor(dockable_window.DockableWindow):
         # when we're done.
         old_selection = pm.ls(sl=True)
 
+        # Sort nodes by DAG depth, to make parenting controllers below easier.
+        nodes = list(nodes)
+        nodes.sort(key=lambda node: len(pm.listRelatives(node, allParents=True)))
+
+        # Parent controllers underneath the selection by default.
+        selected_controller = self.current_selection
+
+        # If we're creating multiple nodes and the transforms are DAG relatives of each other,
+        # parent the controllers too.
 
         first_node = None
         for node in nodes:
@@ -334,6 +353,19 @@ class ControllerEditor(dockable_window.DockableWindow):
 
             if first_node is None:
                 first_node = controller
+
+            # If this node is a child of a node we've already created, parent the controller too.
+            for parent in pm.listRelatives(node, allParents=True):
+                if parent in nodes:
+                    parent_controller = get_controller_for_object(parent)
+                    assert parent_controller is not None
+
+                    set_controller_parent(controller, parent_controller, after=at_end)
+                    break
+            else:
+                # Otherwise, parent it under the selection, if any.
+                if selected_controller:
+                    set_controller_parent(controller, selected_controller, after=at_end)
 
         # Refresh the list now, so we can select the new controller.
         self.populate_tree()
