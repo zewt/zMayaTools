@@ -37,35 +37,51 @@ def bake_transform(*args, **kwargs):
         with maya_helpers.ProgressWindowMaya(1, title='Baking keyframes to %s' % dst.nodeName(),
                 with_secondary_progress=False, with_cancel=True) as progress:
             try:
-                bake_transform_internal(src, dst, min_frame, max_frame, progress=progress,
+                bake = BakeNode(src, dst)
+                bake_transform_internal([bake], min_frame, max_frame, progress=progress,
                         *args, **kwargs)
             except util.CancelledException:
                 log.info('Bake cancelled')
 
-def bake_transform_internal(src, dst, min_frame, max_frame,
-        position=True, rotation=True, scale=False, progress=None):
+class BakeNode(object):
+    """
+    This specifies a bake to perform in bake_transform_internal.
+    """
+    def __init__(self, src, dst, position=True, rotation=True, scale=True):
+        self.src = src
+        self.dst = dst
+        self.position = position
+        self.rotation = rotation
+        self.scale = scale
+
+def bake_transform_internal(bakes, min_frame, max_frame, progress=None):
     # Updating the progress window every frame is too slow, so we only update it
     # every 10 frames.
     update_progress_every = 10
     total_frames = max_frame - min_frame + 1
-    progress.set_total_progress_value(total_frames*2 / update_progress_every)
+
+    total_progress_updates = 0
+    total_progress_updates += total_frames # frame updates
+    total_progress_updates += total_frames*len(bakes) # setting keyframes
+    progress.set_total_progress_value(total_progress_updates / update_progress_every)
 
     # Make sure our target attributes aren't locked.  (Can we check if they're writable,
     # eg. disconnected or connected but writable?)
-    attributes_to_check = []
-    if position:
-        attributes_to_check.extend(('t', 'tx', 'ty', 'tz'))
-    if rotation:
-        attributes_to_check.extend(('r', 'rx', 'ry', 'rz'))
-    if scale:
-        attributes_to_check.extend(('s', 'sx', 'sy', 'sz'))
-
     failed = False
-    for attr_name in attributes_to_check:
-        attr = dst.attr(attr_name)
-        if attr.get(lock=True):
-            log.error('Attribute %s is locked', attr)
-            failed = True
+    for bake in bakes:
+        attributes_to_check = []
+        if bake.position:
+            attributes_to_check.extend(('t', 'tx', 'ty', 'tz'))
+        if bake.rotation:
+            attributes_to_check.extend(('r', 'rx', 'ry', 'rz'))
+        if bake.scale:
+            attributes_to_check.extend(('s', 'sx', 'sy', 'sz'))
+
+        for attr_name in attributes_to_check:
+            attr = bake.dst.attr(attr_name)
+            if attr.get(lock=True):
+                log.error('Attribute %s is locked', attr)
+                failed = True
 
     if failed:
         return
@@ -75,6 +91,8 @@ def bake_transform_internal(src, dst, min_frame, max_frame,
     mtime = om.MTime()
     frame_range = range(min_frame, max_frame+1)
     values = []
+    for _ in range(len(bakes)):
+        values.append([])
 
     with maya_helpers.restores() as restores:
         # Disable stepped preview while we do this.
@@ -83,13 +101,14 @@ def bake_transform_internal(src, dst, min_frame, max_frame,
         # Temporarily disconnect any transform connections.  If there are already keyframes
         # connected, calling pm.matchTransform will have no effect.  These connections will
         # be restored when this restores() block exits.
-        def disconnect_attrs(attr):
-            for channel in ('x', 'y', 'z'):
-                restores.append(maya_helpers.SetAndRestoreAttr(dst.attr(attr + channel), 1))
-            restores.append(maya_helpers.SetAndRestoreAttr(dst.attr(attr), (1,1,1)))
-        if position: disconnect_attrs('t')
-        if rotation: disconnect_attrs('r')
-        if scale: disconnect_attrs('s')
+        for bake in bakes:
+            def disconnect_attrs(attr):
+                for channel in ('x', 'y', 'z'):
+                    restores.append(maya_helpers.SetAndRestoreAttr(bake.dst.attr(attr + channel), 1))
+                restores.append(maya_helpers.SetAndRestoreAttr(bake.dst.attr(attr), (1,1,1)))
+            if bake.position: disconnect_attrs('t')
+            if bake.rotation: disconnect_attrs('r')
+            if bake.scale: disconnect_attrs('s')
 
         # Read the position on each frame.  We'll read all values, then write all results at once.
         for frame in frame_range:
@@ -98,10 +117,11 @@ def bake_transform_internal(src, dst, min_frame, max_frame,
 
             mtime.setValue(frame)
             with MDGContextGuard(om.MDGContext(mtime)) as guard:
-                pm.matchTransform(dst, src, pos=True, rot=True, scl=True)
+                for idx, bake in enumerate(bakes):
+                    pm.matchTransform(bake.dst, bake.src, pos=True, rot=True, scl=True)
 
-                # Store the resulting transform values.
-                values.append((dst.t.get(), dst.r.get(), dst.s.get()))
+                    # Store the resulting transform values.
+                    values[idx].append((bake.dst.t.get(), bake.dst.r.get(), bake.dst.s.get()))
     
     # Now that the above restores block has exited, any connections to the transform
     # will be restored.  Apply the transforms we stored now that we're no longer in
@@ -114,29 +134,32 @@ def bake_transform_internal(src, dst, min_frame, max_frame,
         current_frame = pm.currentTime(q=True)
 
         # Set each destination node's transform on each frame.
-        for frame, (t, r, s) in zip(frame_range, values):
-            if (frame % update_progress_every) == 0:
-                progress.update()
+        for idx, values_for_node in enumerate(values):
+            dst = bakes[idx].dst
 
-            # Work around some character set quirks.  If we set a keyframe with
-            # pm.setKeyframe on the current frame, we need to also set it explicitly
-            # on the attribute too, or else the keyframe won't always have the
-            # correct value.
-            def set_keyframe(attr, value):
-                if frame == current_frame:
-                    dst.attr(attr).set(value)
-                pm.setKeyframe(dst, at=attr, time=frame, value=value)
+            for frame, (t, r, s) in zip(frame_range, values_for_node):
+                if (frame % update_progress_every) == 0:
+                    progress.update()
 
-            if position:
-                set_keyframe('tx', t[0])
-                set_keyframe('ty', t[1])
-                set_keyframe('tz', t[2])
-            if rotation:                
-                set_keyframe('rx', r[0])
-                set_keyframe('ry', r[1])
-                set_keyframe('rz', r[2])
-            if scale:
-                set_keyframe('sx', s[0])
-                set_keyframe('sy', s[1])
-                set_keyframe('sz', s[2])
+                # Work around some character set quirks.  If we set a keyframe with
+                # pm.setKeyframe on the current frame, we need to also set it explicitly
+                # on the attribute too, or else the keyframe won't always have the
+                # correct value.
+                def set_keyframe(attr, value):
+                    if frame == current_frame:
+                        dst.attr(attr).set(value)
+                    pm.setKeyframe(dst, at=attr, time=frame, value=value)
+
+                if bake.position:
+                    set_keyframe('tx', t[0])
+                    set_keyframe('ty', t[1])
+                    set_keyframe('tz', t[2])
+                if bake.rotation:                
+                    set_keyframe('rx', r[0])
+                    set_keyframe('ry', r[1])
+                    set_keyframe('rz', r[2])
+                if bake.scale:
+                    set_keyframe('sx', s[0])
+                    set_keyframe('sy', s[1])
+                    set_keyframe('sz', s[2])
 
