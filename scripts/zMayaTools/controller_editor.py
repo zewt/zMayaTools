@@ -368,7 +368,7 @@ class ControllerEditor(dockable_window.DockableWindow):
 
         # Remember the selection and expanded nodes, so we can restore it later if the selected node still exists.
         selected_controllers = [item.controller_node for item in self.ui.controllerTree.selectedItems()]
-        old_nodes = {node: item.isExpanded() for node, item in self.controllers_to_items.iteritems()}
+        old_nodes = {node: item.isExpanded() for node, item in self.controllers_to_items.items()}
         old_scroll_pos = self.ui.controllerTree.verticalScrollBar().value()
         
         self.ui.controllerTree.clear()

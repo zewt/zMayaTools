@@ -54,7 +54,7 @@ class DragFromMayaMixin(object):
     dragged_internally = Qt.Signal(Qt.QObject, Qt.QDropEvent, Qt.QAbstractItemView.DropIndicatorPosition)
 
     # nodes, target (or None for DropIndicatorPosition.OnViewport), dropIndicatorPosition
-    dragged_from_maya = Qt.Signal(basestring, Qt.QTreeWidgetItem, Qt.QAbstractItemView.DropIndicatorPosition)
+    dragged_from_maya = Qt.Signal(str, Qt.QTreeWidgetItem, Qt.QAbstractItemView.DropIndicatorPosition)
 
     def __init__(self, parent):
         super(DragFromMayaMixin, self).__init__(parent)

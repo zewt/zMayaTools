@@ -7,6 +7,11 @@ import bisect, os, sys, time
 from collections import defaultdict
 from pprint import pprint, pformat
 
+try:
+    from importlib import reload
+except ImportError:
+    pass
+
 # Run this to reload the UI for development (this won't reload the plugin):
 # def go():
 #     from zMayaTools import keyframe_naming

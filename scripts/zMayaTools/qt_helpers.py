@@ -1,4 +1,4 @@
-import fnmatch, os, maya
+import fnmatch, os, maya, sys
 from fnmatch import fnmatch
 from zMayaTools import maya_logging, Qt
 import xml.etree.cElementTree as ET
@@ -102,7 +102,8 @@ def fixup_ui_source(data):
 
         replace_recursively(node)
 
-    return ET.tostring(root)
+    enc = 'unicode' if sys.version_info[0] >= 3 else None
+    return ET.tostring(root, encoding=enc)
 
 _run_once_pending = {}
 def run_async_once(func):

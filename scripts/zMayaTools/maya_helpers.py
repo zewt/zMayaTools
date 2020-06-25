@@ -11,6 +11,11 @@ from maya.api.MDGContextGuard import MDGContextGuard
 from maya import cmds
 from shiboken2 import wrapInstance
 
+try:
+    from importlib import reload
+except ImportError:
+    pass
+
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
 
