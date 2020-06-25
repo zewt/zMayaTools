@@ -253,7 +253,7 @@ class ProgressWindow(Qt.QDialog):
         Qt.QCoreApplication.processEvents(Qt.QEventLoop.ExcludeSocketNotifiers | Qt.QEventLoop.ExcludeUserInputEvents)
 
     def show(self):
-        main_window = wrapInstance(long(omui.MQtUtil.mainWindow()), Qt.QMainWindow)
+        main_window = wrapInstance(int(omui.MQtUtil.mainWindow()), Qt.QMainWindow)
         self.setParent(main_window)
 
         # Disable minimize and maximize.
@@ -507,7 +507,7 @@ class RestorableWindow(object):
             # We're restoring into an existing layout.  Just add the control that was created
             # for us, and show() will be called automatically.
             ptr = omui.MQtUtil.findControl(self.ui.objectName())
-            omui.MQtUtil.addWidgetToMayaLayout(long(ptr), long(parent))
+            omui.MQtUtil.addWidgetToMayaLayout(int(ptr), int(parent))
             return
 
         # Disable retain, or we won't be able to create the window again after reloading the script

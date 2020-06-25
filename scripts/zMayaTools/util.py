@@ -88,7 +88,7 @@ def get_main_window_hwnd():
     from shiboken2 import wrapInstance
     from PySide2 import QtWidgets
     main_window = omui.MQtUtil.mainWindow()
-    window = wrapInstance(long(main_window), QtWidgets.QMainWindow)
+    window = wrapInstance(int(main_window), QtWidgets.QMainWindow)
     return int(window.winId())
 
 def show_file_in_explorer(filename):
