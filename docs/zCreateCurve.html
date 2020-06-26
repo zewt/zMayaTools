@@ -1,0 +1,101 @@
+<html>
+<head>
+<link rel=stylesheet href=style.css>
+<title>zCreateCurve - zMayaTools</title>
+
+<body>
+<div class=header>
+    <a class=main-page-link href=index.html>zMayaTools</a>
+    <a class=download-link href=https://github.com/zewt/zMayaTools/releases>download</a>
+    <a class=github-link href=https://github.com/zewt/zMayaTools>github</a>
+</div>
+
+<h1>
+    Create &gt; Curve Tools &gt; Curve From Transforms
+    <br>
+    <span class=header-module>Module: <span class=module>zCreateCurve.mll</span></span>
+</h1>
+
+<h2>Introduction</h2>
+
+zCreateCurve creates a curve from a list of transforms.
+<p>
+This gives an easier way to control curves for rigging than approaches like cluster
+deformers and skin clusters.
+<p>
+This is implemented as a native plugin for performance.
+
+<video src=https://s3.amazonaws.com/zmayatools/zCreateCurve.mp4 controls width=640 height=360></video>
+<p>
+
+<h2>Usage</h2>
+
+Load the zCreateCurve.mll plugin and select
+<b>Create &gt; Curve Tools &gt; Create Curve</b>.
+<p>
+Create and select three or more locators (or other transforms).
+<p>
+In the Create Curve panel, click <b>Create Curve</b> or drag the locators
+into the window.  A curve will be created, using the locator positions as CVs.  If
+the curves are moved, the curve will update to follow.
+<p>
+MMB-drag transforms in the list to change the order.
+<p>
+Click <b>Select Node</b> to view the zCreateCurve node and adjust the
+settings of the curve.
+<p>
+Double-click a transform to quickly select it.
+<p>
+The same transform can be listed more than once.  Inserting the same transform
+more than once is a way to increase the influence of a particular CV.
+
+<h2>Attributes</h2>
+<ul>
+    <li>
+        <b>Curve Degree</b> - The degree of the generated curves.  Higher degrees will
+        be smoother, and lower degrees will follow the transforms more closely.
+        A degree of 1 will generate lines.
+        <p>
+        Note that this is limited by the number of transforms attached to the curve.
+        If the degree is too high, it will be reduced to a valid value automatically.
+    </li>
+
+    <li>
+        <b>Periodic Curve</b> - If true, generate a periodic (looping) curve.
+    </li>
+
+    <li>
+        <b>Parameter Range</b> - The parameter range for the generated curves.
+    </li>
+
+    <li>
+        <b>EP Curve</b> - If set, the transforms will be used as edit points instead
+        of CVs.  This is the same as creating a curve with the EP Curve tool.  Note
+        that EP curves have several limitations (see below).
+        <p>
+        EP curves reach the transforms exactly, rather than using them as targets.
+        They may be useful for some cases, but can give less controllable results.
+    </li>
+</ul>
+
+<h2>UI</h2>
+<ul>
+    <li>
+        <b>Create Node</b> - Create a new zCreateCurve node.
+    </li>
+
+    <li>
+        <b>Delete Node</b> - Delete the current zCreateCurve node.
+    </li>
+
+    <li>
+        <b>Select Node</b> - Select the current zCreateCurve node.
+    </li>
+</ul>
+
+<h2>Limitations</h2>
+
+EP curves don't support parameterRange and will always have a parameter range of 1.
+<br>
+EP curves don't work for all degrees, and degree 3 is recommended.
+
