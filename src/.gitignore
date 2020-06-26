@@ -1,0 +1,4 @@
+*.vcxproj.user
+build
+.vs
+Local.props

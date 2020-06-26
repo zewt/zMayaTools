@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ImportGroup Label="PropertySheets" />
+  <PropertyGroup Label="UserMacros">
+    <MAYA_SDK>F:\stuff\Maya_DEVKIT\2019\devkitBase</MAYA_SDK>
+  </PropertyGroup>
+  <PropertyGroup>
+    <TargetExt>.mll</TargetExt>
+    <OutDir>$(SolutionDir)/build/$(ProjectName)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)/build/$(ProjectName)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <AdditionalIncludeDirectories>$(MAYA_SDK)\include;$(MAYA_SDK)\include\qt;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>Foundation.lib;OpenMayaUI.lib;OpenMaya.lib;OpenMayaRender.lib;OpenMayaAnim.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <SubSystem>Windows</SubSystem>
+      <AdditionalLibraryDirectories>$(MAYA_SDK)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+    </Link>
+    <PostBuildEvent>
+      <Command>rem This is built by the get_build_version project.  zNativeMayaTools depends on it, so it'll always be built before
+rem we get here.  It just tells us what Maya version we're building for based on MTypes.h, eg. "2019".
+
+set GET_BUILD_VERSION=$(SolutionDir)/build/get_build_version\$(Configuration)\get_build_version.exe
+for /f %%i in ('%GET_BUILD_VERSION%') do set BUILD_VERSION=%%i
+
+set PLUGIN_DIR=$(SolutionDir)..\plug-ins\bin
+mkdir %PLUGIN_DIR% 2&gt;nul
+mkdir %PLUGIN_DIR%\win64-%BUILD_VERSION% 2&gt;nul
+
+echo Copying $(TargetName)$(TargetExt) to %PLUGIN_DIR%\win64-%BUILD_VERSION%
+copy /y "$(TargetPath)" %PLUGIN_DIR%\win64-%BUILD_VERSION% &gt; nul</Command>
+    </PostBuildEvent>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <BuildMacro Include="MAYA_SDK">
+      <Value>$(MAYA_SDK)</Value>
+    </BuildMacro>
+  </ItemGroup>
+</Project>
