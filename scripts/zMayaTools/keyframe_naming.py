@@ -162,7 +162,7 @@ def _get_unused_name_index():
     #
     # Note that we're looking at the entries actually referenced from keyframes and
     # not just calling get(mi=True) on entries, so we'll reuse stale entries.
-    name_indices = get_all_keys().values()
+    name_indices = list(get_all_keys().values())
     name_indices.sort()
 
     # Search for the first unused index.
@@ -256,7 +256,7 @@ def cleanup_duplicate_indices():
 
         # We only care about indices that are used on more than one frame.
         # Sort frames, so we always leave the first one alone and adjust the rest.
-        keys_by_index = {idx: sorted(frames) for idx, frames in keys_by_index.iteritems() if len(frames) >= 2}
+        keys_by_index = {idx: sorted(frames) for idx, frames in keys_by_index.items() if len(frames) >= 2}
 
         # Get the names for each frame we're correcting.
         names = {idx: get_name_at_idx(idx) for idx in keys_by_index.keys()}
@@ -334,7 +334,7 @@ class KeyframeNamingWindow(dockable_window.DockableWindow):
 
         self.time_change_listener = maya_helpers.TimeChangeListener(self._time_changed)
 
-        from qt_generated import keyframe_naming
+        from .qt_generated import keyframe_naming
         reload(keyframe_naming)
 
         self._ui = keyframe_naming.Ui_keyframe_naming()
