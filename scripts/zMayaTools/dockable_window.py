@@ -17,17 +17,6 @@ class DockableWindow(MayaQWidgetDockableMixin, Qt.QDialog):
         # Build our *.ui files into qt/resources, so the subclass can load its layout.
         qt_helpers.compile_all_layouts()
 
-        # How do we make our window handle global hotkeys?
-        undo = Qt.QAction('Undo', self)
-        undo.setShortcut(Qt.QKeySequence(Qt.Qt.CTRL + Qt.Qt.Key_Z))
-        undo.triggered.connect(lambda: pm.undo())
-        self.addAction(undo)
-
-        redo = Qt.QAction('Redo', self)
-        redo.setShortcut(Qt.QKeySequence(Qt.Qt.CTRL + Qt.Qt.Key_Y))
-        redo.triggered.connect(lambda: pm.redo(redo=True))
-        self.addAction(redo)
-
         style = ''
         # Maya's checkbox style makes the checkbox invisible when it's deselected,
         # which makes it impossible to tell that there's even a checkbox there to
