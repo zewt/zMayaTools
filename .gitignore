@@ -1,3 +1,4 @@
 *.pyc
 scripts/zMayaTools/qt_generated
 plug-ins/bin
+/zMayaTools-*.zip
