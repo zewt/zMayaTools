@@ -4,7 +4,7 @@ from collections import namedtuple
 from pymel import core as pm
 from pymel import versions
 from maya import OpenMaya as om
-from zMayaTools import util, Qt, qt_helpers
+from zMayaTools import util, Qt, qt_helpers, taskbar_progress
 from maya import OpenMayaUI as omui
 from maya.app.general import mayaMixin
 from maya.api.MDGContextGuard import MDGContextGuard
@@ -280,6 +280,8 @@ class ProgressWindowMaya(util.ProgressWindow):
         self.with_titles = with_titles
         self.with_secondary_progress = with_secondary_progress
 
+        self.taskbar = taskbar_progress.ProgressWindowWindowsTaskbar(total_progress_values=total_progress_values)
+
         self.window = ProgressWindow()
         self.window.setWindowTitle(title)
         self.window.setWindowFlags(Qt.Qt.Widget)
@@ -314,10 +316,12 @@ class ProgressWindowMaya(util.ProgressWindow):
 
     def set_total_progress_value(self, total_progress_values):
         self.window.ui.mainProgressBar.setMaximum(total_progress_values)
+        self.taskbar.set_total_progress_value(total_progress_values)
 
     def hide(self):
         super(ProgressWindowMaya, self).hide()
         self.window.close()
+        self.taskbar.hide()
 
     def _cancel_clicked(self):
         log.debug('Cancel button clicked')
@@ -356,6 +360,9 @@ class ProgressWindowMaya(util.ProgressWindow):
             self.window.ui.secondaryProgressBar.setValue(0)
 
         self.window.force_redraw()
+
+        # Update the taskbar progress bar.
+        self.taskbar.update(advance_by)
 
     def set_task_progress(self, label, percent=None, force=False):
         # Check for cancellation when we update progress.

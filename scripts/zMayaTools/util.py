@@ -194,39 +194,4 @@ class ProgressWindow(object):
     def __exit__(self, exc, e, tb):
         self.hide()
 
-@contextlib.contextmanager
-def CombinedProgressBar(progress_bar_classes, *args, **kwargs):
-    """
-    Wrap one or more other ProgressWindows.
-
-    This can be used to display progress in multiple ways, such as with both
-    a ProgressWindowMaya and a ProgressWindowWindowsTaskbar.
-    """
-    # Create each progress bar.
-    bars = []
-    for progress_bar_class in progress_bar_classes:
-        progress_bar = progress_bar_class(*args, **kwargs)
-        bars.append(progress_bar)
-
-    # This just forwards all calls to all progress bars.
-    class CombinedProgressBar(ProgressWindow):
-        pass
-        
-    combined_bar = CombinedProgressBar()
-
-    # Add a wrapper for each function that we support.
-    def create_wrapper(func_name):
-        base_func = getattr(super(CombinedProgressBar, combined_bar), func_name)
-        def wrapper(*args, **kwargs):
-            for bar in bars:
-                func = getattr(bar, func_name)
-                func(*args, **kwargs)
-
-        setattr(combined_bar, func_name, wrapper)
-
-    for func_name in ('hide', 'cancel', 'set_total_progress_value', 'check_cancellation', 'update'):
-        create_wrapper(func_name)
-
-    with combined_bar:
-        yield combined_bar
 

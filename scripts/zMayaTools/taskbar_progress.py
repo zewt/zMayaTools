@@ -18,15 +18,8 @@ def get_taskbar_interface():
     taskbar.HrInit()
     return taskbar
 
-class ProgressWindowWindowsTaskbar(util.ProgressWindow):
-    @classmethod
-    def available(cls):
-        return True
-
+class ProgressWindowWindowsTaskbar(object):
     def __init__(self, total_progress_values=10, title=''):
-        print 'xxx'
-        super(ProgressWindowWindowsTaskbar, self).__init__()
-
         self.total = total_progress_values
         self.taskbar = get_taskbar_interface()
         self.hwnd = util.get_main_window_hwnd()
@@ -42,11 +35,9 @@ class ProgressWindowWindowsTaskbar(util.ProgressWindow):
         self.update(advance_by=0)
 
     def hide(self):
-        super(ProgressWindowWindowsTaskbar, self).hide()
-
         self.taskbar.SetProgressState(self.hwnd, TaskbarLib.TBPF_NOPROGRESS)
 
-    def update(self, advance_by=1, text=''):
+    def update(self, advance_by=1):
         self.count += advance_by
         self.taskbar.SetProgressValue(self.hwnd, self.count, self.total + 1)
 
