@@ -348,7 +348,7 @@ MStatus initializePluginInternal(MObject obj)
         zCreateCurve::creator, zCreateCurve::initialize);
 
     *status("PluginMenu.register_from_plugin") = MGlobal::executePythonCommand(MString(
-        "from zMayaTools import zCreateCurve; zCreateCurve.PluginMenu.register_from_plugin('" + plugin.name() + "')"));
+        "from zMayaTools import zCreateCurve; zCreateCurve.menu.register_from_plugin('" + plugin.name() + "')"));
 
     if(status.perror())
     {

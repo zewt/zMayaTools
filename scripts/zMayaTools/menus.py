@@ -503,21 +503,18 @@ class Menu(object):
         log.warning('Couldn\'t find the "%s" submenu' % label)
         return default
 
-    @classmethod
-    def register_from_plugin(cls, plugin):
+    def register_from_plugin(self, plugin):
         """
         Register this plugin's menu items, and automatically unregister them when the given
         plugin is unloaded.  If the plugin isn't loaded, do nothing.
 
         This can be called from plugin initialization.
         """
-        menu = cls()
-        
         def unregister():
             menu.remove_menu_items()
             
         if not maya_helpers.call_on_plugin_unload(plugin, unregister):
             return
 
-        menu.add_menu_items()
+        self.add_menu_items()
     
