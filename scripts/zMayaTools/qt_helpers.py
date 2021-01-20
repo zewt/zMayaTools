@@ -1,4 +1,4 @@
-import fnmatch, os, maya, sys
+import fnmatch, os, maya, sys, subprocess
 from fnmatch import fnmatch
 from zMayaTools import maya_logging, Qt
 import xml.etree.cElementTree as ET
@@ -18,6 +18,52 @@ def mtime(path):
 def compile_all_layouts():
     path = os.path.dirname(__file__)
     compile_all_layouts_in_path(path)
+
+def _safe_write(filename, data):
+    """
+    Write to filename, deleting the file on error so an empty file isn't left behind.
+    """
+    try:
+        with open(filename, 'wb') as out:
+            out.write(data)
+    except:
+        # Remove the file if writing failed.  Ignore errors from this, since the most likely error
+        # is permission denied, in which case this will fail too.
+        try:
+            os.unlink(filename)
+        except IOError as e:
+            pass
+
+        raise
+
+def compile_layout(filename, input_data, output_file):
+    """
+    Compile the given *.ui file into a Python source file.
+
+    QT used to include a module to do this, which for some reason was removed, leaving
+    us having to shell out for each file individually and no proper API.
+    """
+    # Run uic to compile the file.  Since we modify the file before compiling it, we
+    # pass the data through stdin.
+    bin_path = '%s/bin/uic' % os.environ['MAYA_LOCATION']
+    pipe = subprocess.Popen([
+        bin_path,
+        '--generator', 'python',
+    ], stdin=subprocess.PIPE, stderr=subprocess.PIPE, stdout=subprocess.PIPE, shell=True)
+    stdout, stderr = pipe.communicate(input_data)
+
+    if pipe.returncode != 0:
+        # Don't try to parse out what type of error this is (syntax error vs. error reading
+        # the file), just raise SyntaxError.
+        #
+        # We're passing data to stdin, but there's no argument to uic.exe to tell it the name
+        # of the file, and it just says "File <stdin>".  Replace this with the filename to make
+        # errors meaningful.
+        error_text = stderr.decode('mbcs').strip()
+        error_text = error_text.replace('<stdin>', filename)
+        raise SyntaxError(error_text)
+
+    _safe_write(output_file, stdout)
 
 def compile_all_layouts_in_path(path):
     # eg. zMayaTools
@@ -52,9 +98,7 @@ def compile_all_layouts_in_path(path):
             input_xml = input.read()
 
         input_xml = fixup_ui_source(path, container, input_xml)
-
-        with open(output_file, 'w') as output:
-            Qt.pysideuic.compileUi(StringIO(input_xml), output)
+        compile_layout(fn, input_xml.encode('mbcs'), output_file)
 
 def fixup_ui_source(path, container, data):
     """
