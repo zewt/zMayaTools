@@ -221,7 +221,7 @@ def create_editable_joints():
         joint_matrix_after_edits = pm.datatypes.Matrix(pm.xform(edit_joint, q=True, ws=True, m=True))
 
         # Verify that our changes to the edit joint retained the same world matrix.
-        assert joint_matrix_before_edits.isEquivalent(joint_matrix_after_edits)
+        assert joint_matrix_before_edits.isEquivalent(joint_matrix_after_edits), bind_joint
 
         # When we duplicate a joint, its inverseScale is connected to its nearest ancestor joint's
         # scale, not whatever the joint we duplicated had its inverseScale set to.  It usually gives

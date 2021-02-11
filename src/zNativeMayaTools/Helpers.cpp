@@ -136,6 +136,23 @@ void Helpers::replaceString(string &s, const string &src, const string &dst)
     }
 }
 
+void Helpers::replaceString(wstring &s, const wstring &src, const wstring &dst)
+{
+    if(src.empty())
+        return;
+
+    size_t pos = 0;
+    while(1)
+    {
+        pos = s.find(src, pos);
+        if(pos == string::npos)
+            break;
+
+        s.replace(s.begin()+pos, s.begin()+pos+src.size(), dst.begin(), dst.end());
+        pos += dst.size();
+    }
+}
+
 string Helpers::lowercase(const string &s)
 {
     string result = s;

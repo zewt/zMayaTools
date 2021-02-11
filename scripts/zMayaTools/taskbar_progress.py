@@ -3,7 +3,7 @@
 # This should usually not be used by itself.
 import contextlib
 from PySide2 import QtWidgets
-import util
+from . import util
 
 try:
     import comtypes.client as cc

@@ -9,9 +9,9 @@ rem Create the global modules directory if it doesn't exist.
 if not exist %Documents%\maya\modules mkdir %Documents%\maya\modules
 
 rem Create the .mod file in the user's Maya modules directory.
-echo + zMayaTools 1.0 %INSTALL_DIR% > %OUTPUT%
-echo MAYA_CUSTOM_TEMPLATE_PATH +:= scripts/NETemplates >> %OUTPUT%
-echo. >> %OUTPUT%
+echo + zMayaTools 1.0 %INSTALL_DIR% > "%OUTPUT%"
+echo MAYA_CUSTOM_TEMPLATE_PATH +:= scripts/NETemplates >> "%OUTPUT%"
+echo. >> "%OUTPUT%"
 
 rem For binary modules, create a module for each version, including a bunch of versions that don't
 rem exist yet.  This way, when users update for future versions, they won't always need to rerun
@@ -24,9 +24,9 @@ rem
 rem Linux and Mac systems would use "linux-version" and "mac-version".  This is a batch file that
 rem will only work on Windows, so there's no point including those here.
 for %%v in (2018 2019 2020 2021 2022 2023 2024 2025 2026 2027 2028 2029) do (
-    echo + MAYAVERSION:%%v PLATFORM:win64 zMayaTools-bin 1.0 %INSTALL_DIR%\plug-ins\bin\win64-%%v >> %OUTPUT%
-    echo plug-ins: . >> %OUTPUT%
-    echo. >> %OUTPUT%
+    echo + MAYAVERSION:%%v PLATFORM:win64 zMayaTools-bin 1.0 %INSTALL_DIR%\plug-ins\bin\win64-%%v >> "%OUTPUT%"
+    echo plug-ins: . >> "%OUTPUT%"
+    echo. >> "%OUTPUT%"
 )
 
 echo Installed

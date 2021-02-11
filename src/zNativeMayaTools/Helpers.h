@@ -26,6 +26,7 @@ wstring dirname(const wstring &path);
 string extension(const string &path); // filename.ext -> ext
 wstring extension(const wstring &path); // filename.ext -> ext
 void replaceString(string &s, const string &src, const string &dst);
+void replaceString(wstring &s, const wstring &src, const wstring &dst);
 string lowercase(const string &s);
 wstring lowercase(const wstring &s);
 string getWinError(int err = -1);
