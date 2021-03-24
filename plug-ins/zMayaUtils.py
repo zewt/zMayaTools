@@ -1,4 +1,5 @@
 import os
+import maya.OpenMaya as om
 from pymel import core as pm
 from maya import OpenMaya as om, OpenMayaMPx as ompx
 import zMayaTools.menus
@@ -13,10 +14,13 @@ except ImportError:
 from zMayaTools import maya_logging
 log = maya_logging.get_log()
 
-# Only import hide_output_window in Windows.
-if os.name == 'nt':
+# Only import hide_output_window in Windows.  Don't load this from 2022 onwards, since Maya does
+# this internally now.
+if os.name == 'nt' and om.MGlobal.apiVersion() < 20220000:
     from zMayaTools import hide_output_window
     reload(hide_output_window)
+else:
+    hide_output_window = None
 
 class PluginMenu(Menu):
     def __init__(self):
@@ -154,7 +158,7 @@ class PluginMenu(Menu):
 
     def add_hide_output_window(self):
         # Add "Show Output Window" at the end of the Windows menu.
-        if os.name != 'nt':
+        if hide_output_window is None:
             return
 
         # Activate the user's current preference.
