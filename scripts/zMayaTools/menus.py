@@ -511,7 +511,7 @@ class Menu(object):
         This can be called from plugin initialization.
         """
         def unregister():
-            menu.remove_menu_items()
+            self.remove_menu_items()
             
         if not maya_helpers.call_on_plugin_unload(plugin, unregister):
             return
