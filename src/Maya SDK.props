@@ -15,7 +15,6 @@
     </ClCompile>
     <Link>
       <AdditionalDependencies>Foundation.lib;OpenMayaUI.lib;OpenMaya.lib;OpenMayaRender.lib;OpenMayaAnim.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <SubSystem>Windows</SubSystem>
       <AdditionalLibraryDirectories>$(MAYA_SDK)\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
