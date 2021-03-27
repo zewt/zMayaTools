@@ -60,6 +60,7 @@ def go():
             '/property:MAYA_SDK=%s' % maya_version_sdk,
             '/p:Configuration=Release',
             '/verbosity:minimal',
+            '/maxcpucount',
             '/t:Rebuild',
         ], env=environ)
         result = build.wait()
