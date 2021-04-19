@@ -1,4 +1,4 @@
-import copy, six
+import copy, six, traceback
 from maya import OpenMaya as om
 import pymel.core as pm
 from pprint import pprint
@@ -227,10 +227,21 @@ def execute_menu_item(name, button_type):
     def func(unused=None):
         command = button_type(name, q=True, command=True)
         sourceType = button_type(name, q=True, sourceType=True)
+        label = button_type(name, q=True, label=True)
 
         if sourceType == 'python':
             env = {}
-            exec(command, env, env)
+            try:
+                code = compile(command, 'Shelf (%s)' % label, 'exec')
+            except Exception as e:
+                log.exception('Error compiling shelf "%s"' % label)
+                return
+
+            try:
+                exec(code, env, env)
+            except Exception as e:
+                log.exception('Error running shelf "%s"' % label)
+                return
         elif sourceType == 'mel':
             pm.mel.eval(command)
         else:
