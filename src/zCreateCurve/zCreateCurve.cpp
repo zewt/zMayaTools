@@ -73,7 +73,6 @@ MStatus zCreateCurve::initialize()
     nAttr.setReadable(false);
     nAttr.setWritable(true);
     nAttr.setKeyable(true);
-    *status("addAttribute") = addAttribute(CurveAttrs::epCurve);
 
     CurveAttrs::degree = nAttr.create("degree", "deg", MFnNumericData::kInt, 3, status("nAttr.create"));
     nAttr.setReadable(false);
@@ -82,13 +81,11 @@ MStatus zCreateCurve::initialize()
     nAttr.setMin(1);
     nAttr.setMax(50);
     nAttr.setSoftMax(10);
-    *status("addAttribute") = addAttribute(CurveAttrs::degree);
 
     CurveAttrs::periodic = nAttr.create("periodic", "periodic", MFnNumericData::kBoolean, 0, status("nAttr.create"));
     nAttr.setReadable(false);
     nAttr.setWritable(true);
     nAttr.setKeyable(true);
-    *status("addAttribute") = addAttribute(CurveAttrs::periodic);
 
     CurveAttrs::parameterRange = nAttr.create("parameterRange", "parameterRange", MFnNumericData::kFloat, 1.0f, status("nAttr.create"));
     nAttr.setReadable(false);
@@ -98,6 +95,14 @@ MStatus zCreateCurve::initialize()
     nAttr.setSoftMin(1); // cleaner UI sliders
     nAttr.setSoftMax(10);
     *status("addAttribute") = addAttribute(CurveAttrs::parameterRange);
+
+    // A compound for all basic settings, to allow connecting all settings for nodes with one connection.
+    MObject settings = cmpAttr.create("settings", "settings");
+    *status("addAttribute") = cmpAttr.addChild(CurveAttrs::epCurve);
+    *status("addAttribute") = cmpAttr.addChild(CurveAttrs::degree);
+    *status("addAttribute") = cmpAttr.addChild(CurveAttrs::periodic);
+    *status("addAttribute") = cmpAttr.addChild(CurveAttrs::parameterRange);
+    *status("addAttribute") = addAttribute(settings);
 
     // input
     CurveAttrs::inputTransforms = matAttr.create("input", "i", MFnMatrixAttribute::kDouble, status("matrixAttr.create"));
@@ -119,7 +124,7 @@ MStatus zCreateCurve::initialize()
     attributeAffects(CurveAttrs::periodic, CurveAttrs::outputCurve);
     attributeAffects(CurveAttrs::parameterRange, CurveAttrs::outputCurve);
     attributeAffects(CurveAttrs::inputTransforms, CurveAttrs::outputCurve);
-    attributeAffects(CurveAttrs::periodic, CurveAttrs::outputCurve);
+    attributeAffects(settings, CurveAttrs::outputCurve);
 
     status.perror();
     return status.get();
