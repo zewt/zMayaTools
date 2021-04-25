@@ -267,11 +267,11 @@ class CreateCurveEditor(dockable_window.DockableWindow):
 
         pm.select(curve_output, ne=True)
 
-    def create_and_select_node(self):
+    def create_and_select_node(self, add_selected_transforms=True):
         """
         Create a new zCreateCurve node and an output curve.  Select the curve.
         
-        If transforms are selected in the scene, add them to it.
+        If transforms are selected in the scene, add them to the new curve if add_selected_transforms is true.
         """
         with maya_helpers.undo():
             nodes = pm.ls(sl=True)
@@ -285,9 +285,10 @@ class CreateCurveEditor(dockable_window.DockableWindow):
             # Create a curve node.
             output_curve = curve.add_curve_output()
             
-            # Add the transforms to it.
-            curve = CreateCurve(self.current_node)
-            curve.set_transforms(attrs)
+            if add_selected_transforms:
+                # Add selected transforms to it.
+                curve = CreateCurve(self.current_node)
+                curve.set_transforms(attrs)
 
             # Refresh and select the new curve.
             self.refresh_all()
@@ -372,9 +373,9 @@ class CreateCurveEditor(dockable_window.DockableWindow):
             return pos
 
     def dragged_from_maya(self, nodes, target, indicator_position):
-        # If we have no node, create one.
+        # If we have no node, create one.  Don't add the selection while creating the node.
         if not self.current_node:
-            self.create_and_select_node()
+            self.create_and_select_node(add_selected_transforms=False)
 
         pos = self.get_drag_target_idx(target, indicator_position)
         self.add_transforms_to_curve(nodes, pos=pos)
