@@ -1,4 +1,5 @@
 import pymel.core as pm
+from maya import OpenMaya as om
 from zMayaTools import maya_helpers
 
 from zMayaTools import maya_logging
@@ -23,6 +24,9 @@ def set_attribute_order(node, attrs):
         
         # Deleting an attribute and undoing the deletion pushes an attribute to the end of
         # the list.
+        #
+        # Do this with MDGModifier, since regular high-level undo will spam undo logs to
+        # the script editor.
         for attr in attrs:
             # For some reason, Maya won't delete a locked attribute.
             attr = node.attr(attr)
@@ -30,8 +34,10 @@ def set_attribute_order(node, attrs):
             if locked:
                 pm.setAttr(attr, lock=False)
 
-            pm.deleteAttr(attr)
-            pm.undo()
+            mod = om.MDGModifier()
+            mod.removeAttribute(attr.node().__apimobject__(), attr.__apimobject__())
+            mod.doIt()
+            mod.undoIt()
 
             if locked:
                 pm.setAttr(attr, lock=True)
