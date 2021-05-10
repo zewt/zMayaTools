@@ -5,7 +5,7 @@ from maya import OpenMaya as om, OpenMayaMPx as ompx
 import zMayaTools.menus
 from zMayaTools.menus import Menu
 from zMayaTools import controller_editor, maya_helpers, material_assignment_menu, shelf_menus, joint_labelling, skin_clusters
-from zMayaTools import animation_helpers, pick_walk, wireframes, fix_layer_editor_undo
+from zMayaTools import animation_helpers, pick_walk, wireframes, fix_layer_editor_undo, attribute_reordering
 try:
     from importlib import reload
 except ImportError:
@@ -187,14 +187,12 @@ class PluginMenu(Menu):
 
     def add_channel_box_editing(self):
         def move_attr_up(unused):
-            from zMayaTools import attribute_reordering
-            reload(attribute_reordering)
-            attribute_reordering.move_selected_attr(down=False)
+            attrs = maya_helpers.get_selected_cb_attributes()
+            pm.zReorderAttribute(direction='up', attr=attrs)
 
         def move_attr_down(unused):
-            from zMayaTools import attribute_reordering
-            reload(attribute_reordering)
-            attribute_reordering.move_selected_attr(down=True)
+            attrs = maya_helpers.get_selected_cb_attributes()
+            pm.zReorderAttribute(direction='down', attr=attrs)
 
         # Add "Move Attributes Up" and "Move Attributes Down" to the bottom of Edit.
         # Put this in a submenu, so the menu can be torn off while making a bunch of
@@ -257,6 +255,7 @@ def initializePlugin(mobject):
     pick_walk.setup_runtime_commands()
     maya_helpers.setup_runtime_commands()
     wireframes.setup_runtime_commands()
+    attribute_reordering.ReorderAttribute.register(plugin)
 
     if pm.optionVar(q='zFixLayerEditorUndo'):
         fix_layer_editor_undo.install()
@@ -268,4 +267,5 @@ def uninitializePlugin(mobject):
     skin_clusters.MoveSkinnedJoints.deregister(plugin)
     animation_helpers.uninstall()
     fix_layer_editor_undo.uninstall()
+    attribute_reordering.ReorderAttribute.unregister(plugin)
 
