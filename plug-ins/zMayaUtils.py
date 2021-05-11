@@ -5,7 +5,7 @@ from maya import OpenMaya as om, OpenMayaMPx as ompx
 import zMayaTools.menus
 from zMayaTools.menus import Menu
 from zMayaTools import controller_editor, maya_helpers, material_assignment_menu, shelf_menus, joint_labelling, skin_clusters
-from zMayaTools import animation_helpers, pick_walk, wireframes, fix_layer_editor_undo, attribute_reordering
+from zMayaTools import animation_helpers, pick_walk, wireframes, fix_layer_editor_undo, attribute_reordering, component_tag_menu
 try:
     from importlib import reload
 except ImportError:
@@ -250,6 +250,7 @@ def initializePlugin(mobject):
 
     menu.add_menu_items()
     material_assignment_menu.AssignMaterialsContextMenu.register()
+    component_tag_menu.ComponentTagContextMenu.register()
     skin_clusters.MoveSkinnedJoints.register(plugin)
     animation_helpers.install()
     pick_walk.setup_runtime_commands()
@@ -264,6 +265,7 @@ def uninitializePlugin(mobject):
     plugin = ompx.MFnPlugin(mobject)
     menu.remove_menu_items()
     material_assignment_menu.AssignMaterialsContextMenu.deregister()
+    component_tag_menu.ComponentTagContextMenu.deregister()
     skin_clusters.MoveSkinnedJoints.deregister(plugin)
     animation_helpers.uninstall()
     fix_layer_editor_undo.uninstall()
