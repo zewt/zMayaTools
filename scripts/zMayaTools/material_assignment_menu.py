@@ -26,7 +26,7 @@ class AssignMaterialsContextMenu(object):
             self.build_top_context_menu(menu, item)
     
         # Add the top-level menu item.
-        menu = pm.menuItem(label='zAssignExistingMaterial', subMenu=True, allowOptionBoxes=True, postMenuCommand=cmd)
+        menu = pm.menuItem(label='zAssignExistingMaterial', subMenu=True, allowOptionBoxes=True, image='zMayaToolsIcon.png', postMenuCommand=cmd)
         pm.setParent('..', menu=True)
     
     def create_namespace_submenu(self, namespace):
