@@ -349,6 +349,11 @@ class ControllerEditor(dockable_window.DockableWindow):
                 name = '%s_Tag' % node.nodeName()
             controller = pm.createNode('controller', n=name)
 
+            # Prepopulate causes pick walking controllers to have side-effects on evaluation.  Editing
+            # the UI shouldn't cause evaluation changes, so disable this by default.
+            controller.prepopulate.set(False)
+            controller.parentprepopulate.set(False)
+
             if node is not None:
                 node.message.connect(controller.controllerObject)
 
