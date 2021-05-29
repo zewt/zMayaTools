@@ -48,6 +48,9 @@ if TaskbarLib is None:
         @classmethod
         def available(cls):
             return False
+
+        def set_total_progress_value(self, total_progress_values):
+            pass
     
     ProgressWindowWindowsTaskbar = ProgressWindowWindowsTaskbarUnavailable
 
