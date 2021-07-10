@@ -6,8 +6,8 @@
   </PropertyGroup>
   <PropertyGroup>
     <TargetExt>.mll</TargetExt>
-    <OutDir>$(SolutionDir)/build/$(ProjectName)\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)/build/$(ProjectName)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)/build/$(MAYA_VER_PATH)$(ProjectName)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)/build/$(MAYA_VER_PATH)$(ProjectName)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -21,7 +21,7 @@
       <Command>rem This is built by the get_build_version project.  zNativeMayaTools depends on it, so it'll always be built before
 rem we get here.  It just tells us what Maya version we're building for based on MTypes.h, eg. "2019".
 
-set GET_BUILD_VERSION=$(SolutionDir)/build/get_build_version\$(Configuration)\get_build_version.exe
+set GET_BUILD_VERSION=$(SolutionDir)/build/$(MAYA_VER_PATH)get_build_version/$(Configuration)/get_build_version.exe
 for /f %%i in ('%GET_BUILD_VERSION%') do set BUILD_VERSION=%%i
 
 set PLUGIN_DIR=$(SolutionDir)..\plug-ins\bin

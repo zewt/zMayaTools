@@ -58,10 +58,11 @@ def go():
             'msbuild',
             '/m',
             '/property:MAYA_SDK=%s' % maya_version_sdk,
+            '/property:MAYA_VER_PATH=%s/' % version,
             '/p:Configuration=Release',
             '/verbosity:minimal',
             '/maxcpucount',
-            '/t:Rebuild',
+#            '/t:Rebuild',
         ], env=environ)
         result = build.wait()
 
