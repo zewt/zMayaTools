@@ -501,7 +501,7 @@ class Validate(object):
             category[joint_label] = joint
 
         # Any joint labels in joints_center shouldn't appear in joints_left or joints_right.
-        for joint_label, joint in joints_center.iteritems():
+        for joint_label, joint in joints_center.items():
             for category in (joints_left, joints_right):
                 conflicting_joint = category.get(joint_label)
                 if conflicting_joint:
@@ -682,7 +682,7 @@ class Validate(object):
         # If a joint is a stub joint, its mirrored joint should also be a stub joint.  It's easy to
         # accidentally leave some of these bounds, which can cause hard to debug "not all influences
         # could be matched" warnings when mirroring skin weights.
-        for left_joint, right_joint in symmetric_joints.iteritems():
+        for left_joint, right_joint in symmetric_joints.items():
             if left_joint in stub_joints and right_joint not in stub_joints:
                 self.log('Left joint %s is a stub joint, but right joint %s is bound' % (left_joint.nodeName(), right_joint.nodeName()), nodes=[left_joint, right_joint])
             if right_joint in stub_joints and left_joint not in stub_joints:
@@ -694,7 +694,7 @@ class Validate(object):
             if abs(pos[0]) > self.config['error_threshold']:
                 self.log('Center joint %s is not aligned to the YZ plane: %f' % (joint.nodeName(), pos[0]), nodes=[joint])
 
-        for left_joint, right_joint in symmetric_joints.iteritems():
+        for left_joint, right_joint in symmetric_joints.items():
             # Symmetric joints should be in symmetric positions across the YZ plane.
             left_pos = pm.xform(left_joint, q=True, ws=True, t=True)
             right_pos = pm.xform(right_joint, q=True, ws=True, t=True)
