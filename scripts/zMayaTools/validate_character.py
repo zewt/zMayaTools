@@ -406,6 +406,25 @@ class Validate(object):
         old_axis = pm.symmetricModelling(q=True, axis=True)
         old_tolerance = pm.symmetricModelling(q=True, tolerance=True)
         
+        def get_selected_vertices():
+            result = []
+            sel = om.MSelectionList()
+            om.MGlobal.getActiveSelectionList(sel)
+
+            selection_iter = om.MItSelectionList(sel)
+            while not selection_iter.isDone():
+                plug = om.MDagPath()
+                component = om.MObject()
+                selection_iter.getDagPath(plug, component)
+                
+                vertex_iter = om.MItGeometry(plug, component)
+                while not vertex_iter.isDone():
+                    result.append(vertex_iter.index())
+                    vertex_iter.next()
+                
+                selection_iter.next()
+            return result
+
         try:
             pm.symmetricModelling(e=True, symmetry=True, about='world', axis='x', tolerance=tolerance)
             pm.select(verts, symmetry=True)
@@ -413,11 +432,10 @@ class Validate(object):
             # Find the indices of any vertices that weren't selected.  This is a bit roundabout
             # since pm.runtime.InvertSelection doesn't work.
             all_indices = set(range(len(vertices)))
-            selected_indices = set()
-            for sel in pm.ls(sl=True, flatten=True):
-                selected_indices.add(sel.index())
 
+            selected_indices = set(get_selected_vertices())
             deselected_indices = all_indices - selected_indices
+
             if deselected_indices:
                 deselected_verts = ' '.join('%s.vtx[%i]' % (shape.name(), idx) for idx in deselected_indices)
                 self.log('Mesh isn\'t world space symmetric (%i unmatched %s)' % (len(deselected_indices), 'vertex' if len(deselected_indices) == 1 else'vertices'),
