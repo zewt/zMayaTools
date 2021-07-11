@@ -324,7 +324,7 @@ class Validate(object):
             pm.nodetypes.PolyModifier,
         ]
 
-        for history_node in pm.listFuture(base_mesh):
+        for history_node in pm.listFuture(base_mesh, allFuture=True):
             # Stop when we reach the output node, so we don't traverse into anything reading it, like
             # pointOnPoly constraints and wrap deformers.
             if history_node == shapes[0]:
@@ -603,8 +603,8 @@ class Validate(object):
         
     def check_skeleton(self):
         shapes = self.node.getShapes()
-        base_mesh = shapes[-1]
-        skin_clusters = pm.listFuture(base_mesh, type='skinCluster')
+        mesh = shapes[0]
+        skin_clusters = pm.listHistory(mesh, pruneDagObjects=True, type='skinCluster')
 
         if len(skin_clusters) > 1:
             self.log('Mesh has more than one skinCluster', nodes=skin_clusters)
