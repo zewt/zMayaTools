@@ -7,7 +7,6 @@
 #include <string>
 #include <vector>
 #include <functional>
-using namespace std;
 
 #include <maya/MDagPath.h>
 #include <maya/MPlug.h>

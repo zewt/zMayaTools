@@ -1,5 +1,7 @@
 // Simple helpers that aren't specific to Maya.
 
+#include <windows.h> // must be before using namespace std
+
 #include "Helpers.h"
 
 #include <stdarg.h>
@@ -169,7 +171,6 @@ wstring Helpers::lowercase(const wstring &s)
     return result;
 }
 
-#include <windows.h>
 string Helpers::getWinError(int err)
 {
     if(err == -1)
