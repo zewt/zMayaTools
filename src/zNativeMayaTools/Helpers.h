@@ -1,12 +1,14 @@
 #ifndef Helpers_h
 #define Helpers_h
 
+// This file doesn't include windows.h, to isolate incompatibilities between
+// it and C++'s std::byte.  Some of this uses Windows APIs, but anything that
+// needs windows.h for actual declarations is in WindowsHelpers.h.
+
 #include <algorithm>
 #include <map>
 #include <string>
 #include <vector>
-
-#include <windows.h>
 
 using namespace std;
 
@@ -77,16 +79,6 @@ inline float scale_clamp(float x, float l1, float h1, float l2, float h2)
     x = clamp(x, min(l2, h2), max(l2, h2));
     return x;
 }
-
-class HResultException: public exception
-{
-public:
-    HResultException(HRESULT hr_, string caller);
-
-    static string formatMessage(HRESULT hr, string caller);
-
-    HRESULT hr;
-};
 
 class StringException: public exception
 {

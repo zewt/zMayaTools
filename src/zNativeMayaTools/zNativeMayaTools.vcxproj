@@ -15,12 +15,14 @@
     <ClCompile Include="Log.cpp" />
     <ClCompile Include="MayaUtils.cpp" />
     <ClCompile Include="MStatusHandler.cpp" />
+    <ClCompile Include="WindowsHelpers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Helpers.h" />
     <ClInclude Include="Log.h" />
     <ClInclude Include="MayaUtils.h" />
     <ClInclude Include="MStatusHandler.h" />
+    <ClInclude Include="WindowsHelpers.h" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\get_build_version\get_build_version.vcxproj">
