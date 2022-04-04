@@ -46,7 +46,7 @@ def go():
     os.environ['Path'] = environ['Path']
 
     # Build each version that we have an SDK for.
-    for version in '2018', '2019', '2020', '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029':
+    for version in '2022', '2023', '2024', '2025', '2026', '2027', '2028', '2029':
         maya_version_sdk = '%s/%s/devkitBase' % (maya_sdk_dir, version)
         if not os.path.exists(maya_version_sdk):
             continue
