@@ -7,6 +7,9 @@ EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "get_build_version", "get_build_version\get_build_version.vcxproj", "{79995E92-027F-4AA9-AF53-1C91DD808D60}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zCreateCurve", "zCreateCurve\zCreateCurve.vcxproj", "{B12A5660-09AE-48E1-A6DD-7065E58B7E61}"
+	ProjectSection(ProjectDependencies) = postProject
+		{13A79042-4334-4D22-9611-0DF38D1D64F9} = {13A79042-4334-4D22-9611-0DF38D1D64F9}
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
