@@ -17,6 +17,9 @@ using namespace std;
 #include <maya/MTime.h>
 #include <maya/MFnDependencyNode.h>
 
+#include "Helpers.h"
+#include "Log.h"
+
 class CommonSamplerStates;
 class MObjectArray;
 
