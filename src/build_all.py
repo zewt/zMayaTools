@@ -8,7 +8,7 @@ import subprocess, sys, os
 maya_sdk_dir = 'F:/stuff/Maya_DEVKIT'
 
 # The path to Visual Studio.
-visual_studio_path = 'F:/applications/Visual Studio 2017'
+visual_studio_path = 'F:/applications/Visual Studio 2019'
 
 # Visual Studio makes it obnoxiously hard to run their tools except from cmd.  The only way
 # to set it up is to run a batch file, and since that always happens in a subshell, so we
