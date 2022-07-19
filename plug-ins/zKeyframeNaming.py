@@ -18,7 +18,7 @@ class zKeyframeNaming(OpenMayaMPx.MPxNode):
         if plug.isElement():
             plug = plug.array()
 
-        if plug in (self.attr_current_keyframe_name_out, self.attr_arnold_attribute_out):
+        if maya_helpers.plug_in_list(plug, self.attr_current_keyframe_name_out, self.attr_arnold_attribute_out):
             key_idx = dataBlock.inputValue(self.attr_keyframes).asInt()
             entries = dataBlock.inputArrayValue(self.attr_entries)
             

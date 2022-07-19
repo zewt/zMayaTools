@@ -358,18 +358,19 @@ class zRigHandle(om.MPxSurfaceShape):
         if plug.isChild:
             plug = plug.parent()
 
-        if plug in (self.transformAttr, self.localTranslateAttr, self.localRotateAttr, self.localScaleAttr):
+        if maya_helpers.plug_in_list(plug, self.transformAttr, self.localTranslateAttr, self.localRotateAttr, self.localScaleAttr):
             # Discard our transformed shape.
             if hasattr(self, 'transformedShape'): del self.transformedShape
 
-        if plug in (self.transformAttr, self.shapeAttr,
+        if maya_helpers.plug_in_list(plug,
+            self.transformAttr, self.shapeAttr,
             self.localTranslateAttr, self.localRotateAttr, self.localScaleAttr,
             self.colorAttr, self.alphaAttr, self.borderColorAttr, self.borderAlphaAttr,
             self.xrayAttr, self.customMeshAttr):
             self.childChanged(self.kBoundingBoxChanged)
             omr.MRenderer.setGeometryDrawDirty(self.thisMObject(), True)
 
-        if plug in (self.shapeAttr, self.customMeshAttr):
+        if maya_helpers.plug_in_list(plug, self.shapeAttr, self.customMeshAttr):
             # Discard our shape cache.  We can't set the new one now, since the new
             # plug value hasn't actually been set yet, so we'll do it on the next
             # render.

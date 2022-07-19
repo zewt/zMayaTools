@@ -2,6 +2,7 @@ import math, sys
 import maya.OpenMayaMPx as OpenMayaMPx
 import maya.OpenMaya as om
 import pymel.core as pm
+from zMayaTools import maya_helpers
 from zMayaTools.menus import Menu
 
 class zArnoldMetadata(OpenMayaMPx.MPxNode):
@@ -11,7 +12,7 @@ class zArnoldMetadata(OpenMayaMPx.MPxNode):
         if plug.isElement():
             plug = plug.array()
 
-        if plug in (self.attr_output_int, self.attr_output_float, self.attr_output_vector2, self.attr_output_matrix):
+        if maya_helpers.plug_in_list(plug, self.attr_output_int, self.attr_output_float, self.attr_output_vector2, self.attr_output_matrix):
             name = dataBlock.inputValue(self.attr_name).asString()
 
             # Make sure the name is valid.

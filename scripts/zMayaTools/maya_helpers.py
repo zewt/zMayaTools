@@ -1132,3 +1132,14 @@ def setup_runtime_commands():
         annotation='Match the translation and rotation of selected objects to the last-selected object.',
         command='matchTransform -pos -rot', commandLanguage='mel')
 
+def plug_in_list(plug, *attrs):
+    """
+    Maya 2023 broke a basic part of the Python API: "attr == plug" no longer works, which
+    means "plug in (attr1, attr2, attr3)" is now broken.  It still hasn't been fixed, so
+    we have to work around this manually by using "plug == attr".
+    """
+    for attr in attrs:
+        if plug == attr:
+            return True
+    return False
+
