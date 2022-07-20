@@ -9,7 +9,6 @@ zMayaUtils:
 - Eye orientation controller
 - Character validation
 - Better editing of skinned joints
-- Hide the output window
 - Pick walk controller editing
 - Reorder channel box attributes
 - Additive pick walking hotkeys
